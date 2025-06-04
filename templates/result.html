@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Schedule Result</title>
+</head>
+<body>
+    <h1>Generated Schedule</h1>
+    {% if schedule %}
+        <ul>
+        {% for name, lec, ta in schedule %}
+            <li>
+                <strong>{{ name }}</strong>: Lecture {{ lec[0] }} {{ lec[1] }}-{{ lec[2] }}, TA {{ ta[0] }} {{ ta[1] }}-{{ ta[2] }}
+            </li>
+        {% endfor %}
+        </ul>
+    {% else %}
+        <p style="color: red;">No valid schedule found.</p>
+    {% endif %}
+    <a href="/">Back</a>
+</body>
+</html>
