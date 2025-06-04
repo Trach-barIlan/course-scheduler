@@ -3,6 +3,7 @@ import './App.css';
 
 
 function App() {
+  const [preference, setPreference] = useState("crammed");
   const [courses, setCourses] = useState([
     { name: "", lectures: "", ta_times: "" },
   ]);
@@ -29,12 +30,14 @@ function App() {
 
     // Prepare data in expected format
     const payload = {
+      preference,
       courses: courses.map((c) => ({
         name: c.name,
         lectures: c.lectures.split(",").map((s) => s.trim()),
         ta_times: c.ta_times.split(",").map((s) => s.trim()),
       })),
     };
+    
 
     try {
       const res = await fetch("http://127.0.0.1:5000/api/schedule", {
@@ -61,6 +64,17 @@ function App() {
     <div style={{ maxWidth: 600, margin: "auto", padding: 20 }}>
       <h2>Course Scheduler</h2>
       <form onSubmit={handleSubmit}>
+          <div className="schedule-preference">
+          <label>Schedule Preference:</label>
+          <select
+            value={preference}
+            onChange={(e) => setPreference(e.target.value)}
+          >
+            <option value="crammed">Crammed (fewer days, back-to-back)</option>
+            <option value="spaced">Spaced Out (more days, fewer gaps)</option>
+          </select>
+        </div>
+
         {courses.map((course, i) => (
           <div
             key={i}

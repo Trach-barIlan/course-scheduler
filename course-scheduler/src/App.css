@@ -125,3 +125,33 @@ button[type="button"]:hover {
   border-bottom: 1px solid #ccc;
   padding-bottom: 8px;
 }
+
+/* Schedule Preference dropdown */
+.schedule-preference {
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.schedule-preference label {
+  font-size: 16px;
+  font-weight: 500;
+  color: #333;
+  flex-shrink: 0;
+}
+
+.schedule-preference select {
+  flex-grow: 1;
+  padding: 10px 12px;
+  font-size: 16px;
+  border: 1.5px solid #ccc;
+  border-radius: 8px;
+  background-color: #fff;
+  transition: border-color 0.3s ease;
+}
+
+.schedule-preference select:focus {
+  border-color: #007bff;
+  outline: none;
+}
