@@ -1,12 +1,34 @@
 import re
 
-DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri"]
+DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri"]
 
 def parse_time_slot(s):
     match = re.match(r'([A-Za-z]+)\s+(\d+)-(\d+)', s.strip())
     if match:
         day, start, end = match.groups()
-        return (day, int(start), int(end))
+        # Add day standardization
+        day_map = {
+            "monday": "Mon",
+            "tuesday": "Tue",
+            "wednesday": "Wed",
+            "thursday": "Thu",
+            "friday": "Fri",
+            "sunday": "Sun",
+            # Add abbreviated versions
+            "mon": "Mon",
+            "tue": "Tue",
+            "wed": "Wed",
+            "thu": "Thu",
+            "fri": "Fri",
+            "sun": "Sun"
+        }
+        
+        standardized_day = day_map.get(day.lower())
+        if standardized_day is None:
+            print(f"Warning: Invalid day format '{day}', must be one of {list(day_map.keys())}")
+            return None
+            
+        return (standardized_day, int(start), int(end))
     return None
 
 def time_conflict(slot1, slot2):

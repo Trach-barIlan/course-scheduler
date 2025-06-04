@@ -1,7 +1,7 @@
 from itertools import product
 from .utils import time_conflict, count_days_used, count_hour_gaps
 
-def generate_schedule(courses, preference="crammed"):
+def generate_schedule(courses, preference="crammed", constraints=None):
     all_combos = [product(c["lectures"], c["ta_times"]) for c in courses]
     possible_schedules = product(*all_combos)
     valid_schedules = []
@@ -21,6 +21,21 @@ def generate_schedule(courses, preference="crammed"):
             if not valid:
                 break
             time_slots.extend([lecture, ta])
+
+        # Check constraints if provided
+        if valid and constraints:
+            for constraint in constraints:
+                # Example constraint checking - modify based on your constraint format
+                if constraint.get("type") == "no_early_classes":
+                    earliest_allowed = constraint.get("time", 9)
+                    if any(slot[1] < earliest_allowed for slot in time_slots):
+                        valid = False
+                        break
+                elif constraint.get("type") == "no_day":
+                    forbidden_day = constraint.get("day")
+                    if any(slot[0] == forbidden_day for slot in time_slots):
+                        valid = False
+                        break
 
         if valid:
             valid_schedules.append((schedule, time_slots))
