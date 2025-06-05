@@ -1,0 +1,27 @@
+.result {
+    margin-top: 30px;
+    background: var(--bg-primary);
+    padding: 20px;
+    border-radius: 10px;
+    border: 1px solid var(--border-color);
+  }
+  
+  .result h3 {
+    color: var(--primary-color);
+    text-align: center;
+    margin-top: 0;
+  }
+  
+  .result li {
+    padding: 15px;
+    background: var(--bg-secondary);
+    border-radius: 8px;
+    margin-bottom: 10px;
+    box-shadow: 0 2px 4px var(--shadow-color);
+    color: var(--text-primary);
+  }
+  
+  .time-slot {
+    margin-top: 8px;
+    color: var(--text-secondary);
+  }
