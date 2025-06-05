@@ -6,7 +6,13 @@ from schedule.parserAI import parse_course_text
 from ai_model.ml_parser import ScheduleParser
 
 app = Flask(__name__)
-CORS(app)
+CORS(app, resources={
+    r"/api/*": {
+        "origins": ["http://localhost:3000"],
+        "methods": ["GET", "POST", "OPTIONS"],
+        "allow_headers": ["Content-Type"]
+    }
+})
 
 schedule_parser = ScheduleParser()
 
