@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import CourseForm from "./components/CourseForm";
 import WeeklySchedule from "./components/WeeklySchedule";
-import './App.css';
 
 function App() {
   const [courses, setCourses] = useState([{ name: "", lectures: "", ta_times: "" }]);
@@ -14,6 +13,7 @@ function App() {
     newCourses[index][field] = value;
     setCourses(newCourses);
   };
+
 
   const addCourse = () => {
     setCourses([...courses, { name: "", lectures: "", ta_times: "" }]);
