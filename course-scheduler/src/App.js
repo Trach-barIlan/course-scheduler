@@ -1,6 +1,7 @@
 import React, { useState } from "react";
+import { BrowserRouter as Router, Route, Routes, useNavigate, data } from "react-router-dom";
 import CourseInput from './components/CourseInput';
-import ScheduleResult from './components/ScheduleResult';
+import WeeklyScheduler from './components/WeeklyScheduler';
 import './styles/base.css';
 import './styles/App.css';
 
@@ -72,15 +73,18 @@ function App() {
 
       const data = await scheduleRes.json();
       if (data.schedule) {
-        setResult(data.schedule);
+        setResult(data.schedule);        
       } else {
         setError(data.error || 'No valid schedule found');
       }
+      navigate("/schedule", { state: { schedule: result } });
+     
     } catch (err) {
-      console.error('Error details:', err);
       setError(err.message || 'Failed to connect to backend');
     }
   };
+
+  const navigate = useNavigate();
 
   return (
     <div className="container">
@@ -137,10 +141,21 @@ function App() {
           <strong>Error:</strong> {error}
         </div>
       )}
-
-      {result && <ScheduleResult schedule={result} />}
     </div>
   );
 }
 
-export default App;
+function AppWrapper() {
+  const [schedule, setSchedule] = useState(null);
+
+  return (
+    <Router>
+      <Routes>
+        <Route path="/" element={<App />} />
+        <Route path="/schedule" element={<WeeklyScheduler schedule={schedule} />} />
+      </Routes>
+    </Router>
+  );
+}
+
+export default AppWrapper;
