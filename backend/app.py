@@ -3,24 +3,23 @@ from flask_cors import CORS
 from schedule.logic import generate_schedule  # Remove parse_time_slot from here
 from schedule.utils import parse_time_slot
 from schedule.parserAI import parse_course_text
+from ai_model.ml_parser import ScheduleParser
 
 app = Flask(__name__)
 CORS(app)
 
+schedule_parser = ScheduleParser()
+
 @app.route("/api/parse", methods=["POST"])
 def parse_input():
     data = request.json
-    if not data:
-        return jsonify({"error": "No data provided"}), 400
-    if "text" not in data:
+    # print(f"Received data for parsing: {data}")
+    if not data or "text" not in data:
         return jsonify({"error": "Missing text input"}), 400
-    if not data["text"].strip():
-        return jsonify({"error": "Empty text input"}), 400
 
     try:
-        parsed_data = parse_course_text(data["text"])
-        if not parsed_data:
-            return jsonify({"error": "Failed to parse input"}), 400
+        parsed_data = schedule_parser.parse(data["text"])
+        print(f"Parsed data: {parsed_data}")  # Debug print
         return jsonify(parsed_data), 200
     except Exception as e:
         app.logger.error(f"Error parsing text: {str(e)}")

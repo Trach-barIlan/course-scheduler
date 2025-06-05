@@ -25,15 +25,17 @@ def generate_schedule(courses, preference="crammed", constraints=None):
         # Check constraints if provided
         if valid and constraints:
             for constraint in constraints:
-                # Example constraint checking - modify based on your constraint format
-                if constraint.get("type") == "no_early_classes":
-                    earliest_allowed = constraint.get("time", 9)
-                    if any(slot[1] < earliest_allowed for slot in time_slots):
+                print(f"Checking constraint: {constraint}")  # Debug print
+                if constraint.get("type") == "no_day":
+                    forbidden_day = constraint.get("day")
+                    # Check both lecture and TA slots
+                    if any(slot[0] == forbidden_day for slot in time_slots):
+                        print(f"Schedule violates no_day constraint for {forbidden_day}")  # Debug print
                         valid = False
                         break
-                elif constraint.get("type") == "no_day":
-                    forbidden_day = constraint.get("day")
-                    if any(slot[0] == forbidden_day for slot in time_slots):
+                elif constraint.get("type") == "no_early_classes":
+                    earliest_allowed = constraint.get("time", 9)
+                    if any(slot[1] < earliest_allowed for slot in time_slots):
                         valid = False
                         break
 

@@ -1,1 +1,3 @@
-schedule/__pycache__
+backend/ai_model/__pycache__
+backend/ai_model/schedule_ner
+backend/schedule/__pycache__
