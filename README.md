@@ -12,3 +12,12 @@ pip install spacy-lookups-data
 6. python3 -m spacy download en_core_web_md
 npm install react-router-dom
 6. npm install
+
+
+
+
+To add more labels:
+1. update the parse function in ml_parser.py to also handle its parsing and cases
+2. add patterns for the label
+3. add training data points
+4. add testing data points

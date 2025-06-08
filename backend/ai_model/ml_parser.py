@@ -22,7 +22,7 @@ class ScheduleParser:
         constraints = []
         
         for ent in doc.ents:
-            if ent.label_ == "NO_CLASS_BEFORE":
+            if ent.label_ == "NO_CLASS_BEFORE" or ent.label_ == "NO_CLASS_AFTER":
                 # Try to extract the hour from the entity text
                 hour_text = ent.text.strip().lower()
                 
@@ -49,10 +49,16 @@ class ScheduleParser:
                         if "am" in ent.text.lower() and hour == 12:
                             hour = 0
                             
-                        constraints.append({
-                            "type": "no_early_classes",
-                            "time": hour
-                        })
+                        if ent.label_ == "NO_CLASS_BEFORE":
+                            constraints.append({
+                                "type": "no_classes_before",
+                                "time": hour
+                            })
+                        elif ent.label_ == "NO_CLASS_AFTER":
+                            constraints.append({
+                                "type": "no_classes_after",
+                                "time": hour
+                            })
                     except ValueError:
                         print(f"Could not parse time from: {hour_text}")
                         continue
@@ -82,6 +88,7 @@ class ScheduleParser:
                         "type": "avoid_ta",
                         "name": ta_name
                     })
+            
 
         return {
             "constraints": constraints,

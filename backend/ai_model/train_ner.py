@@ -112,13 +112,13 @@ def train_ner():
     with nlp.disable_pipes(*other_pipes):
         # Initialize the model with transfer learning settings
         optimizer = nlp.begin_training()
-        optimizer.learn_rate = 0.002
+        optimizer.learn_rate = 0.001
         
         # Training parameters optimized for transfer learning
-        n_iter = 50  # Fewer iterations needed with pre-trained model
-        batch_size = 8
-        drop_rate = 0.1  # Lower dropout for stability
-        patience = 5  # Number of evaluations without improvement before stopping
+        n_iter = 100  # Fewer iterations needed with pre-trained model
+        batch_size = 4
+        drop_rate = 0.2  # Lower dropout for stability
+        patience = 8  # Number of evaluations without improvement before stopping
         best_accuracy = 0  # Track best accuracy for early stopping
         best_model = None
         no_improve = 0
