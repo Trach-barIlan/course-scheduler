@@ -15,21 +15,102 @@ CORS(app, resources={
 })
 
 schedule_parser = ScheduleParser()
+model_nlp = schedule_parser.nlp
+
+def extract_hour_from_text(text):
+    """Converts time expressions to 24-hour integer values."""
+    text = text.strip().lower()
+    
+    if text in ["noon"]:
+        return 12
+    if text in ["midnight"]:
+        return 0
+
+    import re
+    match = re.match(r"(\d{1,2})(?::(\d{2}))?\s*(am|pm)?", text)
+    if not match:
+        return None
+
+    hour = int(match.group(1))
+    minutes = int(match.group(2)) if match.group(2) else 0
+    period = match.group(3)
+
+    if period == "pm" and hour < 12:
+        hour += 12
+    elif period == "am" and hour == 12:
+        hour = 0
+
+    return hour
+
+def normalize_text(text):
+    """Normalize text before NER processing."""
+    day_names = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday']
+    normalized = text
+    
+    # Convert day names to title case
+    for day in day_names:
+        # Replace full lowercase version with title case
+        normalized = normalized.replace(day.lower(), day.title())
+        # Replace full uppercase version with title case
+        normalized = normalized.replace(day.upper(), day.title())
+    
+    return normalized
 
 @app.route("/api/parse", methods=["POST"])
 def parse_input():
     data = request.json
-    # print(f"Received data for parsing: {data}")
     if not data or "text" not in data:
         return jsonify({"error": "Missing text input"}), 400
 
-    try:
-        parsed_data = schedule_parser.parse(data["text"])
-        print(f"Parsed data: {parsed_data}")  # Debug print
-        return jsonify(parsed_data), 200
-    except Exception as e:
-        app.logger.error(f"Error parsing text: {str(e)}")
-        return jsonify({"error": "Failed to parse text input"}), 500
+    text = data["text"].strip()
+    # Normalize text before processing
+    normalized_text = normalize_text(text)
+    print(f"Original text: {text}")
+    print(f"Normalized text: {normalized_text}")
+    
+    doc = model_nlp(normalized_text)
+
+    constraints = []
+    raw_entities = []
+
+    for ent in doc.ents:
+        raw_entities.append({
+            "specifics": ent.text,
+            "label": ent.label_
+        })
+
+        if ent.label_ == "NO_CLASS_BEFORE":
+            hour = extract_hour_from_text(ent.text)
+            if hour is not None:
+                constraints.append({
+                    "type": "No Class Before",
+                    "time": hour
+                })
+
+        elif ent.label_ == "NO_CLASS_DAY":
+            constraints.append({
+                "type": "No Class Day",
+                "day": ent.text.strip().capitalize()[:3]  # e.g., Tuesday -> Tue
+            })
+        elif ent.label_ == "NO_CLASS_AFTER":
+            hour = extract_hour_from_text(ent.text)
+            if hour is not None:
+                constraints.append({
+                    "type": "No Class After",
+                    "time": hour
+                })
+        elif ent.label_ == "AVOID_TA":
+            ta_name = ent.text.replace("ta", "").replace("TA", "").title().strip()
+            if ta_name:
+                constraints.append({
+                    "type": "Avoid TA",
+                    "name": ta_name
+                })
+
+    return jsonify({
+        "constraints": constraints,
+        "entities": raw_entities
+    }), 200
 
 @app.route("/api/schedule", methods=["POST"])
 def api_schedule():

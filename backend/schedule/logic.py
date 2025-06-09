@@ -25,19 +25,35 @@ def generate_schedule(courses, preference="crammed", constraints=None):
         # Check constraints if provided
         if valid and constraints:
             for constraint in constraints:
-                print(f"Checking constraint: {constraint}")  # Debug print
-                if constraint.get("type") == "no_day":
+                constraint_type = constraint.get("type", "").lower().replace(" ", "_")
+                
+                if constraint_type == "NO CLASS DAY":
                     forbidden_day = constraint.get("day")
-                    # Check both lecture and TA slots
                     if any(slot[0] == forbidden_day for slot in time_slots):
-                        print(f"Schedule violates no_day constraint for {forbidden_day}")  # Debug print
                         valid = False
                         break
-                elif constraint.get("type") == "no_early_classes":
+                
+                elif constraint_type == "NO CLASS BEFORE":
                     earliest_allowed = constraint.get("time", 9)
                     if any(slot[1] < earliest_allowed for slot in time_slots):
                         valid = False
                         break
+                
+                elif constraint_type == "NO CLASS AFTER":
+                    latest_allowed = constraint.get("time", 17)
+                    if any(slot[2] > latest_allowed for slot in time_slots):
+                        valid = False
+                        break
+                
+                elif constraint_type == "AVOID TA":
+                    ta_name = constraint.get("name", "").strip()
+                    # Extract course and TA information from schedule
+                    for i, (_, ta_slot) in enumerate(schedule):
+                        course_info = courses[i]
+                        # Check if this TA slot belongs to the TA to avoid
+                        if ta_name.lower() in str(ta_slot).lower():
+                            valid = False
+                            break
 
         if valid:
             valid_schedules.append((schedule, time_slots))
