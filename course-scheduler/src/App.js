@@ -33,18 +33,23 @@ function App({ setSchedule }) {
         lectures: c.lectures.split(",").map((s) => s.trim()),
         ta_times: c.ta_times.split(",").map((s) => s.trim()),
       }));
+      console.log("1")
 
       const parseRes = await fetch("http://127.0.0.1:5000/api/parse", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text: constraints }),
       });
+      console.log("2")
       if (!parseRes.ok) {
         const errorData = await parseRes.json();
         throw new Error(errorData.error || 'Failed to parse constraints');
       }
+      console.log("3")
 
       const parsedData = await parseRes.json();
+      console.log("4")
+      console.log("Parsed constraints:", parsedData.constraints);
 
       const scheduleRes = await fetch("http://127.0.0.1:5000/api/schedule", {
         method: "POST",
@@ -55,18 +60,20 @@ function App({ setSchedule }) {
           constraints: parsedData.constraints || []
         }),
       });
-      print("response: ", scheduleRes);
+      console.log("5")
       if (!scheduleRes.ok) {
         const errorData = await scheduleRes.json();
         throw new Error(errorData.error || 'Failed to generate schedule');
       }
 
       const data = await scheduleRes.json();
+      console.log("6")
       if (data.schedule) {
         setSchedule(data.schedule);
       } else {
         setError(data.error || 'No valid schedule found');
       }
+      console.log("7")
       console.log("Schedule generated:", data.schedule);
     } catch (err) {
       setError(err.message || 'Failed to connect to backend');

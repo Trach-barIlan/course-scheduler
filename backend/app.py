@@ -65,8 +65,6 @@ def parse_input():
     text = data["text"].strip()
     # Normalize text before processing
     normalized_text = normalize_text(text)
-    print(f"Original text: {text}")
-    print(f"Normalized text: {normalized_text}")
     
     doc = model_nlp(normalized_text)
 
@@ -176,6 +174,8 @@ def api_schedule():
                 "lectures": [s for s in lec_slots if s],
                 "ta_times": [s for s in ta_slots if s]
             })
+
+        print(f"Parsed constraints: {parsed_constraints.get("constraints") if parsed_constraints else None}")
 
         # Generate schedule
         schedule = generate_schedule(

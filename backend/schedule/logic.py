@@ -25,27 +25,31 @@ def generate_schedule(courses, preference="crammed", constraints=None):
         # Check constraints if provided
         if valid and constraints:
             for constraint in constraints:
-                constraint_type = constraint.get("type", "").lower().replace(" ", "_")
+                constraint_type = constraint.get("type", "")
+                print(f"Checking constraint: {constraint_type}")
                 
-                if constraint_type == "NO CLASS DAY":
+                if constraint_type == "No Class Day":
                     forbidden_day = constraint.get("day")
+                    print(f"Checking for forbidden day: {forbidden_day}")
+                    for slot in time_slots:
+                        print(f"Checking slots: {slot}")
                     if any(slot[0] == forbidden_day for slot in time_slots):
                         valid = False
                         break
                 
-                elif constraint_type == "NO CLASS BEFORE":
+                elif constraint_type == "No Class Before":
                     earliest_allowed = constraint.get("time", 9)
                     if any(slot[1] < earliest_allowed for slot in time_slots):
                         valid = False
                         break
                 
-                elif constraint_type == "NO CLASS AFTER":
+                elif constraint_type == "No Class After":
                     latest_allowed = constraint.get("time", 17)
                     if any(slot[2] > latest_allowed for slot in time_slots):
                         valid = False
                         break
                 
-                elif constraint_type == "AVOID TA":
+                elif constraint_type == "Avoid Ta":
                     ta_name = constraint.get("name", "").strip()
                     # Extract course and TA information from schedule
                     for i, (_, ta_slot) in enumerate(schedule):
