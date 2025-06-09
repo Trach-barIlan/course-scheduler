@@ -27,6 +27,35 @@ PATTERNS = [
                 {"LIKE_NUM": True}
             ]
         },
+            # Morning/Early patterns (NO_CLASS_BEFORE)
+        {
+            "label": "NO_CLASS_BEFORE",
+            "pattern": [
+                {"LOWER": {"IN": ["early", "morning"]}},
+                {"LOWER": "classes"},
+                {"LOWER": "before"},
+                {"LIKE_NUM": True}
+            ]
+        },
+        {
+            "label": "NO_CLASS_BEFORE",
+            "pattern": [{"LOWER": "starts"}, {"LOWER": "after"}, {"LIKE_NUM": True}]
+        },
+    
+        # Evening/Late patterns (NO_CLASS_AFTER)
+        {
+            "label": "NO_CLASS_AFTER",
+            "pattern": [
+                {"LOWER": {"IN": ["late", "evening"]}},
+                {"LOWER": "classes"},
+                {"LOWER": "after"},
+                {"LIKE_NUM": True}
+            ]
+        },
+        {
+            "label": "NO_CLASS_AFTER",
+            "pattern": [{"LOWER": "ends"}, {"LOWER": "by"}, {"LIKE_NUM": True}]
+        },
         
         # NO_CLASS_AFTER patterns with explicit after indicators
         {

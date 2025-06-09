@@ -83,6 +83,27 @@ TRAIN_DATA = [
 ("Classes should not be scheduled after 6pm", {
     "entities": [(38, 41, "NO_CLASS_AFTER")]
 }),
+("I prefer no classes after 9:30pm", {
+    "entities": [(26, 32, "NO_CLASS_AFTER")]
+}),
+("Please avoid scheduling after 10pm", {
+    "entities": [(30, 34, "NO_CLASS_AFTER")]
+}),
+("classes after 4 don't work for me", {
+    "entities": [(14, 15, "NO_CLASS_AFTER")]
+}),
+("5pm classes are too late", {
+    "entities": [(0, 3, "NO_CLASS_AFTER")]
+}),
+("Nothing after 3:30pm", {
+    "entities": [(14, 20, "NO_CLASS_AFTER")]
+}),
+("Classes should not be scheduled after 2pm", {
+    "entities": [(38, 41, "NO_CLASS_AFTER")]
+}),
+("Please avoid scheduling after 1pm", {
+    "entities": [(30, 33, "NO_CLASS_AFTER")]
+}),
 
 # Day constraints
 ("No classes on Tuesday", {
@@ -133,6 +154,25 @@ TRAIN_DATA = [
 ("I had issues with TA Jordan last semester", {
     "entities": [(21, 27, "AVOID_TA")]
 }),
+("I don't want to learn with Emily as my ta", {
+    "entities": [(27, 32, "AVOID_TA")]
+}),
+("Avoid TA Chris for this course", {
+    "entities": [(9, 14, "AVOID_TA")]
+}),
+
+("I prefer not to have TA Taylor", {
+    "entities": [(24, 30, "AVOID_TA")]
+}),
+("Please avoid TA Jamie", {
+    "entities": [(16, 21, "AVOID_TA")]
+}),
+("I can't work with TA Morgan", {
+    "entities": [(21, 27, "AVOID_TA")]
+}),
+("I had a bad experience with TA Casey", {
+    "entities": [(31, 36, "AVOID_TA")]
+}),
 
 # Combined constraints
 ("No early classes before 9am and no Tuesday classes", {
@@ -155,6 +195,40 @@ TRAIN_DATA = [
 }),
 ("Nothing before 9am nor after 4pm", {
     "entities": [(15, 18, "NO_CLASS_BEFORE"), (29, 32, "NO_CLASS_AFTER")]
+}),
+("I can't do classes before 10:30am or with TA Johnson", {
+    "entities": [(26, 33, "NO_CLASS_BEFORE"), (45, 52, "AVOID_TA")]
+}),
+("Please avoid scheduling before 8:15am and after 6pm", {
+    "entities": [(31, 37, "NO_CLASS_BEFORE"), (48, 51, "NO_CLASS_AFTER")]
+}),
+("I prefer no classes on monday or with TA Brown", {
+    "entities": [(23, 29, "NO_CLASS_DAY"), (41, 46, "AVOID_TA")]
+}),
+("Don't schedule anything after 6:00pm or after 5:30pm", {
+    "entities": [(30, 36, "NO_CLASS_AFTER"), (46, 52, "NO_CLASS_AFTER")]
+}),
+("Classes should not be scheduled before 10am or after 3pm", {
+    "entities": [(39, 43, "NO_CLASS_BEFORE"), (53, 56, "NO_CLASS_AFTER")]
+}),
+
+("Nothing should be after 19 or on Mondays", {
+    "entities": [(24, 26, "NO_CLASS_AFTER"), (33, 40, "NO_CLASS_DAY")]
+}),
+("After 8pm classes are not suitable and I can't do Friday", {
+    "entities": [(6, 9, "NO_CLASS_AFTER"), (50, 56, "NO_CLASS_DAY")]
+}),
+("8pm classes are too late and I can't do Thursdays", {
+    "entities": [(0, 3, "NO_CLASS_AFTER"), (40, 49, "NO_CLASS_DAY")]
+}),
+("Avoid scheduling classes before 9:00am and after 5:00pm", {
+    "entities": [(32, 38, "NO_CLASS_BEFORE"), (49, 55, "NO_CLASS_AFTER")]
+}),
+("I can't attend classes before 10:15am or after 6:30pm", {
+    "entities": [(30, 37, "NO_CLASS_BEFORE"), (47, 53, "NO_CLASS_AFTER")]
+}),
+("No classes on Tuesday mornings or with TA Smith", {
+    "entities": [(14, 21, "NO_CLASS_DAY"), (42, 47, "AVOID_TA")]
 }),
 
 # Additional variations of common patterns

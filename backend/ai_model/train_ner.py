@@ -38,6 +38,41 @@ def calculate_accuracy(nlp, test_data):
     print(f"\nAccuracy: {accuracy:.2f}% ({correct}/{total} entities correctly identified)")
     return accuracy
 
+def print_confusion_matrix(nlp, test_data):
+    confusion = {
+        "NO_CLASS_BEFORE": {"correct": 0, "confused_as_after": 0},
+        "NO_CLASS_AFTER": {"correct": 0, "confused_as_before": 0}
+    }
+    
+    for text, annotations in test_data:
+        doc = nlp(text)
+        true_labels = {(s, e): l for s, e, l in annotations["entities"]}
+        pred_labels = {(e.start_char, e.end_char): e.label_ for e in doc.ents}
+        
+        for (start, end), true_label in true_labels.items():
+            if true_label in ["NO_CLASS_BEFORE", "NO_CLASS_AFTER"]:
+                pred_label = pred_labels.get((start, end))
+                if pred_label == true_label:
+                    confusion[true_label]["correct"] += 1
+                elif pred_label in ["NO_CLASS_BEFORE", "NO_CLASS_AFTER"]:
+                    if true_label == "NO_CLASS_BEFORE":
+                        confusion["NO_CLASS_BEFORE"]["confused_as_after"] += 1
+                    else:
+                        confusion["NO_CLASS_AFTER"]["confused_as_before"] += 1
+    
+    print("\nConfusion Matrix:")
+    for label, stats in confusion.items():
+        total = sum(stats.values())
+        if total > 0:
+            print(f"\n{label}:")
+            print(f"Correct: {stats['correct']}/{total} ({stats['correct']/total*100:.1f}%)")
+            if label == "NO_CLASS_BEFORE":
+                print(f"Confused as AFTER: {stats['confused_as_after']}/{total} "
+                      f"({stats['confused_as_after']/total*100:.1f}%)")
+            else:
+                print(f"Confused as BEFORE: {stats['confused_as_before']}/{total} "
+                      f"({stats['confused_as_before']/total*100:.1f}%)")
+
 def per_label_accuracy(nlp, test_data):
     correct = defaultdict(int)
     total = defaultdict(int)
@@ -65,16 +100,27 @@ def add_pattern_matching(nlp):
 
 def preprocess_text(nlp, text):
     """Normalize text before processing."""
-    # First, preserve existing capitalization
-    doc = nlp.make_doc(text)
-    
-    # Replace day names with title case version
+    # Existing day name normalization
     day_names = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday']
-    normalized = text
+    normalized = text.lower()
+    
+    # Normalize time expressions
+    time_indicators = {
+        'morning': 'am',
+        'evening': 'pm',
+        'afternoon': 'pm',
+        'night': 'pm',
+        'noon': '12pm',
+        'midnight': '12am'
+    }
+    
+    for indicator, replacement in time_indicators.items():
+        if indicator in normalized:
+            normalized = normalized.replace(indicator, replacement)
+    
+    # Handle day names
     for day in day_names:
-        # Replace full lowercase or uppercase versions with title case
         normalized = normalized.replace(day.lower(), day.title())
-        normalized = normalized.replace(day.upper(), day.title())
     
     return normalized
 
@@ -90,7 +136,7 @@ def train_ner():
         
     # Add NER and pattern matching in correct order
     ner = nlp.add_pipe("ner", last=True)
-    #add_pattern_matching(nlp)
+    add_pattern_matching(nlp)
 
     # Add labels and prepare for transfer learning
     for _, annotations in TRAIN_DATA:
@@ -175,6 +221,9 @@ def train_ner():
         final_accuracy = calculate_accuracy(nlp, TEST_DATA)
         print("\n--- Per Label Accuracy ---")
         per_label_accuracy(nlp, TEST_DATA)
+
+        print("\n--- Confusion Matrix Analysis ---")
+        print_confusion_matrix(nlp, TEST_DATA)
         
         # Save only the final best model
         output_dir = os.path.join(os.path.dirname(__file__), "schedule_ner")

@@ -42,41 +42,70 @@ def extract_hour_from_text(text):
 
     return hour
 
+def normalize_text(text):
+    """Normalize text before NER processing."""
+    day_names = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday']
+    normalized = text
+    
+    # Convert day names to title case
+    for day in day_names:
+        # Replace full lowercase version with title case
+        normalized = normalized.replace(day.lower(), day.title())
+        # Replace full uppercase version with title case
+        normalized = normalized.replace(day.upper(), day.title())
+    
+    return normalized
+
 @app.route("/api/parse", methods=["POST"])
 def parse_input():
     data = request.json
     if not data or "text" not in data:
         return jsonify({"error": "Missing text input"}), 400
 
-    text = data["text"]
-    text = text.strip()
-    print(f"Received text for parsing: {text}")
-    doc = model_nlp(text)
+    text = data["text"].strip()
+    # Normalize text before processing
+    normalized_text = normalize_text(text)
+    print(f"Original text: {text}")
+    print(f"Normalized text: {normalized_text}")
+    
+    doc = model_nlp(normalized_text)
 
     constraints = []
     raw_entities = []
 
     for ent in doc.ents:
         raw_entities.append({
-            "text": ent.text,
-            "label": ent.label_,
-            "start": ent.start_char,
-            "end": ent.end_char
+            "specifics": ent.text,
+            "label": ent.label_
         })
 
         if ent.label_ == "NO_CLASS_BEFORE":
             hour = extract_hour_from_text(ent.text)
             if hour is not None:
                 constraints.append({
-                    "type": "no_early_classes",
+                    "type": "No Class Before",
                     "time": hour
                 })
 
         elif ent.label_ == "NO_CLASS_DAY":
             constraints.append({
-                "type": "no_day",
+                "type": "No Class Day",
                 "day": ent.text.strip().capitalize()[:3]  # e.g., Tuesday -> Tue
             })
+        elif ent.label_ == "NO_CLASS_AFTER":
+            hour = extract_hour_from_text(ent.text)
+            if hour is not None:
+                constraints.append({
+                    "type": "No Class After",
+                    "time": hour
+                })
+        elif ent.label_ == "AVOID_TA":
+            ta_name = ent.text.replace("ta", "").replace("TA", "").title().strip()
+            if ta_name:
+                constraints.append({
+                    "type": "Avoid TA",
+                    "name": ta_name
+                })
 
     return jsonify({
         "constraints": constraints,
