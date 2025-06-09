@@ -1,17 +1,16 @@
 import React, { useState } from "react";
-import { BrowserRouter as Router, Route, Routes, useNavigate, data } from "react-router-dom";
+import { BrowserRouter as Router } from "react-router-dom";
 import CourseInput from './components/CourseInput';
 import WeeklyScheduler from './components/WeeklyScheduler';
 import './styles/base.css';
 import './styles/App.css';
 
-function App() {
+function App({ setSchedule }) {
   const [preference, setPreference] = useState("crammed");
   const [courses, setCourses] = useState([
     { name: "", lectures: "", ta_times: "" },
   ]);
   const [constraints, setConstraints] = useState("");
-  const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
 
   const handleCourseChange = (index, field, value) => {
@@ -26,7 +25,6 @@ function App() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setResult(null);
     setError(null);
 
     try {
@@ -36,13 +34,6 @@ function App() {
         ta_times: c.ta_times.split(",").map((s) => s.trim()),
       }));
 
-      console.log('Sending to backend:', {
-        preference,
-        courses: formattedCourses,
-        constraints
-      });
-
-      // First validate and parse the constraints text
       const parseRes = await fetch("http://127.0.0.1:5000/api/parse", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -55,7 +46,6 @@ function App() {
 
       const parsedData = await parseRes.json();
 
-      // Then generate schedule with both form courses and parsed constraints
       const scheduleRes = await fetch("http://127.0.0.1:5000/api/schedule", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -65,7 +55,7 @@ function App() {
           constraints: parsedData.constraints || []
         }),
       });
-
+      print("response: ", scheduleRes);
       if (!scheduleRes.ok) {
         const errorData = await scheduleRes.json();
         throw new Error(errorData.error || 'Failed to generate schedule');
@@ -73,21 +63,18 @@ function App() {
 
       const data = await scheduleRes.json();
       if (data.schedule) {
-        setResult(data.schedule);        
+        setSchedule(data.schedule);
       } else {
         setError(data.error || 'No valid schedule found');
       }
-      navigate("/schedule", { state: { schedule: result } });
-     
+      console.log("Schedule generated:", data.schedule);
     } catch (err) {
       setError(err.message || 'Failed to connect to backend');
     }
   };
 
-  const navigate = useNavigate();
-
   return (
-    <div className="container">
+    <div className="course-scheduler">
       <h2>Course Scheduler</h2>
       <form onSubmit={handleSubmit}>
         <div className="schedule-preference">
@@ -150,10 +137,10 @@ function AppWrapper() {
 
   return (
     <Router>
-      <Routes>
-        <Route path="/" element={<App />} />
-        <Route path="/schedule" element={<WeeklyScheduler schedule={schedule} />} />
-      </Routes>
+      <div className="app-wrapper">
+        <App setSchedule={setSchedule} />
+        <WeeklyScheduler schedule={schedule} />
+      </div>
     </Router>
   );
 }

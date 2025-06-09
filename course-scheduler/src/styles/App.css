@@ -138,3 +138,27 @@ input:focus {
 .constraints-input::placeholder {
   color: var(--text-secondary);
 }
+
+.app-wrapper {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+  padding: 20px;
+}
+
+.course-scheduler {
+  width: 30%;
+  padding: 20px;
+  background-color: var(--bg-primary);
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.weekly-scheduler {
+  width: 60%;
+  padding: 20px;
+  background-color: var(--bg-secondary);
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}

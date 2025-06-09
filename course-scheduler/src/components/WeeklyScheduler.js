@@ -1,11 +1,7 @@
 import { jsPDF } from "jspdf";
 import html2canvas from "html2canvas";
-import { useLocation } from "react-router-dom";
-
-const WeeklySchedule = () => {
-  const location = useLocation();
-  const schedule = location.state?.schedule;
-
+import "../styles/WeeklyScheduler.css";
+const WeeklySchedule = ({ schedule }) => {
   if (!schedule || schedule.length === 0) {
     return <div>No schedule available</div>;
   }
@@ -42,7 +38,7 @@ const WeeklySchedule = () => {
     });
   });
 
-  const downloadPDF = () => {
+   const downloadPDF = () => {
     const tableElement = document.getElementById("schedule-table");
     html2canvas(tableElement, { scale: 3 }).then((canvas) => {
       const imgData = canvas.toDataURL("image/png");
@@ -68,111 +64,63 @@ const WeeklySchedule = () => {
     });
   };
 
-  return (
-    <div style={{ padding: "20px", maxWidth: "95%", margin: "0 auto", height: "70vh" }}>
-      <button
-        onClick={downloadPDF}
-        style={{
-          marginBottom: "20px",
-          padding: "10px 20px",
-          backgroundColor: "#007BFF",
-          color: "#fff",
-          border: "none",
-          borderRadius: "5px",
-          cursor: "pointer",
-          fontSize: "16px",
-        }}
-      >
+const shareTableAsImage = () => {
+  const tableElement = document.getElementById("schedule-table");
+  html2canvas(tableElement, { scale: 3 }).then((canvas) => {
+    const imgData = canvas.toDataURL("image/png");
+
+    // יצירת קישור לשיתוף בווטסאפ
+    const whatsappUrl = `https://wa.me/?text=Check out my weekly schedule!`;
+    const newWindow = window.open(whatsappUrl, "_blank");
+
+    // הוספת התמונה לחלון החדש (לא ניתן לשלוח ישירות דרך API של ווטסאפ)
+    if (newWindow) {
+      const img = newWindow.document.createElement("img");
+      img.src = imgData;
+      img.style.maxWidth = "100%";
+      newWindow.document.body.appendChild(img);
+    }
+  });
+};
+
+    return (
+    <div style={{ padding: "20px", width: "100%", height: "100%" }}>
+      <button onClick={downloadPDF} className="button button-download">
         Download as PDF
       </button>
-      <table
-        id="schedule-table"
-        style={{
-          width: "100%",
-          height: "100%", // Ensure the table fills the container
-          borderCollapse: "collapse",
-          fontFamily: "Arial, sans-serif",
-          fontSize: "18px", // Increase font size for better readability
-          textAlign: "center",
-        }}
-      >
+      <button onClick={shareTableAsImage} className="button button-share">
+        Share on WhatsApp
+      </button>
+      <table id="schedule-table">
         <thead>
           <tr>
-            <th
-              style={{
-                backgroundColor: "#f4f4f4",
-                padding: "15px", // Increase padding for larger cells
-                border: "1px solid #ddd",
-                fontWeight: "bold",
-              }}
-            >
-              Hour
-            </th>
+            <th>Hour</th>
             {days.map((d) => (
-              <th
-                key={d}
-                style={{
-                  backgroundColor: "#f4f4f4",
-                  padding: "15px", // Increase padding for larger cells
-                  border: "1px solid #ddd",
-                  fontWeight: "bold",
-                }}
-              >
-                {d}
-              </th>
+              <th key={d}>{d}</th>
             ))}
           </tr>
         </thead>
         <tbody>
           {hours.map((h) => (
             <tr key={h}>
-              <td
-                style={{
-                  backgroundColor: "#f9f9f9",
-                  padding: "15px", // Increase padding for larger cells
-                  border: "1px solid #ddd",
-                  fontWeight: "bold",
-                }}
-              >
-                {h}:00
-              </td>
+              <td>{h}:00</td>
               {days.map((d) => {
                 const slotKey = Object.keys(slots).find((key) => {
                   const [day, start, end] = key.split("-");
                   return day === d && h >= parseInt(start) && h < parseInt(end);
                 });
-
+  
                 if (slotKey) {
                   const slot = slots[slotKey];
                   const isStartHour = h === slot.start;
                   return isStartHour ? (
-                    <td
-                      key={d}
-                      rowSpan={slot.end - slot.start}
-                      style={{
-                        backgroundColor: slot.color,
-                        color: "#000", // Text color set to black
-                        border: "1px solid #ddd",
-                        padding: "15px", // Increase padding for larger cells
-                        verticalAlign: "middle",
-                        fontWeight: "bold",
-                      }}
-                    >
+                    <td key={d} rowSpan={slot.end - slot.start} style={{ backgroundColor: slot.color }}>
                       {slot.text}
                     </td>
-                  ) : null; // Skip rendering for non-start hours
+                  ) : null;
                 }
-
-                return (
-                  <td
-                    key={d}
-                    style={{
-                      backgroundColor: "#fff",
-                      border: "1px solid #ddd",
-                      padding: "15px", // Increase padding for larger cells
-                    }}
-                  />
-                );
+  
+                return <td key={d}></td>;
               })}
             </tr>
           ))}

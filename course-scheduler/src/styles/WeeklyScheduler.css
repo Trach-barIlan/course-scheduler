@@ -1,0 +1,44 @@
+#schedule-table {
+  width: 100%;
+  height: 100%; /* הטבלה תתפוס את כל החלק שלה */
+  border-collapse: collapse;
+  font-family: Arial, sans-serif;
+  font-size: 18px; /* גודל טקסט קריא */
+  text-align: center;
+}
+
+#schedule-table th {
+  background-color: #f4f4f4;
+  color: #000; /* צבע שחור לכותרות */
+  padding: 15px; /* ריווח לתאים */
+  border: 1px solid #ddd;
+  font-weight: bold;
+}
+
+#schedule-table td {
+  background-color: #fff;
+  color: #000; /* צבע שחור לטקסט */
+  padding: 15px; /* ריווח לתאים */
+  border: 1px solid #ddd;
+  font-weight: bold;
+  vertical-align: middle;
+}
+
+.button {
+  margin-bottom: 20px;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.button-download {
+  background-color: #007BFF;
+  color: #fff;
+}
+
+.button-share {
+  background-color: #25D366; /* צבע ירוק של ווטסאפ */
+  color: #fff;
+}
