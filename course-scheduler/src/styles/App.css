@@ -142,23 +142,132 @@ input:focus {
 .app-wrapper {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
   gap: 20px;
   padding: 20px;
+  height: 100vh;
+  max-height: 100vh;
+  overflow: hidden;
+  position: fixed;
+  width: 100%;
+  top: 0;
+  left: 0;
 }
 
 .course-scheduler {
   width: 30%;
-  padding: 20px;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
   background-color: var(--bg-primary);
   border-radius: 8px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  overflow: hidden; /* Prevent scroll on container */
+}
+
+.course-scheduler h2 {
+  padding: 20px;
+  margin: 0;
+  background-color: var(--bg-primary);
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+.course-scheduler form {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+  padding-top: 0;
+  margin-bottom: 0;
+  margin-bottom: 0;
+}
+
+/* Add custom scrollbar styling */
+.course-scheduler form::-webkit-scrollbar {
+  width: 8px;
+}
+
+.course-scheduler form::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+  border-radius: 4px;
+}
+
+.course-scheduler form::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 4px;
+}
+
+.course-scheduler form::-webkit-scrollbar-thumb:hover {
+  background: var(--text-secondary);
 }
 
 .weekly-scheduler {
-  width: 60%;
-  padding: 20px;
+  width: 70%;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
   background-color: var(--bg-secondary);
   border-radius: 8px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  overflow: hidden; /* Changed from overflow-y: auto */
+}
+
+.schedule-header {
+  position: sticky;
+  top: 0;
+  background-color: var(--bg-secondary);
+  padding: 20px 20px 0;
+  z-index: 2;
+}
+
+.schedule-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 20px 20px;
+}
+
+.time-slots {
+  height: 100%;
+  overflow-y: auto;
+  padding-bottom: 200px;
+  /* Add scrollbar styling for time slots */
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-color) var(--bg-secondary);
+}
+
+.time-slots::-webkit-scrollbar {
+  width: 8px;
+}
+
+.time-slots::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+  border-radius: 4px;
+}
+
+.time-slots::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 4px;
+}
+
+.time-slots::-webkit-scrollbar-thumb:hover {
+  background: var(--text-secondary);
+}
+
+/* Ensure error message stays within scrollable area */
+.error-message {
+  position: fixed;
+  bottom: 20px;
+  left: 20px;
+  width: calc(30% - 40px);
+  margin-top: 20px;
+  background-color: var(--bg-primary);
+  z-index: 1000;
+  padding: 15px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.button-group {
+  /* Ensure buttons don't overlap with error message */
+  margin-bottom: 60px;
 }

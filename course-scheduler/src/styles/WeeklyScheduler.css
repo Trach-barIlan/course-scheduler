@@ -42,3 +42,31 @@
   background-color: #25D366; /* צבע ירוק של ווטסאפ */
   color: #fff;
 }
+
+.button-container {
+  display: flex;
+  gap: 10px;
+  padding: 20px;
+  background-color: var(--bg-secondary);
+}
+
+.schedule-header {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background-color: var(--bg-secondary);
+}
+
+#schedule-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+}
+
+/* Ensure table header stays fixed */
+#schedule-table thead {
+  position: sticky;
+  top: 0;
+  background-color: var(--bg-secondary);
+  z-index: 1;
+}

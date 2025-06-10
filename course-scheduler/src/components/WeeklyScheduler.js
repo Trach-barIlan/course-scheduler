@@ -84,48 +84,56 @@ const shareTableAsImage = () => {
 };
 
     return (
-    <div style={{ padding: "20px", width: "100%", height: "100%" }}>
-      <button onClick={downloadPDF} className="button button-download">
-        Download as PDF
-      </button>
-      <button onClick={shareTableAsImage} className="button button-share">
-        Share on WhatsApp
-      </button>
-      <table id="schedule-table">
-        <thead>
-          <tr>
-            <th>Hour</th>
-            {days.map((d) => (
-              <th key={d}>{d}</th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {hours.map((h) => (
-            <tr key={h}>
-              <td>{h}:00</td>
-              {days.map((d) => {
-                const slotKey = Object.keys(slots).find((key) => {
-                  const [day, start, end] = key.split("-");
-                  return day === d && h >= parseInt(start) && h < parseInt(end);
-                });
-  
-                if (slotKey) {
-                  const slot = slots[slotKey];
-                  const isStartHour = h === slot.start;
-                  return isStartHour ? (
-                    <td key={d} rowSpan={slot.end - slot.start} style={{ backgroundColor: slot.color }}>
-                      {slot.text}
-                    </td>
-                  ) : null;
-                }
-  
-                return <td key={d}></td>;
-              })}
-            </tr>
-          ))}
-        </tbody>
-      </table>
+    <div className="weekly-scheduler">
+      <div className="schedule-header">
+        <div className="button-container">
+          <button onClick={downloadPDF} className="button button-download">
+            Download as PDF
+          </button>
+          <button onClick={shareTableAsImage} className="button button-share">
+            Share on WhatsApp
+          </button>
+        </div>
+      </div>
+      <div className="schedule-content">
+        <div className="time-slots">
+          <table id="schedule-table">
+            <thead>
+              <tr>
+                <th>Hour</th>
+                {days.map((d) => (
+                  <th key={d}>{d}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {hours.map((h) => (
+                <tr key={h}>
+                  <td>{h}:00</td>
+                  {days.map((d) => {
+                    const slotKey = Object.keys(slots).find((key) => {
+                      const [day, start, end] = key.split("-");
+                      return day === d && h >= parseInt(start) && h < parseInt(end);
+                    });
+      
+                    if (slotKey) {
+                      const slot = slots[slotKey];
+                      const isStartHour = h === slot.start;
+                      return isStartHour ? (
+                        <td key={d} rowSpan={slot.end - slot.start} style={{ backgroundColor: slot.color }}>
+                          {slot.text}
+                        </td>
+                      ) : null;
+                    }
+      
+                    return <td key={d}></td>;
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   );
 };
