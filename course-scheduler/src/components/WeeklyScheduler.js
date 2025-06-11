@@ -6,6 +6,7 @@ import "../styles/WeeklyScheduler.css";
 const WeeklySchedule = ({ schedule, isLoading }) => {
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
+  const [selectedClass, setSelectedClass] = useState(null);
 
   if (isLoading) {
     return (
@@ -68,9 +69,21 @@ const WeeklySchedule = ({ schedule, isLoading }) => {
         color: colors[name],
         start,
         end,
+        courseName: name,
+        type: i === 0 ? "Lecture" : "TA Session",
+        time: `${start}:00 - ${end}:00`,
+        day: day
       };
     });
   });
+
+  const handleClassClick = (slot) => {
+    setSelectedClass(slot);
+  };
+
+  const closePopup = () => {
+    setSelectedClass(null);
+  };
 
   const downloadPDF = async () => {
     setIsGeneratingPDF(true);
@@ -224,6 +237,8 @@ const WeeklySchedule = ({ schedule, isLoading }) => {
                         rowSpan={slot.end - slot.start} 
                         style={{ backgroundColor: slot.color }}
                         title={slot.text}
+                        onClick={() => handleClassClick(slot)}
+                        className="clickable-cell"
                       >
                         {slot.text}
                       </td>
@@ -237,6 +252,36 @@ const WeeklySchedule = ({ schedule, isLoading }) => {
           </tbody>
         </table>
       </div>
+
+      {/* Class Details Popup */}
+      {selectedClass && (
+        <div className="popup-overlay" onClick={closePopup}>
+          <div className="popup-content" onClick={(e) => e.stopPropagation()}>
+            <div className="popup-header">
+              <h3>{selectedClass.courseName}</h3>
+              <button className="close-button" onClick={closePopup}>×</button>
+            </div>
+            <div className="popup-body">
+              <div className="detail-item">
+                <span className="detail-label">Type:</span>
+                <span className="detail-value">{selectedClass.type}</span>
+              </div>
+              <div className="detail-item">
+                <span className="detail-label">Day:</span>
+                <span className="detail-value">{selectedClass.day}</span>
+              </div>
+              <div className="detail-item">
+                <span className="detail-label">Time:</span>
+                <span className="detail-value">{selectedClass.time}</span>
+              </div>
+              <div className="detail-item">
+                <span className="detail-label">Duration:</span>
+                <span className="detail-value">{selectedClass.end - selectedClass.start} hour(s)</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

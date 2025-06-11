@@ -26,8 +26,7 @@ function App({ setSchedule, setIsLoading }) {
 
   const removeCourse = (index) => {
     if (courses.length > 1) {
-      const newCourses = courses.filter((_, i) => i !== index);
-      setCourses(newCourses);
+      setCourses(courses.filter((_, i) => i !== index));
     }
   };
 
