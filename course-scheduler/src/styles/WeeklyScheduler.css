@@ -69,6 +69,35 @@
   box-shadow: var(--shadow-md);
 }
 
+.button-cancel {
+  background: linear-gradient(135deg, var(--error-500), var(--error-600));
+  color: white;
+  box-shadow: var(--shadow-sm);
+}
+
+.button-cancel:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.drag-mode-info {
+  background: linear-gradient(135deg, var(--primary-50), var(--primary-100));
+  border: 2px solid var(--primary-200);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+  margin-bottom: var(--space-6);
+  text-align: center;
+}
+
+.drag-mode-info p {
+  margin: var(--space-1) 0;
+  color: var(--primary-800);
+}
+
+.drag-mode-info strong {
+  color: var(--primary-900);
+}
+
 .empty-state {
   display: flex;
   flex-direction: column;
@@ -188,6 +217,58 @@
   transform: scale(1.02);
   box-shadow: var(--shadow-lg);
   z-index: 5;
+}
+
+.dragging {
+  opacity: 0.7;
+  border: 3px dashed var(--primary-500) !important;
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.7; }
+  50% { opacity: 0.9; }
+}
+
+/* Available slot styling */
+.available-slot {
+  background: linear-gradient(135deg, var(--success-100), var(--success-50)) !important;
+  border: 2px dashed var(--success-500) !important;
+  cursor: pointer;
+  position: relative;
+  animation: availableSlotPulse 2s infinite;
+}
+
+@keyframes availableSlotPulse {
+  0%, 100% { 
+    background: linear-gradient(135deg, var(--success-100), var(--success-50));
+    border-color: var(--success-500);
+  }
+  50% { 
+    background: linear-gradient(135deg, var(--success-200), var(--success-100));
+    border-color: var(--success-600);
+  }
+}
+
+.available-slot:hover {
+  background: linear-gradient(135deg, var(--success-200), var(--success-100)) !important;
+  border-color: var(--success-600) !important;
+  transform: scale(1.02);
+  box-shadow: var(--shadow-lg);
+}
+
+.available-slot-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--success-700);
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+
+.move-here-text {
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
 }
 
 /* Popup Styles */
@@ -354,6 +435,11 @@
   .popup-body {
     padding: var(--space-4);
   }
+
+  .drag-mode-info {
+    padding: var(--space-3);
+    font-size: 0.875rem;
+  }
 }
 
 /* Loading Animation */
@@ -410,6 +496,10 @@
   }
   
   .popup-overlay {
+    display: none;
+  }
+
+  .drag-mode-info {
     display: none;
   }
 }

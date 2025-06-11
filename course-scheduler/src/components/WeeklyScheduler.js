@@ -7,6 +7,14 @@ const WeeklySchedule = ({ schedule, isLoading }) => {
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
   const [selectedClass, setSelectedClass] = useState(null);
+  const [draggedClass, setDraggedClass] = useState(null);
+  const [availableSlots, setAvailableSlots] = useState([]);
+  const [currentSchedule, setCurrentSchedule] = useState(schedule);
+
+  // Update current schedule when prop changes
+  React.useEffect(() => {
+    setCurrentSchedule(schedule);
+  }, [schedule]);
 
   if (isLoading) {
     return (
@@ -19,7 +27,7 @@ const WeeklySchedule = ({ schedule, isLoading }) => {
     );
   }
 
-  if (!schedule || schedule.length === 0) {
+  if (!currentSchedule || currentSchedule.length === 0) {
     return (
       <div className="weekly-scheduler-container">
         <div className="empty-state">
@@ -54,7 +62,7 @@ const WeeklySchedule = ({ schedule, isLoading }) => {
 
   let colorIndex = 0;
 
-  schedule.forEach(({ name, lecture, ta }) => {
+  currentSchedule.forEach(({ name, lecture, ta }) => {
     if (!colors[name]) {
       colors[name] = predefinedColors[colorIndex % predefinedColors.length];
       colorIndex++;
@@ -72,17 +80,106 @@ const WeeklySchedule = ({ schedule, isLoading }) => {
         courseName: name,
         type: i === 0 ? "Lecture" : "TA Session",
         time: `${start}:00 - ${end}:00`,
-        day: day
+        day: day,
+        slotKey: key,
+        courseIndex: currentSchedule.findIndex(c => c.name === name),
+        isLecture: i === 0
       };
     });
   });
 
+  const findAvailableSlots = (classToMove) => {
+    const available = [];
+    const duration = classToMove.end - classToMove.start;
+    
+    // Get all currently occupied slots except the one being moved
+    const occupiedSlots = Object.keys(slots).filter(key => key !== classToMove.slotKey);
+    
+    days.forEach(day => {
+      for (let hour = 8; hour <= 19 - duration; hour++) {
+        let canPlace = true;
+        
+        // Check if this time slot conflicts with any existing classes
+        for (let h = hour; h < hour + duration; h++) {
+          const checkKey = `${day}-${h}-${h + 1}`;
+          if (occupiedSlots.some(occupiedKey => {
+            const [occupiedDay, occupiedStart, occupiedEnd] = occupiedKey.split("-").map((v, i) => i === 0 ? v : Number(v));
+            return occupiedDay === day && 
+                   ((h >= occupiedStart && h < occupiedEnd) || 
+                    (h + 1 > occupiedStart && h + 1 <= occupiedEnd));
+          })) {
+            canPlace = false;
+            break;
+          }
+        }
+        
+        if (canPlace) {
+          available.push({
+            day,
+            start: hour,
+            end: hour + duration,
+            key: `${day}-${hour}-${hour + duration}`
+          });
+        }
+      }
+    });
+    
+    return available;
+  };
+
   const handleClassClick = (slot) => {
-    setSelectedClass(slot);
+    if (draggedClass && draggedClass.slotKey === slot.slotKey) {
+      // Clicking on the same class again - cancel drag mode
+      setDraggedClass(null);
+      setAvailableSlots([]);
+    } else {
+      // Start drag mode
+      setDraggedClass(slot);
+      setAvailableSlots(findAvailableSlots(slot));
+    }
+    setSelectedClass(null);
+  };
+
+  const handleSlotDrop = (targetSlot) => {
+    if (!draggedClass) return;
+
+    // Update the schedule
+    const newSchedule = [...currentSchedule];
+    const courseIndex = draggedClass.courseIndex;
+    const course = newSchedule[courseIndex];
+    
+    const newTimeSlot = `${targetSlot.day} ${targetSlot.start}-${targetSlot.end}`;
+    
+    if (draggedClass.isLecture) {
+      course.lecture = newTimeSlot;
+    } else {
+      course.ta = newTimeSlot;
+    }
+    
+    setCurrentSchedule(newSchedule);
+    setDraggedClass(null);
+    setAvailableSlots([]);
+  };
+
+  const isSlotAvailable = (day, hour) => {
+    return availableSlots.some(slot => 
+      slot.day === day && hour >= slot.start && hour < slot.end
+    );
+  };
+
+  const getAvailableSlotForHour = (day, hour) => {
+    return availableSlots.find(slot => 
+      slot.day === day && hour >= slot.start && hour < slot.end
+    );
   };
 
   const closePopup = () => {
     setSelectedClass(null);
+  };
+
+  const cancelDragMode = () => {
+    setDraggedClass(null);
+    setAvailableSlots([]);
   };
 
   const downloadPDF = async () => {
@@ -173,6 +270,14 @@ const WeeklySchedule = ({ schedule, isLoading }) => {
       <div className="scheduler-header">
         <h2 className="scheduler-title">Weekly Schedule</h2>
         <div className="scheduler-actions">
+          {draggedClass && (
+            <button 
+              onClick={cancelDragMode}
+              className="action-button button-cancel"
+            >
+              Cancel Move
+            </button>
+          )}
           <button 
             onClick={downloadPDF} 
             className="action-button button-download"
@@ -207,6 +312,13 @@ const WeeklySchedule = ({ schedule, isLoading }) => {
           </button>
         </div>
       </div>
+
+      {draggedClass && (
+        <div className="drag-mode-info">
+          <p>Moving: <strong>{draggedClass.text}</strong></p>
+          <p>Click on a highlighted time slot to move the class there, or click "Cancel Move" to exit.</p>
+        </div>
+      )}
       
       <div className="table-container">
         <table id="schedule-table">
@@ -228,9 +340,14 @@ const WeeklySchedule = ({ schedule, isLoading }) => {
                     return day === d && h >= parseInt(start) && h < parseInt(end);
                   });
 
+                  const isAvailable = isSlotAvailable(d, h);
+                  const availableSlot = getAvailableSlotForHour(d, h);
+
                   if (slotKey) {
                     const slot = slots[slotKey];
                     const isStartHour = h === slot.start;
+                    const isDragging = draggedClass && draggedClass.slotKey === slotKey;
+                    
                     return isStartHour ? (
                       <td 
                         key={d} 
@@ -238,9 +355,26 @@ const WeeklySchedule = ({ schedule, isLoading }) => {
                         style={{ backgroundColor: slot.color }}
                         title={slot.text}
                         onClick={() => handleClassClick(slot)}
-                        className="clickable-cell"
+                        className={`clickable-cell ${isDragging ? 'dragging' : ''}`}
                       >
                         {slot.text}
+                      </td>
+                    ) : null;
+                  }
+
+                  if (isAvailable && availableSlot) {
+                    const isStartOfAvailableSlot = h === availableSlot.start;
+                    return isStartOfAvailableSlot ? (
+                      <td 
+                        key={d}
+                        rowSpan={availableSlot.end - availableSlot.start}
+                        className="available-slot"
+                        onClick={() => handleSlotDrop(availableSlot)}
+                        title={`Move ${draggedClass?.text} here`}
+                      >
+                        <div className="available-slot-content">
+                          <span className="move-here-text">Move Here</span>
+                        </div>
                       </td>
                     ) : null;
                   }
