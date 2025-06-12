@@ -60,6 +60,9 @@ function App({ setSchedule, setIsLoading }) {
         ta_times: c.ta_times.split(",").map((s) => s.trim()).filter(s => s),
       }));
 
+      // Store original course options in localStorage for drag and drop functionality
+      localStorage.setItem('originalCourseOptions', JSON.stringify(formattedCourses));
+
       // Parse constraints
       let parsedConstraints = [];
       if (constraints.trim()) {

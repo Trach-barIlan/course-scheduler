@@ -239,6 +239,13 @@
   animation: availableSlotPulse 2s infinite;
 }
 
+/* Original option styling - different color for original course options */
+.available-slot.original-option {
+  background: linear-gradient(135deg, var(--primary-100), var(--primary-50)) !important;
+  border: 2px dashed var(--primary-500) !important;
+  animation: originalOptionPulse 2s infinite;
+}
+
 @keyframes availableSlotPulse {
   0%, 100% { 
     background: linear-gradient(135deg, var(--success-100), var(--success-50));
@@ -250,9 +257,27 @@
   }
 }
 
+@keyframes originalOptionPulse {
+  0%, 100% { 
+    background: linear-gradient(135deg, var(--primary-100), var(--primary-50));
+    border-color: var(--primary-500);
+  }
+  50% { 
+    background: linear-gradient(135deg, var(--primary-200), var(--primary-100));
+    border-color: var(--primary-600);
+  }
+}
+
 .available-slot:hover {
   background: linear-gradient(135deg, var(--success-200), var(--success-100)) !important;
   border-color: var(--success-600) !important;
+  transform: scale(1.02);
+  box-shadow: var(--shadow-lg);
+}
+
+.available-slot.original-option:hover {
+  background: linear-gradient(135deg, var(--primary-200), var(--primary-100)) !important;
+  border-color: var(--primary-600) !important;
   transform: scale(1.02);
   box-shadow: var(--shadow-lg);
 }
@@ -265,6 +290,10 @@
   color: var(--success-700);
   font-weight: 600;
   font-size: 0.875rem;
+}
+
+.original-option .available-slot-content {
+  color: var(--primary-700);
 }
 
 .move-here-text {

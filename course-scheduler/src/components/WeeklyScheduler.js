@@ -10,11 +10,30 @@ const WeeklySchedule = ({ schedule, isLoading }) => {
   const [draggedClass, setDraggedClass] = useState(null);
   const [availableSlots, setAvailableSlots] = useState([]);
   const [currentSchedule, setCurrentSchedule] = useState(schedule);
+  const [originalCourseOptions, setOriginalCourseOptions] = useState(null);
 
   // Update current schedule when prop changes
   React.useEffect(() => {
     setCurrentSchedule(schedule);
-  }, [schedule]);
+    // Extract original course options from the initial schedule
+    if (schedule && !originalCourseOptions) {
+      extractOriginalOptions(schedule);
+    }
+  }, [schedule, originalCourseOptions]);
+
+  // Extract original course options from the backend data
+  const extractOriginalOptions = async (scheduleData) => {
+    try {
+      // We need to get the original course data that was sent to generate this schedule
+      // For now, we'll store it in localStorage when the schedule is generated
+      const storedOptions = localStorage.getItem('originalCourseOptions');
+      if (storedOptions) {
+        setOriginalCourseOptions(JSON.parse(storedOptions));
+      }
+    } catch (error) {
+      console.error('Error extracting original options:', error);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -116,46 +135,102 @@ const WeeklySchedule = ({ schedule, isLoading }) => {
     }
   });
 
+  const parseTimeSlot = (timeSlotStr) => {
+    const match = timeSlotStr.match(/^(\w+)\s+(\d+)-(\d+)$/);
+    if (match) {
+      const [, day, start, end] = match;
+      return {
+        day,
+        start: parseInt(start),
+        end: parseInt(end)
+      };
+    }
+    return null;
+  };
+
   const findAvailableSlots = (classToMove) => {
     const available = [];
-    const duration = classToMove.end - classToMove.start;
     
-    // Get all currently occupied time ranges except the one being moved
-    const occupiedRanges = Object.values(slots)
-      .filter(slot => slot.slotKey !== classToMove.slotKey)
-      .map(slot => ({
-        day: slot.day,
-        start: slot.start,
-        end: slot.end
-      }));
-    
-    // Check each day and time slot
-    days.forEach(day => {
-      for (let startHour = 8; startHour <= 19 - duration; startHour++) {
-        const endHour = startHour + duration;
-        let canPlace = true;
+    // Get original course options from localStorage
+    const storedOptions = localStorage.getItem('originalCourseOptions');
+    if (storedOptions) {
+      const originalOptions = JSON.parse(storedOptions);
+      const course = originalOptions.find(c => c.name === classToMove.courseName);
+      
+      if (course) {
+        // Get the alternative time slots for this specific class type
+        const alternativeSlots = classToMove.isLecture ? course.lectures : course.ta_times;
         
-        // Check if this time slot conflicts with any existing classes
-        for (const occupied of occupiedRanges) {
-          if (occupied.day === day) {
-            // Check for overlap: new slot overlaps if it starts before occupied ends and ends after occupied starts
-            if (startHour < occupied.end && endHour > occupied.start) {
-              canPlace = false;
-              break;
+        // Parse each alternative slot
+        alternativeSlots.forEach(slotStr => {
+          const parsedSlot = parseTimeSlot(slotStr.trim());
+          if (parsedSlot) {
+            // Check if this slot conflicts with any other classes (except the one being moved)
+            const hasConflict = Object.values(slots).some(existingSlot => {
+              if (existingSlot.slotKey === classToMove.slotKey) return false; // Skip the slot being moved
+              
+              return existingSlot.day === parsedSlot.day && 
+                     parsedSlot.start < existingSlot.end && 
+                     parsedSlot.end > existingSlot.start;
+            });
+            
+            if (!hasConflict) {
+              available.push({
+                day: parsedSlot.day,
+                start: parsedSlot.start,
+                end: parsedSlot.end,
+                key: `${parsedSlot.day}-${parsedSlot.start}-${parsedSlot.end}`,
+                isOriginalOption: true,
+                originalSlotString: slotStr.trim()
+              });
             }
           }
-        }
-        
-        if (canPlace) {
-          available.push({
-            day,
-            start: startHour,
-            end: endHour,
-            key: `${day}-${startHour}-${endHour}`
-          });
-        }
+        });
       }
-    });
+    }
+    
+    // If no original options found, fall back to finding any available slots
+    if (available.length === 0) {
+      const duration = classToMove.end - classToMove.start;
+      
+      // Get all currently occupied time ranges except the one being moved
+      const occupiedRanges = Object.values(slots)
+        .filter(slot => slot.slotKey !== classToMove.slotKey)
+        .map(slot => ({
+          day: slot.day,
+          start: slot.start,
+          end: slot.end
+        }));
+      
+      // Check each day and time slot
+      days.forEach(day => {
+        for (let startHour = 8; startHour <= 19 - duration; startHour++) {
+          const endHour = startHour + duration;
+          let canPlace = true;
+          
+          // Check if this time slot conflicts with any existing classes
+          for (const occupied of occupiedRanges) {
+            if (occupied.day === day) {
+              // Check for overlap: new slot overlaps if it starts before occupied ends and ends after occupied starts
+              if (startHour < occupied.end && endHour > occupied.start) {
+                canPlace = false;
+                break;
+              }
+            }
+          }
+          
+          if (canPlace) {
+            available.push({
+              day,
+              start: startHour,
+              end: endHour,
+              key: `${day}-${startHour}-${endHour}`,
+              isOriginalOption: false
+            });
+          }
+        }
+      });
+    }
     
     return available;
   };
@@ -185,7 +260,7 @@ const WeeklySchedule = ({ schedule, isLoading }) => {
     const courseIndex = draggedClass.courseIndex;
     const course = newSchedule[courseIndex];
     
-    const newTimeSlot = `${targetSlot.day} ${targetSlot.start}-${targetSlot.end}`;
+    const newTimeSlot = targetSlot.originalSlotString || `${targetSlot.day} ${targetSlot.start}-${targetSlot.end}`;
     
     if (draggedClass.isLecture) {
       course.lecture = newTimeSlot;
@@ -353,7 +428,12 @@ const WeeklySchedule = ({ schedule, isLoading }) => {
       {draggedClass && (
         <div className="drag-mode-info">
           <p>Moving: <strong>{draggedClass.text}</strong></p>
-          <p>Click on a highlighted time slot to move the class there, or click "Cancel Move" to exit.</p>
+          <p>
+            {availableSlots.some(slot => slot.isOriginalOption) 
+              ? "Click on a highlighted time slot to switch to an alternative option for this class."
+              : "Click on a highlighted time slot to move the class there, or click \"Cancel Move\" to exit."
+            }
+          </p>
         </div>
       )}
       
@@ -404,12 +484,17 @@ const WeeklySchedule = ({ schedule, isLoading }) => {
                       <td 
                         key={d}
                         rowSpan={availableSlot.end - availableSlot.start}
-                        className="available-slot"
+                        className={`available-slot ${availableSlot.isOriginalOption ? 'original-option' : ''}`}
                         onClick={() => handleSlotDrop(availableSlot)}
-                        title={`Move ${draggedClass?.text} here`}
+                        title={availableSlot.isOriginalOption 
+                          ? `Switch to alternative: ${availableSlot.originalSlotString || `${availableSlot.day} ${availableSlot.start}-${availableSlot.end}`}`
+                          : `Move ${draggedClass?.text} here`
+                        }
                       >
                         <div className="available-slot-content">
-                          <span className="move-here-text">Move Here</span>
+                          <span className="move-here-text">
+                            {availableSlot.isOriginalOption ? 'Switch Here' : 'Move Here'}
+                          </span>
                         </div>
                       </td>
                     ) : null;
