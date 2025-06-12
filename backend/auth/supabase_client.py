@@ -37,6 +37,7 @@ class SupabaseClient:
 
             print(f"Attempting to create user with email: {email}")
             
+            # Create the auth user first
             response = self.supabase.auth.sign_up({
                 "email": email,
                 "password": password,
@@ -45,31 +46,44 @@ class SupabaseClient:
                 }
             })
             
-            print(f"Supabase response: {response}")
+            print(f"Supabase auth response: {response}")
             
             if response.user:
-                # Also create a profile record in our custom table
-                profile_data = {
-                    "id": response.user.id,
-                    "username": user_metadata.get("username"),
-                    "first_name": user_metadata.get("first_name"),
-                    "last_name": user_metadata.get("last_name"),
-                    "email": email
-                }
+                # Sign in the user immediately to get proper authentication context
+                sign_in_response = self.supabase.auth.sign_in_with_password({
+                    "email": email,
+                    "password": password
+                })
                 
-                print(f"Creating profile with data: {profile_data}")
-                
-                profile_response = self.supabase.table("user_profiles").insert(profile_data).execute()
-                print(f"Profile creation response: {profile_response}")
-                
-                return {
-                    "id": response.user.id,
-                    "email": response.user.email,
-                    "username": user_metadata.get("username"),
-                    "first_name": user_metadata.get("first_name"),
-                    "last_name": user_metadata.get("last_name"),
-                    "created_at": response.user.created_at
-                }
+                if sign_in_response.user:
+                    print(f"User signed in successfully: {sign_in_response.user.id}")
+                    
+                    # Now create the profile record with the authenticated user context
+                    profile_data = {
+                        "id": response.user.id,
+                        "username": user_metadata.get("username"),
+                        "first_name": user_metadata.get("first_name"),
+                        "last_name": user_metadata.get("last_name"),
+                        "email": email
+                    }
+                    
+                    print(f"Creating profile with data: {profile_data}")
+                    
+                    # Use the authenticated session to create the profile
+                    profile_response = self.supabase.table("user_profiles").insert(profile_data).execute()
+                    print(f"Profile creation response: {profile_response}")
+                    
+                    return {
+                        "id": response.user.id,
+                        "email": response.user.email,
+                        "username": user_metadata.get("username"),
+                        "first_name": user_metadata.get("first_name"),
+                        "last_name": user_metadata.get("last_name"),
+                        "created_at": response.user.created_at
+                    }
+                else:
+                    print("Failed to sign in after registration")
+                    return None
             else:
                 print("No user returned from Supabase")
                 return None
@@ -84,6 +98,8 @@ class SupabaseClient:
                 print("Email validation failed at Supabase level")
             elif "already" in error_message or "exists" in error_message:
                 print("User already exists")
+            elif "policy" in error_message:
+                print("Row Level Security policy violation")
             
             return None
 
