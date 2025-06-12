@@ -6,7 +6,7 @@ import ConstraintsDisplay from './components/ConstraintsDisplay';
 import './styles/base.css';
 import './styles/App.css';
 
-function App({ setSchedule, setIsLoading, setParsedConstraints }) {
+function App({ setSchedule, setIsLoading, setParsedConstraints, parsedConstraints, onConstraintsUpdate }) {
   const [preference, setPreference] = useState("crammed");
   const [courses, setCourses] = useState([
     { name: "", lectures: "", ta_times: "" },
@@ -45,13 +45,7 @@ function App({ setSchedule, setIsLoading, setParsedConstraints }) {
     }
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError(null);
-    setIsSubmitting(true);
-    setIsLoading(true);
-    setParsedConstraints(null); // Clear previous constraints
-
+  const generateScheduleWithConstraints = async (constraintsToUse) => {
     try {
       // Validate form
       validateForm();
@@ -65,6 +59,43 @@ function App({ setSchedule, setIsLoading, setParsedConstraints }) {
       // Store original course options in localStorage for drag and drop functionality
       localStorage.setItem('originalCourseOptions', JSON.stringify(formattedCourses));
 
+      // Generate schedule
+      const scheduleRes = await fetch("http://127.0.0.1:5000/api/schedule", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          preference,
+          courses: formattedCourses,
+          constraints: constraintsToUse
+        }),
+      });
+
+      if (!scheduleRes.ok) {
+        const errorData = await scheduleRes.json();
+        throw new Error(errorData.error || 'Failed to generate schedule');
+      }
+
+      const data = await scheduleRes.json();
+      
+      if (data.schedule) {
+        setSchedule(data.schedule);
+        setError(null);
+      } else {
+        setError(data.error || 'No valid schedule found with the given constraints. Try adjusting your requirements.');
+      }
+    } catch (err) {
+      setError(err.message || 'Failed to connect to backend. Please make sure the server is running.');
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError(null);
+    setIsSubmitting(true);
+    setIsLoading(true);
+    setParsedConstraints(null); // Clear previous constraints
+
+    try {
       // Parse constraints
       let parsedConstraints = [];
       let constraintsData = null;
@@ -87,29 +118,7 @@ function App({ setSchedule, setIsLoading, setParsedConstraints }) {
         setParsedConstraints(constraintsData);
       }
 
-      // Generate schedule
-      const scheduleRes = await fetch("http://127.0.0.1:5000/api/schedule", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          preference,
-          courses: formattedCourses,
-          constraints: parsedConstraints
-        }),
-      });
-
-      if (!scheduleRes.ok) {
-        const errorData = await scheduleRes.json();
-        throw new Error(errorData.error || 'Failed to generate schedule');
-      }
-
-      const data = await scheduleRes.json();
-      
-      if (data.schedule) {
-        setSchedule(data.schedule);
-      } else {
-        setError(data.error || 'No valid schedule found with the given constraints. Try adjusting your requirements.');
-      }
+      await generateScheduleWithConstraints(parsedConstraints);
     } catch (err) {
       setError(err.message || 'Failed to connect to backend. Please make sure the server is running.');
       setParsedConstraints(null);
@@ -118,6 +127,13 @@ function App({ setSchedule, setIsLoading, setParsedConstraints }) {
       setIsLoading(false);
     }
   };
+
+  // Expose the constraints update function
+  React.useEffect(() => {
+    if (onConstraintsUpdate) {
+      onConstraintsUpdate(generateScheduleWithConstraints);
+    }
+  }, [onConstraintsUpdate, generateScheduleWithConstraints]);
 
   return (
     <div className="course-scheduler">
@@ -203,6 +219,20 @@ function AppWrapper() {
   const [schedule, setSchedule] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [parsedConstraints, setParsedConstraints] = useState(null);
+  const [constraintsUpdateFunction, setConstraintsUpdateFunction] = useState(null);
+
+  const handleConstraintsUpdate = async (updatedConstraints) => {
+    if (constraintsUpdateFunction) {
+      setIsLoading(true);
+      try {
+        await constraintsUpdateFunction(updatedConstraints);
+      } catch (err) {
+        console.error('Error updating constraints:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+  };
 
   return (
     <Router>
@@ -211,9 +241,15 @@ function AppWrapper() {
           setSchedule={setSchedule} 
           setIsLoading={setIsLoading}
           setParsedConstraints={setParsedConstraints}
+          parsedConstraints={parsedConstraints}
+          onConstraintsUpdate={setConstraintsUpdateFunction}
         />
         <div className="right-panel">
-          <ConstraintsDisplay parsedConstraints={parsedConstraints} />
+          <ConstraintsDisplay 
+            parsedConstraints={parsedConstraints} 
+            onConstraintsUpdate={handleConstraintsUpdate}
+            isRegenerating={isLoading}
+          />
           <WeeklyScheduler schedule={schedule} isLoading={isLoading} />
         </div>
       </div>
