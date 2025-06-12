@@ -1,0 +1,489 @@
+.constraints-display {
+  background: var(--bg-secondary);
+  border-radius: var(--radius-xl);
+  padding: var(--space-6);
+  margin-bottom: var(--space-6);
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--border-color);
+  animation: slideInFromTop 0.5s ease-out;
+}
+
+@keyframes slideInFromTop {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.constraints-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-5);
+  padding-bottom: var(--space-3);
+  border-bottom: 2px solid var(--border-color);
+}
+
+.constraints-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.constraints-count {
+  background: linear-gradient(135deg, var(--primary-100), var(--primary-50));
+  color: var(--primary-700);
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-lg);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.constraints-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.constraint-item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  background: linear-gradient(135deg, var(--gray-50), var(--bg-secondary));
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  transition: all var(--transition-fast);
+  position: relative;
+  overflow: hidden;
+}
+
+.constraint-item::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--primary-500), var(--primary-400));
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+}
+
+.constraint-item:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--primary-200);
+}
+
+.constraint-item:hover::before {
+  opacity: 1;
+}
+
+.constraint-icon {
+  font-size: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background: linear-gradient(135deg, var(--primary-100), var(--primary-50));
+  border-radius: var(--radius-md);
+  flex-shrink: 0;
+}
+
+.constraint-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.constraint-text {
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: 0.95rem;
+  line-height: 1.4;
+}
+
+.constraint-type {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 500;
+}
+
+.constraint-actions {
+  display: flex;
+  gap: var(--space-2);
+  flex-shrink: 0;
+}
+
+.edit-btn, .delete-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: var(--space-2);
+  border-radius: var(--radius-md);
+  transition: all var(--transition-fast);
+  font-size: 1rem;
+}
+
+.edit-btn:hover {
+  background: var(--primary-100);
+  transform: scale(1.1);
+}
+
+.delete-btn:hover {
+  background: var(--error-100);
+  transform: scale(1.1);
+}
+
+/* Edit Form Styles */
+.edit-form {
+  margin-top: var(--space-4);
+  padding: var(--space-4);
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-lg);
+  border: 2px solid var(--primary-200);
+}
+
+.edit-form-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.form-group label {
+  font-weight: 600;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+}
+
+.form-group input,
+.form-group select {
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  font-size: 0.875rem;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  transition: all var(--transition-fast);
+}
+
+.form-group input:focus,
+.form-group select:focus {
+  border-color: var(--primary-500);
+  box-shadow: 0 0 0 2px var(--primary-100);
+}
+
+.edit-form-actions {
+  display: flex;
+  gap: var(--space-2);
+  justify-content: flex-end;
+}
+
+.save-btn, .cancel-btn {
+  padding: var(--space-2) var(--space-4);
+  border: none;
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.save-btn {
+  background: var(--success-500);
+  color: white;
+}
+
+.save-btn:hover {
+  background: var(--success-600);
+  transform: translateY(-1px);
+}
+
+.cancel-btn {
+  background: var(--gray-200);
+  color: var(--text-secondary);
+}
+
+.cancel-btn:hover {
+  background: var(--gray-300);
+  transform: translateY(-1px);
+}
+
+/* Add Form Styles */
+.add-form {
+  margin-top: var(--space-4);
+  padding: var(--space-5);
+  background: linear-gradient(135deg, var(--success-50), var(--bg-secondary));
+  border: 2px solid var(--success-200);
+  border-radius: var(--radius-lg);
+  animation: slideInFromTop 0.3s ease-out;
+}
+
+.add-form-header h4 {
+  margin: 0 0 var(--space-4) 0;
+  color: var(--text-primary);
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.add-form-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+.add-form-actions {
+  display: flex;
+  gap: var(--space-3);
+  justify-content: flex-end;
+}
+
+.add-constraint-btn {
+  background: linear-gradient(135deg, var(--success-500), var(--success-600));
+  color: white;
+  padding: var(--space-3) var(--space-5);
+  border: none;
+  border-radius: var(--radius-lg);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.add-constraint-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, var(--success-600), var(--success-500));
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.add-constraint-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.cancel-add-btn {
+  background: var(--gray-200);
+  color: var(--text-secondary);
+  padding: var(--space-3) var(--space-5);
+  border: none;
+  border-radius: var(--radius-lg);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.cancel-add-btn:hover {
+  background: var(--gray-300);
+  transform: translateY(-1px);
+}
+
+/* Controls Section */
+.constraints-controls {
+  display: flex;
+  gap: var(--space-3);
+  margin-top: var(--space-5);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--border-color);
+  justify-content: space-between;
+  align-items: center;
+}
+
+.add-new-btn {
+  background: linear-gradient(135deg, var(--primary-500), var(--primary-600));
+  color: white;
+  padding: var(--space-3) var(--space-5);
+  border: none;
+  border-radius: var(--radius-lg);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.add-new-btn:hover {
+  background: linear-gradient(135deg, var(--primary-600), var(--primary-500));
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.regenerate-btn {
+  background: linear-gradient(135deg, var(--warning-500), var(--warning-600));
+  color: white;
+  padding: var(--space-3) var(--space-5);
+  border: none;
+  border-radius: var(--radius-lg);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.regenerate-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, var(--warning-600), var(--warning-500));
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.regenerate-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.loading-spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: white;
+  animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Raw Entities Section */
+.raw-entities {
+  margin-top: var(--space-5);
+  border-top: 1px solid var(--border-color);
+  padding-top: var(--space-4);
+}
+
+.entities-summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  padding: var(--space-2);
+  border-radius: var(--radius-md);
+  transition: all var(--transition-fast);
+  user-select: none;
+}
+
+.entities-summary:hover {
+  background: var(--gray-100);
+  color: var(--text-primary);
+}
+
+.entities-list {
+  margin-top: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.entity-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-2) var(--space-3);
+  background: var(--gray-50);
+  border-radius: var(--radius-md);
+  font-size: 0.875rem;
+}
+
+.entity-text {
+  font-weight: 500;
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+}
+
+.entity-label {
+  background: var(--primary-100);
+  color: var(--primary-700);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .constraints-display {
+    padding: var(--space-4);
+    margin-bottom: var(--space-4);
+  }
+  
+  .constraints-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-2);
+  }
+  
+  .constraints-title {
+    font-size: 1.1rem;
+  }
+  
+  .constraint-item {
+    padding: var(--space-3);
+    gap: var(--space-2);
+  }
+  
+  .constraint-icon {
+    width: 32px;
+    height: 32px;
+    font-size: 1.25rem;
+  }
+  
+  .constraint-text {
+    font-size: 0.9rem;
+  }
+
+  .constraints-controls {
+    flex-direction: column;
+    gap: var(--space-3);
+  }
+
+  .add-new-btn,
+  .regenerate-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* Success state animation */
+@keyframes constraintSuccess {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.02); }
+  100% { transform: scale(1); }
+}
+
+.constraint-item {
+  animation: constraintSuccess 0.3s ease-out;
+}
+
+/* Empty state (when no constraints) */
+.constraints-display:empty {
+  display: none;
+}
