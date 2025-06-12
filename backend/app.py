@@ -1,18 +1,31 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, session
 from flask_cors import CORS
 from schedule.logic import generate_schedule  # Remove parse_time_slot from here
 from schedule.utils import parse_time_slot
 from schedule.parserAI import parse_course_text
 from ai_model.ml_parser import ScheduleParser
+from auth.routes import auth_bp
+import os
 
 app = Flask(__name__)
+
+# Configure session
+app.secret_key = os.environ.get('SECRET_KEY', 'your-secret-key-change-this-in-production')
+app.config['SESSION_COOKIE_SECURE'] = False  # Set to True in production with HTTPS
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+
 CORS(app, resources={
     r"/api/*": {
         "origins": ["http://localhost:3000"],
         "methods": ["GET", "POST", "OPTIONS"],
-        "allow_headers": ["Content-Type"]
+        "allow_headers": ["Content-Type"],
+        "supports_credentials": True
     }
-})
+}, supports_credentials=True)
+
+# Register auth blueprint
+app.register_blueprint(auth_bp, url_prefix='/api/auth')
 
 schedule_parser = ScheduleParser()
 model_nlp = schedule_parser.nlp

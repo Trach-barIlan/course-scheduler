@@ -1,12 +1,14 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import { BrowserRouter as Router } from "react-router-dom";
 import CourseInput from './components/CourseInput';
 import WeeklyScheduler from './components/WeeklyScheduler';
 import ConstraintsDisplay from './components/ConstraintsDisplay';
+import LoginRegister from './components/Auth/LoginRegister';
+import UserProfile from './components/UserProfile/UserProfile';
 import './styles/base.css';
 import './styles/App.css';
 
-function App({ setSchedule, setIsLoading, setParsedConstraints, parsedConstraints, onConstraintsUpdate }) {
+function App({ setSchedule, setIsLoading, setParsedConstraints, parsedConstraints, onConstraintsUpdate, user, setUser }) {
   const [preference, setPreference] = useState("crammed");
   const [courses, setCourses] = useState([
     { name: "", lectures: "", ta_times: "" },
@@ -63,6 +65,7 @@ function App({ setSchedule, setIsLoading, setParsedConstraints, parsedConstraint
       const scheduleRes = await fetch("http://127.0.0.1:5000/api/schedule", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: 'include',
         body: JSON.stringify({
           preference,
           courses: formattedCourses,
@@ -103,6 +106,7 @@ function App({ setSchedule, setIsLoading, setParsedConstraints, parsedConstraint
         const parseRes = await fetch("http://127.0.0.1:5000/api/parse", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
+          credentials: 'include',
           body: JSON.stringify({ text: constraints }),
         });
 
@@ -137,7 +141,15 @@ function App({ setSchedule, setIsLoading, setParsedConstraints, parsedConstraint
 
   return (
     <div className="course-scheduler">
-      <h2>Course Scheduler</h2>
+      <div className="scheduler-header-section">
+        <h2>Course Scheduler</h2>
+        {user && (
+          <div className="user-welcome">
+            Welcome back, <strong>{user.first_name}</strong>!
+          </div>
+        )}
+      </div>
+      
       <form onSubmit={handleSubmit}>
         <div className="schedule-preference">
           <label htmlFor="preference">Schedule Preference</label>
@@ -220,6 +232,32 @@ function AppWrapper() {
   const [isLoading, setIsLoading] = useState(false);
   const [parsedConstraints, setParsedConstraints] = useState(null);
   const [constraintsUpdateFunction, setConstraintsUpdateFunction] = useState(null);
+  const [user, setUser] = useState(null);
+  const [showAuth, setShowAuth] = useState(false);
+  const [showProfile, setShowProfile] = useState(false);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+
+  // Check if user is already logged in on app start
+  useEffect(() => {
+    const checkAuthStatus = async () => {
+      try {
+        const response = await fetch('http://127.0.0.1:5000/api/auth/me', {
+          credentials: 'include'
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          setUser(data.user);
+        }
+      } catch (error) {
+        console.error('Auth check failed:', error);
+      } finally {
+        setIsCheckingAuth(false);
+      }
+    };
+
+    checkAuthStatus();
+  }, []);
 
   const handleConstraintsUpdate = useCallback(async (updatedConstraints) => {
     if (constraintsUpdateFunction) {
@@ -238,24 +276,94 @@ function AppWrapper() {
     setConstraintsUpdateFunction(() => func);
   }, []);
 
+  const handleAuthSuccess = (userData) => {
+    setUser(userData);
+    setShowAuth(false);
+  };
+
+  const handleLogout = () => {
+    setUser(null);
+    setShowProfile(false);
+    // Clear any user-specific data
+    setSchedule(null);
+    setParsedConstraints(null);
+  };
+
+  if (isCheckingAuth) {
+    return (
+      <div className="app-loading">
+        <div className="loading-spinner"></div>
+        <p>Loading...</p>
+      </div>
+    );
+  }
+
   return (
     <Router>
       <div className="app-wrapper">
-        <App 
-          setSchedule={setSchedule} 
-          setIsLoading={setIsLoading}
-          setParsedConstraints={setParsedConstraints}
-          parsedConstraints={parsedConstraints}
-          onConstraintsUpdate={handleSetConstraintsUpdateFunction}
-        />
-        <div className="right-panel">
-          <ConstraintsDisplay 
-            parsedConstraints={parsedConstraints} 
-            onConstraintsUpdate={handleConstraintsUpdate}
-            isRegenerating={isLoading}
-          />
-          <WeeklyScheduler schedule={schedule} isLoading={isLoading} />
+        <div className="app-header">
+          <div className="app-logo">
+            <span className="logo-icon">📚</span>
+            <span className="logo-text">Course Scheduler</span>
+          </div>
+          <div className="app-nav">
+            {user ? (
+              <div className="user-menu">
+                <button 
+                  className="user-button"
+                  onClick={() => setShowProfile(true)}
+                >
+                  <div className="user-avatar">
+                    {user.first_name?.charAt(0)}{user.last_name?.charAt(0)}
+                  </div>
+                  <span className="user-name">{user.first_name}</span>
+                </button>
+              </div>
+            ) : (
+              <button 
+                className="auth-button"
+                onClick={() => setShowAuth(true)}
+              >
+                Sign In
+              </button>
+            )}
+          </div>
         </div>
+
+        <div className="app-content">
+          <App 
+            setSchedule={setSchedule} 
+            setIsLoading={setIsLoading}
+            setParsedConstraints={setParsedConstraints}
+            parsedConstraints={parsedConstraints}
+            onConstraintsUpdate={handleSetConstraintsUpdateFunction}
+            user={user}
+            setUser={setUser}
+          />
+          <div className="right-panel">
+            <ConstraintsDisplay 
+              parsedConstraints={parsedConstraints} 
+              onConstraintsUpdate={handleConstraintsUpdate}
+              isRegenerating={isLoading}
+            />
+            <WeeklyScheduler schedule={schedule} isLoading={isLoading} />
+          </div>
+        </div>
+
+        {showAuth && (
+          <LoginRegister 
+            onAuthSuccess={handleAuthSuccess}
+            onClose={() => setShowAuth(false)}
+          />
+        )}
+
+        {showProfile && user && (
+          <UserProfile 
+            user={user}
+            onLogout={handleLogout}
+            onClose={() => setShowProfile(false)}
+          />
+        )}
       </div>
     </Router>
   );
