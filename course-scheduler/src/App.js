@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import { BrowserRouter as Router } from "react-router-dom";
 import CourseInput from './components/CourseInput';
 import WeeklyScheduler from './components/WeeklyScheduler';
@@ -45,7 +45,7 @@ function App({ setSchedule, setIsLoading, setParsedConstraints, parsedConstraint
     }
   };
 
-  const generateScheduleWithConstraints = async (constraintsToUse) => {
+  const generateScheduleWithConstraints = useCallback(async (constraintsToUse) => {
     try {
       // Validate form
       validateForm();
@@ -86,7 +86,7 @@ function App({ setSchedule, setIsLoading, setParsedConstraints, parsedConstraint
     } catch (err) {
       setError(err.message || 'Failed to connect to backend. Please make sure the server is running.');
     }
-  };
+  }, [courses, preference, setSchedule, setError]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -128,7 +128,7 @@ function App({ setSchedule, setIsLoading, setParsedConstraints, parsedConstraint
     }
   };
 
-  // Expose the constraints update function
+  // Expose the constraints update function - use useCallback to prevent infinite loops
   React.useEffect(() => {
     if (onConstraintsUpdate) {
       onConstraintsUpdate(generateScheduleWithConstraints);
@@ -221,7 +221,7 @@ function AppWrapper() {
   const [parsedConstraints, setParsedConstraints] = useState(null);
   const [constraintsUpdateFunction, setConstraintsUpdateFunction] = useState(null);
 
-  const handleConstraintsUpdate = async (updatedConstraints) => {
+  const handleConstraintsUpdate = useCallback(async (updatedConstraints) => {
     if (constraintsUpdateFunction) {
       setIsLoading(true);
       try {
@@ -232,7 +232,11 @@ function AppWrapper() {
         setIsLoading(false);
       }
     }
-  };
+  }, [constraintsUpdateFunction]);
+
+  const handleSetConstraintsUpdateFunction = useCallback((func) => {
+    setConstraintsUpdateFunction(() => func);
+  }, []);
 
   return (
     <Router>
@@ -242,7 +246,7 @@ function AppWrapper() {
           setIsLoading={setIsLoading}
           setParsedConstraints={setParsedConstraints}
           parsedConstraints={parsedConstraints}
-          onConstraintsUpdate={setConstraintsUpdateFunction}
+          onConstraintsUpdate={handleSetConstraintsUpdateFunction}
         />
         <div className="right-panel">
           <ConstraintsDisplay 
