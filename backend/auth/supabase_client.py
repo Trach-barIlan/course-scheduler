@@ -1,6 +1,7 @@
 import os
 from supabase import create_client, Client
 from typing import Optional, Dict, Any
+import re
 
 class SupabaseClient:
     def __init__(self):
@@ -12,9 +13,30 @@ class SupabaseClient:
         
         self.supabase: Client = create_client(url, key)
 
+    def validate_email_format(self, email: str) -> bool:
+        """Validate email format using a more comprehensive regex"""
+        pattern = r'^[a-zA-Z0-9.!#$%&\'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$'
+        return re.match(pattern, email) is not None
+
     def create_user(self, email: str, password: str, user_metadata: Dict[str, Any]) -> Optional[Dict]:
         """Create a new user with Supabase Auth"""
         try:
+            # Validate email format before sending to Supabase
+            if not self.validate_email_format(email):
+                print(f"Invalid email format: {email}")
+                return None
+
+            # Clean and validate the email
+            email = email.strip().lower()
+            
+            # Check if username already exists
+            existing_user = self.supabase.table("user_profiles").select("username").eq("username", user_metadata.get("username")).execute()
+            if existing_user.data:
+                print(f"Username already exists: {user_metadata.get('username')}")
+                return None
+
+            print(f"Attempting to create user with email: {email}")
+            
             response = self.supabase.auth.sign_up({
                 "email": email,
                 "password": password,
@@ -22,6 +44,8 @@ class SupabaseClient:
                     "data": user_metadata
                 }
             })
+            
+            print(f"Supabase response: {response}")
             
             if response.user:
                 # Also create a profile record in our custom table
@@ -33,7 +57,10 @@ class SupabaseClient:
                     "email": email
                 }
                 
-                self.supabase.table("user_profiles").insert(profile_data).execute()
+                print(f"Creating profile with data: {profile_data}")
+                
+                profile_response = self.supabase.table("user_profiles").insert(profile_data).execute()
+                print(f"Profile creation response: {profile_response}")
                 
                 return {
                     "id": response.user.id,
@@ -43,16 +70,28 @@ class SupabaseClient:
                     "last_name": user_metadata.get("last_name"),
                     "created_at": response.user.created_at
                 }
-            
-            return None
+            else:
+                print("No user returned from Supabase")
+                return None
             
         except Exception as e:
-            print(f"Error creating user: {e}")
+            print(f"Detailed error creating user: {e}")
+            print(f"Error type: {type(e)}")
+            
+            # Check for specific Supabase errors
+            error_message = str(e).lower()
+            if "email" in error_message and "invalid" in error_message:
+                print("Email validation failed at Supabase level")
+            elif "already" in error_message or "exists" in error_message:
+                print("User already exists")
+            
             return None
 
     def authenticate_user(self, email: str, password: str) -> Optional[Dict]:
         """Authenticate user with email and password"""
         try:
+            email = email.strip().lower()
+            
             response = self.supabase.auth.sign_in_with_password({
                 "email": email,
                 "password": password
