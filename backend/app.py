@@ -4,8 +4,12 @@ from schedule.logic import generate_schedule  # Remove parse_time_slot from here
 from schedule.utils import parse_time_slot
 from schedule.parserAI import parse_course_text
 from ai_model.ml_parser import ScheduleParser
-from auth.routes import auth_bp
+from auth.routes_supabase import auth_bp  # Updated import
 import os
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 app = Flask(__name__)
 
