@@ -62,63 +62,96 @@ const WeeklySchedule = ({ schedule, isLoading }) => {
 
   let colorIndex = 0;
 
-  currentSchedule.forEach(({ name, lecture, ta }) => {
+  // Parse schedule and create slots
+  currentSchedule.forEach(({ name, lecture, ta }, courseIndex) => {
     if (!colors[name]) {
       colors[name] = predefinedColors[colorIndex % predefinedColors.length];
       colorIndex++;
     }
 
-    [lecture, ta].forEach((slotStr, i) => {
-      const [day, times] = slotStr.split(" ");
-      const [start, end] = times.split("-").map(Number);
-      const key = `${day}-${start}-${end}`;
+    // Parse lecture slot
+    const lectureMatch = lecture.match(/^(\w+)\s+(\d+)-(\d+)$/);
+    if (lectureMatch) {
+      const [, day, start, end] = lectureMatch;
+      const startHour = parseInt(start);
+      const endHour = parseInt(end);
+      const key = `${day}-${startHour}-${endHour}`;
+      
       slots[key] = {
-        text: `${name} ${i === 0 ? "(Lecture)" : "(TA)"}`,
+        text: `${name} (Lecture)`,
         color: colors[name],
-        start,
-        end,
+        start: startHour,
+        end: endHour,
         courseName: name,
-        type: i === 0 ? "Lecture" : "TA Session",
-        time: `${start}:00 - ${end}:00`,
+        type: "Lecture",
+        time: `${startHour}:00 - ${endHour}:00`,
         day: day,
         slotKey: key,
-        courseIndex: currentSchedule.findIndex(c => c.name === name),
-        isLecture: i === 0
+        courseIndex: courseIndex,
+        isLecture: true
       };
-    });
+    }
+
+    // Parse TA slot
+    const taMatch = ta.match(/^(\w+)\s+(\d+)-(\d+)$/);
+    if (taMatch) {
+      const [, day, start, end] = taMatch;
+      const startHour = parseInt(start);
+      const endHour = parseInt(end);
+      const key = `${day}-${startHour}-${endHour}`;
+      
+      slots[key] = {
+        text: `${name} (TA)`,
+        color: colors[name],
+        start: startHour,
+        end: endHour,
+        courseName: name,
+        type: "TA Session",
+        time: `${startHour}:00 - ${endHour}:00`,
+        day: day,
+        slotKey: key,
+        courseIndex: courseIndex,
+        isLecture: false
+      };
+    }
   });
 
   const findAvailableSlots = (classToMove) => {
     const available = [];
     const duration = classToMove.end - classToMove.start;
     
-    // Get all currently occupied slots except the one being moved
-    const occupiedSlots = Object.keys(slots).filter(key => key !== classToMove.slotKey);
+    // Get all currently occupied time ranges except the one being moved
+    const occupiedRanges = Object.values(slots)
+      .filter(slot => slot.slotKey !== classToMove.slotKey)
+      .map(slot => ({
+        day: slot.day,
+        start: slot.start,
+        end: slot.end
+      }));
     
+    // Check each day and time slot
     days.forEach(day => {
-      for (let hour = 8; hour <= 19 - duration; hour++) {
+      for (let startHour = 8; startHour <= 19 - duration; startHour++) {
+        const endHour = startHour + duration;
         let canPlace = true;
         
         // Check if this time slot conflicts with any existing classes
-        for (let h = hour; h < hour + duration; h++) {
-          const checkKey = `${day}-${h}-${h + 1}`;
-          if (occupiedSlots.some(occupiedKey => {
-            const [occupiedDay, occupiedStart, occupiedEnd] = occupiedKey.split("-").map((v, i) => i === 0 ? v : Number(v));
-            return occupiedDay === day && 
-                   ((h >= occupiedStart && h < occupiedEnd) || 
-                    (h + 1 > occupiedStart && h + 1 <= occupiedEnd));
-          })) {
-            canPlace = false;
-            break;
+        for (const occupied of occupiedRanges) {
+          if (occupied.day === day) {
+            // Check for overlap: new slot overlaps if it starts before occupied ends and ends after occupied starts
+            if (startHour < occupied.end && endHour > occupied.start) {
+              canPlace = false;
+              break;
+            }
           }
         }
         
         if (canPlace) {
           available.push({
             day,
-            start: hour,
-            end: hour + duration,
-            key: `${day}-${hour}-${hour + duration}`
+            start: startHour,
+            end: endHour,
+            key: `${day}-${startHour}-${endHour}`
           });
         }
       }
@@ -135,13 +168,17 @@ const WeeklySchedule = ({ schedule, isLoading }) => {
     } else {
       // Start drag mode
       setDraggedClass(slot);
-      setAvailableSlots(findAvailableSlots(slot));
+      const availableSlots = findAvailableSlots(slot);
+      setAvailableSlots(availableSlots);
+      console.log('Available slots for', slot.text, ':', availableSlots);
     }
     setSelectedClass(null);
   };
 
   const handleSlotDrop = (targetSlot) => {
     if (!draggedClass) return;
+
+    console.log('Dropping', draggedClass.text, 'to', targetSlot);
 
     // Update the schedule
     const newSchedule = [...currentSchedule];
@@ -335,29 +372,28 @@ const WeeklySchedule = ({ schedule, isLoading }) => {
               <tr key={h}>
                 <td>{h}:00 - {h + 1}:00</td>
                 {days.map((d) => {
-                  const slotKey = Object.keys(slots).find((key) => {
-                    const [day, start, end] = key.split("-");
-                    return day === d && h >= parseInt(start) && h < parseInt(end);
-                  });
+                  // Find if there's a class slot that occupies this cell
+                  const occupyingSlot = Object.values(slots).find(slot => 
+                    slot.day === d && h >= slot.start && h < slot.end
+                  );
 
                   const isAvailable = isSlotAvailable(d, h);
                   const availableSlot = getAvailableSlotForHour(d, h);
 
-                  if (slotKey) {
-                    const slot = slots[slotKey];
-                    const isStartHour = h === slot.start;
-                    const isDragging = draggedClass && draggedClass.slotKey === slotKey;
+                  if (occupyingSlot) {
+                    const isStartHour = h === occupyingSlot.start;
+                    const isDragging = draggedClass && draggedClass.slotKey === occupyingSlot.slotKey;
                     
                     return isStartHour ? (
                       <td 
                         key={d} 
-                        rowSpan={slot.end - slot.start} 
-                        style={{ backgroundColor: slot.color }}
-                        title={slot.text}
-                        onClick={() => handleClassClick(slot)}
+                        rowSpan={occupyingSlot.end - occupyingSlot.start} 
+                        style={{ backgroundColor: occupyingSlot.color }}
+                        title={occupyingSlot.text}
+                        onClick={() => handleClassClick(occupyingSlot)}
                         className={`clickable-cell ${isDragging ? 'dragging' : ''}`}
                       >
-                        {slot.text}
+                        {occupyingSlot.text}
                       </td>
                     ) : null;
                   }
