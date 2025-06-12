@@ -2,10 +2,11 @@ import React, { useState } from "react";
 import { BrowserRouter as Router } from "react-router-dom";
 import CourseInput from './components/CourseInput';
 import WeeklyScheduler from './components/WeeklyScheduler';
+import ConstraintsDisplay from './components/ConstraintsDisplay';
 import './styles/base.css';
 import './styles/App.css';
 
-function App({ setSchedule, setIsLoading }) {
+function App({ setSchedule, setIsLoading, setParsedConstraints }) {
   const [preference, setPreference] = useState("crammed");
   const [courses, setCourses] = useState([
     { name: "", lectures: "", ta_times: "" },
@@ -49,6 +50,7 @@ function App({ setSchedule, setIsLoading }) {
     setError(null);
     setIsSubmitting(true);
     setIsLoading(true);
+    setParsedConstraints(null); // Clear previous constraints
 
     try {
       // Validate form
@@ -65,6 +67,7 @@ function App({ setSchedule, setIsLoading }) {
 
       // Parse constraints
       let parsedConstraints = [];
+      let constraintsData = null;
       if (constraints.trim()) {
         const parseRes = await fetch("http://127.0.0.1:5000/api/parse", {
           method: "POST",
@@ -77,8 +80,11 @@ function App({ setSchedule, setIsLoading }) {
           throw new Error(errorData.error || 'Failed to parse constraints');
         }
 
-        const parsedData = await parseRes.json();
-        parsedConstraints = parsedData.constraints || [];
+        constraintsData = await parseRes.json();
+        parsedConstraints = constraintsData.constraints || [];
+        
+        // Set the parsed constraints for display
+        setParsedConstraints(constraintsData);
       }
 
       // Generate schedule
@@ -106,6 +112,7 @@ function App({ setSchedule, setIsLoading }) {
       }
     } catch (err) {
       setError(err.message || 'Failed to connect to backend. Please make sure the server is running.');
+      setParsedConstraints(null);
     } finally {
       setIsSubmitting(false);
       setIsLoading(false);
@@ -195,12 +202,20 @@ function App({ setSchedule, setIsLoading }) {
 function AppWrapper() {
   const [schedule, setSchedule] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [parsedConstraints, setParsedConstraints] = useState(null);
 
   return (
     <Router>
       <div className="app-wrapper">
-        <App setSchedule={setSchedule} setIsLoading={setIsLoading} />
-        <WeeklyScheduler schedule={schedule} isLoading={isLoading} />
+        <App 
+          setSchedule={setSchedule} 
+          setIsLoading={setIsLoading}
+          setParsedConstraints={setParsedConstraints}
+        />
+        <div className="right-panel">
+          <ConstraintsDisplay parsedConstraints={parsedConstraints} />
+          <WeeklyScheduler schedule={schedule} isLoading={isLoading} />
+        </div>
       </div>
     </Router>
   );

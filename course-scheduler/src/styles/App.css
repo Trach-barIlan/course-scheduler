@@ -16,6 +16,12 @@
   }
 }
 
+.right-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0; /* Remove gap since ConstraintsDisplay has its own margin */
+}
+
 .course-scheduler {
   background: var(--bg-secondary);
   border-radius: var(--radius-xl);
