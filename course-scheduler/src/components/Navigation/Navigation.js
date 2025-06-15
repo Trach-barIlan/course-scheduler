@@ -6,9 +6,15 @@ const Navigation = ({ user, onAuthClick, onProfileClick }) => {
     <nav className="main-navigation">
       <div className="nav-container">
         <div className="nav-brand">
-          <div className="brand-icon">🎓</div>
+          <div className="brand-icon">
+            <img 
+              src="/ChatGPT Image Jun 15, 2025, 02_51_46 PM.png" 
+              alt="Schedgic Logo" 
+              className="brand-logo"
+            />
+          </div>
           <div className="brand-content">
-            <h1 className="brand-title">CourseFlow</h1>
+            <h1 className="brand-title">Schedgic</h1>
             <span className="brand-subtitle">Smart Academic Planning</span>
           </div>
         </div>

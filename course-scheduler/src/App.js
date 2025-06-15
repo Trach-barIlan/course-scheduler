@@ -276,7 +276,11 @@ function App({
                   onConstraintsUpdate={handleConstraintsUpdate}
                   isRegenerating={isLoading}
                 />
-                <WeeklyScheduler schedule={schedule} isLoading={isLoading} />
+                <WeeklyScheduler 
+                  schedule={schedule} 
+                  isLoading={isLoading} 
+                  user={user}
+                />
               </div>
             </div>
           </div>

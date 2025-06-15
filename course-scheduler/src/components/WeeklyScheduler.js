@@ -5,7 +5,7 @@ import SaveScheduleModal from './SaveScheduleModal/SaveScheduleModal';
 import NotImplementedModal from './NotImplementedModal/NotImplementedModal';
 import "../styles/WeeklyScheduler.css";
 
-const WeeklySchedule = ({ schedule, isLoading }) => {
+const WeeklySchedule = ({ schedule, isLoading, user }) => {
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
   const [selectedClass, setSelectedClass] = useState(null);
@@ -16,25 +16,6 @@ const WeeklySchedule = ({ schedule, isLoading }) => {
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [showNotImplemented, setShowNotImplemented] = useState(false);
   const [notImplementedFeature, setNotImplementedFeature] = useState('');
-  const [user, setUser] = useState(null);
-
-  // Check for user on component mount
-  React.useEffect(() => {
-    const checkUser = async () => {
-      try {
-        const response = await fetch('http://127.0.0.1:5000/api/auth/me', {
-          credentials: 'include'
-        });
-        if (response.ok) {
-          const data = await response.json();
-          setUser(data.user);
-        }
-      } catch (error) {
-        console.log('User not logged in');
-      }
-    };
-    checkUser();
-  }, []);
 
   // Update current schedule when prop changes
   React.useEffect(() => {
@@ -66,8 +47,8 @@ const WeeklySchedule = ({ schedule, isLoading }) => {
 
   const handleSaveSchedule = () => {
     if (!user) {
-      // Show login prompt
-      alert('Please sign in to save schedules');
+      // Show a more user-friendly message
+      alert('Please sign in to save schedules. Click the "Sign In" button in the top navigation to create an account or log in.');
       return;
     }
     setShowSaveModal(true);

@@ -30,12 +30,22 @@
 }
 
 .brand-icon {
-  font-size: 2.5rem;
-  background: linear-gradient(135deg, var(--primary-500), var(--primary-600));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  filter: drop-shadow(0 2px 4px rgba(59, 130, 246, 0.3));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.brand-logo {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-lg);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transition: all var(--transition-fast);
+}
+
+.brand-logo:hover {
+  transform: scale(1.05);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
 }
 
 .brand-content {
@@ -223,6 +233,11 @@
     padding: var(--space-3) var(--space-4);
   }
   
+  .brand-logo {
+    width: 40px;
+    height: 40px;
+  }
+  
   .brand-title {
     font-size: 1.5rem;
   }
@@ -246,8 +261,9 @@
 }
 
 @media (max-width: 480px) {
-  .brand-icon {
-    font-size: 2rem;
+  .brand-logo {
+    width: 36px;
+    height: 36px;
   }
   
   .brand-title {
