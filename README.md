@@ -37,12 +37,15 @@ A sophisticated AI-powered course scheduling application that automatically gene
    pip install -r requirements.txt
    
    # Download required spaCy models
-   python3 -m spacy download en_core_web_sm
    python3 -m spacy download en_core_web_md
    
    # Set up environment variables
    cp .env.example .env
-   # Edit .env with your Supabase credentials
+   # Edit .env with your Supabase credentials:
+   SUPABASE_URL=...
+   SUPABASE_ANON_KEY=...
+   SECRET_KEY=...
+   FLASK_ENV=...
    ```
 
 3. **Frontend Setup**
