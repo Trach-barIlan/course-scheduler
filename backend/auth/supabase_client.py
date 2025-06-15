@@ -23,7 +23,7 @@ class SupabaseClient:
         try:
             # Validate email format before sending to Supabase
             if not self.validate_email_format(email):
-                print(f"Invalid email format: {email}")
+                print(f"❌ Invalid email format: {email}")
                 return None
 
             # Clean and validate the email
@@ -32,10 +32,10 @@ class SupabaseClient:
             # Check if username already exists
             existing_user = self.supabase.table("user_profiles").select("username").eq("username", user_metadata.get("username")).execute()
             if existing_user.data:
-                print(f"Username already exists: {user_metadata.get('username')}")
+                print(f"❌ Username already exists: {user_metadata.get('username')}")
                 return None
 
-            print(f"Attempting to create user with email: {email}")
+            print(f"🔄 Attempting to create user with email: {email}")
             
             # Create the auth user first
             response = self.supabase.auth.sign_up({
@@ -46,60 +46,80 @@ class SupabaseClient:
                 }
             })
             
-            print(f"Supabase auth response: {response}")
+            print(f"✅ Supabase auth response: user={response.user.id if response.user else 'None'}")
             
             if response.user:
-                # Sign in the user immediately to get proper authentication context
-                sign_in_response = self.supabase.auth.sign_in_with_password({
-                    "email": email,
-                    "password": password
-                })
+                # The user is created in auth.users, now create the profile
+                # We don't need to sign in first - just create the profile directly
                 
-                if sign_in_response.user:
-                    print(f"User signed in successfully: {sign_in_response.user.id}")
+                profile_data = {
+                    "id": response.user.id,  # This should match the auth.users.id
+                    "username": user_metadata.get("username"),
+                    "first_name": user_metadata.get("first_name"),
+                    "last_name": user_metadata.get("last_name"),
+                    "email": email
+                }
+                
+                print(f"🔄 Creating profile with data: {profile_data}")
+                
+                # Create the profile using the service role or with proper RLS
+                try:
+                    # First, try to sign in the user to get proper authentication context
+                    sign_in_response = self.supabase.auth.sign_in_with_password({
+                        "email": email,
+                        "password": password
+                    })
                     
-                    # Now create the profile record with the authenticated user context
-                    profile_data = {
-                        "id": response.user.id,
-                        "username": user_metadata.get("username"),
-                        "first_name": user_metadata.get("first_name"),
-                        "last_name": user_metadata.get("last_name"),
-                        "email": email
-                    }
+                    if sign_in_response.user:
+                        print(f"✅ User signed in successfully: {sign_in_response.user.id}")
+                        
+                        # Now create the profile with authenticated context
+                        profile_response = self.supabase.table("user_profiles").insert(profile_data).execute()
+                        print(f"✅ Profile creation response: {profile_response}")
+                        
+                        if profile_response.data:
+                            print(f"✅ Profile created successfully")
+                            return {
+                                "id": response.user.id,
+                                "email": response.user.email,
+                                "username": user_metadata.get("username"),
+                                "first_name": user_metadata.get("first_name"),
+                                "last_name": user_metadata.get("last_name"),
+                                "created_at": response.user.created_at
+                            }
+                        else:
+                            print(f"❌ Profile creation failed - no data returned")
+                            return None
+                    else:
+                        print(f"❌ Failed to sign in after registration")
+                        return None
+                        
+                except Exception as profile_error:
+                    print(f"❌ Profile creation error: {profile_error}")
+                    print(f"Error type: {type(profile_error)}")
                     
-                    print(f"Creating profile with data: {profile_data}")
-                    
-                    # Use the authenticated session to create the profile
-                    profile_response = self.supabase.table("user_profiles").insert(profile_data).execute()
-                    print(f"Profile creation response: {profile_response}")
-                    
-                    return {
-                        "id": response.user.id,
-                        "email": response.user.email,
-                        "username": user_metadata.get("username"),
-                        "first_name": user_metadata.get("first_name"),
-                        "last_name": user_metadata.get("last_name"),
-                        "created_at": response.user.created_at
-                    }
-                else:
-                    print("Failed to sign in after registration")
+                    # If profile creation fails, we should clean up the auth user
+                    # But Supabase doesn't allow deleting users via client SDK
+                    # The user will exist in auth but not in profiles
                     return None
             else:
-                print("No user returned from Supabase")
+                print("❌ No user returned from Supabase auth")
                 return None
             
         except Exception as e:
-            print(f"Detailed error creating user: {e}")
+            print(f"❌ Detailed error creating user: {e}")
             print(f"Error type: {type(e)}")
             
             # Check for specific Supabase errors
             error_message = str(e).lower()
             if "email" in error_message and "invalid" in error_message:
-                print("Email validation failed at Supabase level")
+                print("❌ Email validation failed at Supabase level")
             elif "already" in error_message or "exists" in error_message:
-                print("User already exists")
+                print("❌ User already exists")
             elif "policy" in error_message:
-                print("Row Level Security policy violation")
+                print("❌ Row Level Security policy violation")
+            elif "foreign key" in error_message:
+                print("❌ Foreign key constraint violation")
             
             return None
 
@@ -128,11 +148,14 @@ class SupabaseClient:
                         "created_at": response.user.created_at,
                         "last_login": response.user.last_sign_in_at
                     }
+                else:
+                    print(f"❌ No profile found for user {response.user.id}")
+                    return None
             
             return None
             
         except Exception as e:
-            print(f"Error authenticating user: {e}")
+            print(f"❌ Error authenticating user: {e}")
             return None
 
     def get_user_by_id(self, user_id: str) -> Optional[Dict]:
@@ -146,7 +169,7 @@ class SupabaseClient:
             return None
             
         except Exception as e:
-            print(f"Error getting user: {e}")
+            print(f"❌ Error getting user: {e}")
             return None
 
     def logout_user(self) -> bool:
@@ -155,7 +178,7 @@ class SupabaseClient:
             self.supabase.auth.sign_out()
             return True
         except Exception as e:
-            print(f"Error logging out: {e}")
+            print(f"❌ Error logging out: {e}")
             return False
 
     def get_current_user(self) -> Optional[Dict]:
@@ -180,5 +203,5 @@ class SupabaseClient:
             return None
             
         except Exception as e:
-            print(f"Error getting current user: {e}")
+            print(f"❌ Error getting current user: {e}")
             return None
