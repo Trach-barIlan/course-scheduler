@@ -46,11 +46,20 @@ const WeeklySchedule = ({ schedule, isLoading, user }) => {
   };
 
   const handleSaveSchedule = () => {
+    console.log('Save schedule clicked, user:', user);
+    
     if (!user) {
       // Show a more user-friendly message
       alert('Please sign in to save schedules. Click the "Sign In" button in the top navigation to create an account or log in.');
       return;
     }
+    
+    if (!currentSchedule || currentSchedule.length === 0) {
+      alert('No schedule to save. Please generate a schedule first.');
+      return;
+    }
+    
+    console.log('Opening save modal with schedule:', currentSchedule);
     setShowSaveModal(true);
   };
 
@@ -444,6 +453,7 @@ const WeeklySchedule = ({ schedule, isLoading, user }) => {
           <button 
             onClick={handleSaveSchedule}
             className="action-button button-save"
+            title={!user ? "Sign in to save schedules" : "Save this schedule"}
           >
             💾 Save Schedule
           </button>

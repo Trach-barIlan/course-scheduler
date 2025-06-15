@@ -25,6 +25,22 @@ const SaveScheduleModal = ({ isOpen, onClose, onSave, schedule, user }) => {
     setError('');
 
     try {
+      console.log('Attempting to save schedule with user:', user);
+      console.log('Schedule data:', schedule);
+
+      // First, verify authentication status
+      const authCheck = await fetch('http://127.0.0.1:5000/api/auth/me', {
+        credentials: 'include'
+      });
+
+      if (!authCheck.ok) {
+        setError('Authentication expired. Please sign in again.');
+        return;
+      }
+
+      const authData = await authCheck.json();
+      console.log('Auth check result:', authData);
+
       // Save to database via API
       const response = await fetch('http://127.0.0.1:5000/api/schedules/save', {
         method: 'POST',
@@ -41,8 +57,11 @@ const SaveScheduleModal = ({ isOpen, onClose, onSave, schedule, user }) => {
         })
       });
 
+      console.log('Save response status:', response.status);
+      
       if (response.ok) {
         const data = await response.json();
+        console.log('Save successful:', data);
         onSave(data.schedule);
         onClose();
         
@@ -52,6 +71,7 @@ const SaveScheduleModal = ({ isOpen, onClose, onSave, schedule, user }) => {
         setIsPublic(false);
       } else {
         const errorData = await response.json();
+        console.error('Save failed:', errorData);
         setError(errorData.error || 'Failed to save schedule');
       }
     } catch (err) {
@@ -81,6 +101,21 @@ const SaveScheduleModal = ({ isOpen, onClose, onSave, schedule, user }) => {
         </div>
 
         <form onSubmit={handleSubmit} className="modal-form">
+          {/* Debug info - remove in production */}
+          {process.env.NODE_ENV === 'development' && (
+            <div className="debug-info" style={{ 
+              background: '#f0f0f0', 
+              padding: '10px', 
+              marginBottom: '15px', 
+              fontSize: '12px',
+              borderRadius: '5px'
+            }}>
+              <strong>Debug Info:</strong><br/>
+              User: {user ? `${user.first_name} (ID: ${user.id})` : 'Not logged in'}<br/>
+              Schedule: {schedule ? `${schedule.length} courses` : 'No schedule'}
+            </div>
+          )}
+
           <div className="form-group">
             <label htmlFor="scheduleName">Schedule Name *</label>
             <input

@@ -16,16 +16,24 @@ def get_supabase_client():
 @schedules_bp.route('/save', methods=['POST'])
 def save_schedule():
     """Save a schedule to the database"""
+    print(f"Save schedule request received")
+    print(f"Session data: {dict(session)}")
+    
     user_id = session.get('user_id')
+    print(f"User ID from session: {user_id}")
+    
     if not user_id:
-        return jsonify({'error': 'Authentication required'}), 401
+        print("No user_id in session - authentication required")
+        return jsonify({'error': 'Authentication required. Please sign in again.'}), 401
 
     supabase = get_supabase_client()
     if not supabase:
+        print("Failed to get Supabase client")
         return jsonify({'error': 'Database connection failed'}), 500
 
     try:
         data = request.get_json()
+        print(f"Request data: {data}")
         
         # Validate required fields
         if not data.get('name'):
@@ -38,26 +46,37 @@ def save_schedule():
             'user_id': user_id,
             'schedule_name': data['name'].strip(),
             'schedule_data': data['schedule'],
-            'constraints_data': data.get('constraints', []),
-            'description': data.get('description', ''),
-            'is_public': data.get('isPublic', False)
+            'constraints_data': data.get('constraints', [])
         }
+        
+        # Add optional fields if they exist in the database schema
+        if 'description' in data:
+            schedule_data['description'] = data['description']
+        if 'isPublic' in data:
+            schedule_data['is_public'] = data['isPublic']
+
+        print(f"Attempting to save schedule data: {schedule_data}")
 
         # Save to database
         result = supabase.supabase.table("saved_schedules").insert(schedule_data).execute()
+        print(f"Database insert result: {result}")
         
         if result.data:
             saved_schedule = result.data[0]
+            print(f"Schedule saved successfully: {saved_schedule}")
             return jsonify({
                 'message': 'Schedule saved successfully',
                 'schedule': saved_schedule
             }), 201
         else:
+            print("No data returned from database insert")
             return jsonify({'error': 'Failed to save schedule'}), 500
 
     except Exception as e:
         print(f"Error saving schedule: {e}")
-        return jsonify({'error': 'Failed to save schedule'}), 500
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': f'Failed to save schedule: {str(e)}'}), 500
 
 @schedules_bp.route('/list', methods=['GET'])
 def list_schedules():
@@ -185,3 +204,13 @@ def delete_schedule(schedule_id):
     except Exception as e:
         print(f"Error deleting schedule: {e}")
         return jsonify({'error': 'Failed to delete schedule'}), 500
+
+@schedules_bp.route('/debug', methods=['GET'])
+def debug_session():
+    """Debug endpoint to check session state"""
+    return jsonify({
+        'session_data': dict(session),
+        'user_id': session.get('user_id'),
+        'username': session.get('username'),
+        'has_session': bool(session)
+    }), 200

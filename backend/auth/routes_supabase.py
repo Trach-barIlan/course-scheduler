@@ -113,11 +113,12 @@ def register():
         user = supabase.create_user(email, password, user_metadata)
         
         if user:
-            # Set session
+            # Set session with detailed logging
             session['user_id'] = user['id']
             session['username'] = user['username']
             
             print(f"User created successfully: {user['id']}")
+            print(f"Session set: user_id={session.get('user_id')}, username={session.get('username')}")
             
             return jsonify({
                 'message': 'User registered successfully',
@@ -174,9 +175,12 @@ def login():
         user = supabase.authenticate_user(email, password)
         
         if user:
-            # Set session
+            # Set session with detailed logging
             session['user_id'] = user['id']
             session['username'] = user['username']
+            
+            print(f"User logged in successfully: {user['id']}")
+            print(f"Session set: user_id={session.get('user_id')}, username={session.get('username')}")
             
             return jsonify({
                 'message': 'Login successful',
@@ -191,17 +195,23 @@ def login():
 
 @auth_bp.route('/logout', methods=['POST'])
 def logout():
+    print(f"Logout request - current session: {dict(session)}")
+    
     supabase = get_supabase_client()
     if supabase:
         supabase.logout_user()
     
     session.clear()
+    print("Session cleared after logout")
     return jsonify({'message': 'Logged out successfully'}), 200
 
 @auth_bp.route('/me', methods=['GET'])
 def get_current_user():
+    print(f"Auth check - current session: {dict(session)}")
+    
     user_id = session.get('user_id')
     if not user_id:
+        print("No user_id in session")
         return jsonify({'error': 'Not authenticated'}), 401
     
     supabase = get_supabase_client()
@@ -210,8 +220,10 @@ def get_current_user():
     
     user = supabase.get_user_by_id(user_id)
     if user:
+        print(f"User found: {user}")
         return jsonify({'user': user}), 200
     else:
+        print("User not found in database, clearing session")
         session.clear()
         return jsonify({'error': 'User not found'}), 404
 
