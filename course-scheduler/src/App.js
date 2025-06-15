@@ -11,7 +11,18 @@ import UserProfile from './components/UserProfile/UserProfile';
 import './styles/base.css';
 import './styles/App.css';
 
-function App({ setSchedule, setIsLoading, setParsedConstraints, parsedConstraints, onConstraintsUpdate, user, setUser }) {
+function App({ 
+  setSchedule, 
+  setIsLoading, 
+  setParsedConstraints, 
+  parsedConstraints, 
+  onConstraintsUpdate, 
+  user, 
+  setUser,
+  schedule,
+  isLoading,
+  handleConstraintsUpdate
+}) {
   const [preference, setPreference] = useState("crammed");
   const [courses, setCourses] = useState([
     { name: "", lectures: "", ta_times: "" },
@@ -37,7 +48,7 @@ function App({ setSchedule, setIsLoading, setParsedConstraints, parsedConstraint
     }
   };
 
-  const validateForm = () => {
+  const validateForm = useCallback(() => {
     for (const course of courses) {
       if (!course.name.trim()) {
         throw new Error("Please fill in all course names");
@@ -49,7 +60,7 @@ function App({ setSchedule, setIsLoading, setParsedConstraints, parsedConstraint
         throw new Error(`Please add TA session times for ${course.name}`);
       }
     }
-  };
+  }, [courses]);
 
   const generateScheduleWithConstraints = useCallback(async (constraintsToUse) => {
     try {
@@ -94,7 +105,7 @@ function App({ setSchedule, setIsLoading, setParsedConstraints, parsedConstraint
     } catch (err) {
       setError(err.message || 'Failed to connect to backend. Please make sure the server is running.');
     }
-  }, [courses, preference, setSchedule, setError]);
+  }, [courses, preference, setSchedule, setError, validateForm]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -144,7 +155,7 @@ function App({ setSchedule, setIsLoading, setParsedConstraints, parsedConstraint
     }
   }, [onConstraintsUpdate, generateScheduleWithConstraints]);
 
-  const handleQuickAction = (actionId) => {
+  const handleQuickAction = useCallback((actionId) => {
     switch (actionId) {
       case 'new-schedule':
         setCurrentView('scheduler');
@@ -164,12 +175,12 @@ function App({ setSchedule, setIsLoading, setParsedConstraints, parsedConstraint
       default:
         break;
     }
-  };
+  }, []);
 
   const renderCurrentView = () => {
     switch (currentView) {
       case 'dashboard':
-        return <Dashboard user={user} />;
+        return <Dashboard user={user} onQuickAction={handleQuickAction} />;
       case 'scheduler':
         return (
           <div className="scheduler-view">
@@ -271,7 +282,7 @@ function App({ setSchedule, setIsLoading, setParsedConstraints, parsedConstraint
           </div>
         );
       default:
-        return <Dashboard user={user} />;
+        return <Dashboard user={user} onQuickAction={handleQuickAction} />;
     }
   };
 
@@ -291,7 +302,6 @@ function AppWrapper() {
   const [showAuth, setShowAuth] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
-  const [currentView, setCurrentView] = useState('dashboard');
 
   // Check if user is already logged in on app start
   useEffect(() => {
@@ -340,16 +350,15 @@ function AppWrapper() {
   const handleLogout = () => {
     setUser(null);
     setShowProfile(false);
-    setCurrentView('dashboard');
     // Clear any user-specific data
     setSchedule(null);
     setParsedConstraints(null);
   };
 
-  const handleQuickAction = (actionId) => {
+  const handleQuickAction = useCallback((actionId) => {
     switch (actionId) {
       case 'new-schedule':
-        setCurrentView('scheduler');
+        // This will be handled by the App component's handleQuickAction
         break;
       case 'saved-schedules':
         // TODO: Implement saved schedules view
@@ -366,7 +375,7 @@ function AppWrapper() {
       default:
         break;
     }
-  };
+  }, []);
 
   if (isCheckingAuth) {
     return (

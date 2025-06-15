@@ -1,7 +1,7 @@
 import React from 'react';
 import './Dashboard.css';
 
-const Dashboard = ({ user }) => {
+const Dashboard = ({ user, onQuickAction }) => {
   const stats = [
     {
       icon: '📅',
@@ -66,7 +66,10 @@ const Dashboard = ({ user }) => {
           </p>
         </div>
         <div className="header-actions">
-          <button className="primary-action">
+          <button 
+            className="primary-action"
+            onClick={() => onQuickAction && onQuickAction('new-schedule')}
+          >
             <span className="action-icon">✨</span>
             Create New Schedule
           </button>
@@ -122,13 +125,23 @@ const Dashboard = ({ user }) => {
               <div className="card-icon">🚀</div>
               <h3>First Time?</h3>
               <p>Follow our step-by-step guide to create your first schedule</p>
-              <button className="card-action">Get Started</button>
+              <button 
+                className="card-action"
+                onClick={() => onQuickAction && onQuickAction('new-schedule')}
+              >
+                Get Started
+              </button>
             </div>
             <div className="quick-start-card">
               <div className="card-icon">📋</div>
               <h3>Use Template</h3>
               <p>Start with a pre-made template for common degree programs</p>
-              <button className="card-action">Browse Templates</button>
+              <button 
+                className="card-action"
+                onClick={() => onQuickAction && onQuickAction('templates')}
+              >
+                Browse Templates
+              </button>
             </div>
             <div className="quick-start-card">
               <div className="card-icon">📤</div>
