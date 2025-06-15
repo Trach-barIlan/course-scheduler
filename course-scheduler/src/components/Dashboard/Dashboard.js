@@ -1,7 +1,11 @@
 import React from 'react';
+import NotImplementedModal from '../NotImplementedModal/NotImplementedModal';
 import './Dashboard.css';
 
 const Dashboard = ({ user, onQuickAction }) => {
+  const [showNotImplemented, setShowNotImplemented] = React.useState(false);
+  const [notImplementedFeature, setNotImplementedFeature] = React.useState('');
+
   const stats = [
     {
       icon: '📅',
@@ -54,105 +58,141 @@ const Dashboard = ({ user, onQuickAction }) => {
     }
   ];
 
+  const handleNotImplementedClick = (feature) => {
+    setNotImplementedFeature(feature);
+    setShowNotImplemented(true);
+  };
+
+  const handleQuickAction = (actionId) => {
+    if (actionId === 'new-schedule') {
+      onQuickAction && onQuickAction(actionId);
+    } else {
+      handleNotImplementedClick(actionId);
+    }
+  };
+
   return (
-    <div className="dashboard">
-      <div className="dashboard-header">
-        <div className="welcome-section">
-          <h1 className="welcome-title">
-            Welcome back, {user?.first_name || 'Student'}! 👋
-          </h1>
-          <p className="welcome-subtitle">
-            Ready to create your perfect schedule? Let's make this semester amazing.
-          </p>
+    <>
+      <div className="dashboard">
+        <div className="dashboard-header">
+          <div className="welcome-section">
+            <h1 className="welcome-title">
+              Welcome back, {user?.first_name || 'Student'}! 👋
+            </h1>
+            <p className="welcome-subtitle">
+              Ready to create your perfect schedule? Let's make this semester amazing.
+            </p>
+          </div>
+          <div className="header-actions">
+            <button 
+              className="primary-action"
+              onClick={() => handleQuickAction('new-schedule')}
+            >
+              <span className="action-icon">✨</span>
+              Create New Schedule
+            </button>
+          </div>
         </div>
-        <div className="header-actions">
-          <button 
-            className="primary-action"
-            onClick={() => onQuickAction && onQuickAction('new-schedule')}
-          >
-            <span className="action-icon">✨</span>
-            Create New Schedule
-          </button>
-        </div>
-      </div>
 
-      <div className="stats-grid">
-        {stats.map((stat, index) => (
-          <div key={index} className={`stat-card ${stat.color}`}>
-            <div className="stat-icon">{stat.icon}</div>
-            <div className="stat-content">
-              <div className="stat-value">{stat.value}</div>
-              <div className="stat-label">{stat.label}</div>
-              <div className="stat-change">{stat.change}</div>
+        <div className="stats-grid">
+          {stats.map((stat, index) => (
+            <div key={index} className={`stat-card ${stat.color}`}>
+              <div className="stat-icon">{stat.icon}</div>
+              <div className="stat-content">
+                <div className="stat-value">{stat.value}</div>
+                <div className="stat-label">{stat.label}</div>
+                <div className="stat-change">{stat.change}</div>
+              </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
 
-      <div className="dashboard-content">
-        <div className="content-section">
-          <div className="section-header">
-            <h2 className="section-title">Recent Schedules</h2>
-            <button className="section-action">View All</button>
-          </div>
-          <div className="schedules-list">
-            {recentSchedules.map((schedule, index) => (
-              <div key={index} className="schedule-card">
-                <div className="schedule-info">
-                  <h3 className="schedule-name">{schedule.name}</h3>
-                  <div className="schedule-meta">
-                    <span className="course-count">{schedule.courses} courses</span>
-                    <span className="schedule-date">{schedule.created}</span>
+        <div className="dashboard-content">
+          <div className="content-section">
+            <div className="section-header">
+              <h2 className="section-title">Recent Schedules</h2>
+              <button 
+                className="section-action"
+                onClick={() => handleNotImplementedClick('saved-schedules')}
+              >
+                View All
+              </button>
+            </div>
+            <div className="schedules-list">
+              {recentSchedules.map((schedule, index) => (
+                <div key={index} className="schedule-card">
+                  <div className="schedule-info">
+                    <h3 className="schedule-name">{schedule.name}</h3>
+                    <div className="schedule-meta">
+                      <span className="course-count">{schedule.courses} courses</span>
+                      <span className="schedule-date">{schedule.created}</span>
+                    </div>
+                  </div>
+                  <div className="schedule-actions">
+                    <span className={`status-badge ${schedule.status}`}>
+                      {schedule.status}
+                    </span>
+                    <button 
+                      className="schedule-action"
+                      onClick={() => handleNotImplementedClick('saved-schedules')}
+                    >
+                      Open
+                    </button>
                   </div>
                 </div>
-                <div className="schedule-actions">
-                  <span className={`status-badge ${schedule.status}`}>
-                    {schedule.status}
-                  </span>
-                  <button className="schedule-action">Open</button>
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
 
-        <div className="content-section">
-          <div className="section-header">
-            <h2 className="section-title">Quick Start</h2>
-          </div>
-          <div className="quick-start-cards">
-            <div className="quick-start-card">
-              <div className="card-icon">🚀</div>
-              <h3>First Time?</h3>
-              <p>Follow our step-by-step guide to create your first schedule</p>
-              <button 
-                className="card-action"
-                onClick={() => onQuickAction && onQuickAction('new-schedule')}
-              >
-                Get Started
-              </button>
+          <div className="content-section">
+            <div className="section-header">
+              <h2 className="section-title">Quick Start</h2>
             </div>
-            <div className="quick-start-card">
-              <div className="card-icon">📋</div>
-              <h3>Use Template</h3>
-              <p>Start with a pre-made template for common degree programs</p>
-              <button 
-                className="card-action"
-                onClick={() => onQuickAction && onQuickAction('templates')}
-              >
-                Browse Templates
-              </button>
-            </div>
-            <div className="quick-start-card">
-              <div className="card-icon">📤</div>
-              <h3>Import Schedule</h3>
-              <p>Upload your existing schedule and let AI optimize it</p>
-              <button className="card-action">Import Now</button>
+            <div className="quick-start-cards">
+              <div className="quick-start-card">
+                <div className="card-icon">🚀</div>
+                <h3>First Time?</h3>
+                <p>Follow our step-by-step guide to create your first schedule</p>
+                <button 
+                  className="card-action"
+                  onClick={() => handleQuickAction('new-schedule')}
+                >
+                  Get Started
+                </button>
+              </div>
+              <div className="quick-start-card">
+                <div className="card-icon">📋</div>
+                <h3>Use Template</h3>
+                <p>Start with a pre-made template for common degree programs</p>
+                <button 
+                  className="card-action"
+                  onClick={() => handleQuickAction('templates')}
+                >
+                  Browse Templates
+                </button>
+              </div>
+              <div className="quick-start-card">
+                <div className="card-icon">📤</div>
+                <h3>Import Schedule</h3>
+                <p>Upload your existing schedule and let AI optimize it</p>
+                <button 
+                  className="card-action"
+                  onClick={() => handleNotImplementedClick('import')}
+                >
+                  Import Now
+                </button>
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
+
+      <NotImplementedModal
+        isOpen={showNotImplemented}
+        onClose={() => setShowNotImplemented(false)}
+        feature={notImplementedFeature}
+      />
+    </>
   );
 };
 

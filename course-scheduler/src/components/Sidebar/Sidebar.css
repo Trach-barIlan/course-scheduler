@@ -112,6 +112,19 @@
   opacity: 1;
 }
 
+.quick-action-card.not-implemented {
+  opacity: 0.8;
+  border-style: dashed;
+}
+
+.quick-action-card.not-implemented:hover {
+  border-color: var(--warning-300);
+}
+
+.quick-action-card.not-implemented::before {
+  background: var(--warning-500);
+}
+
 .action-icon {
   font-size: 1.75rem;
   width: 48px;
@@ -127,6 +140,10 @@
 .quick-action-card.success .action-icon { background: var(--success-50); }
 .quick-action-card.warning .action-icon { background: var(--warning-50); }
 .quick-action-card.info .action-icon { background: #F0F9FF; }
+.quick-action-card.not-implemented .action-icon { 
+  background: var(--warning-50);
+  filter: grayscale(0.3);
+}
 
 .action-content {
   flex: 1;
@@ -137,6 +154,20 @@
   font-weight: 600;
   color: var(--text-primary);
   margin: 0 0 var(--space-1) 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.coming-soon-badge {
+  background: var(--warning-100);
+  color: var(--warning-700);
+  font-size: 0.65rem;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .action-description {
@@ -248,12 +279,39 @@
   cursor: pointer;
   transition: all var(--transition-fast);
   font-size: 1.25rem;
+  position: relative;
 }
 
 .collapsed-action:hover {
   background: var(--primary-50);
   border-color: var(--primary-200);
   transform: scale(1.1);
+}
+
+.collapsed-action.not-implemented {
+  opacity: 0.8;
+  border-style: dashed;
+}
+
+.collapsed-action.not-implemented:hover {
+  border-color: var(--warning-300);
+  background: var(--warning-50);
+}
+
+.mini-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  background: var(--warning-500);
+  color: white;
+  font-size: 0.6rem;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
 }
 
 /* Responsive Design */

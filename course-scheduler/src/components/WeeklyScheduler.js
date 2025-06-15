@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import { jsPDF } from "jspdf";
 import html2canvas from "html2canvas";
+import SaveScheduleModal from './SaveScheduleModal/SaveScheduleModal';
+import NotImplementedModal from './NotImplementedModal/NotImplementedModal';
 import "../styles/WeeklyScheduler.css";
 
 const WeeklySchedule = ({ schedule, isLoading }) => {
@@ -11,6 +13,28 @@ const WeeklySchedule = ({ schedule, isLoading }) => {
   const [availableSlots, setAvailableSlots] = useState([]);
   const [currentSchedule, setCurrentSchedule] = useState(schedule);
   const [originalCourseOptions, setOriginalCourseOptions] = useState(null);
+  const [showSaveModal, setShowSaveModal] = useState(false);
+  const [showNotImplemented, setShowNotImplemented] = useState(false);
+  const [notImplementedFeature, setNotImplementedFeature] = useState('');
+  const [user, setUser] = useState(null);
+
+  // Check for user on component mount
+  React.useEffect(() => {
+    const checkUser = async () => {
+      try {
+        const response = await fetch('http://127.0.0.1:5000/api/auth/me', {
+          credentials: 'include'
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setUser(data.user);
+        }
+      } catch (error) {
+        console.log('User not logged in');
+      }
+    };
+    checkUser();
+  }, []);
 
   // Update current schedule when prop changes
   React.useEffect(() => {
@@ -33,6 +57,25 @@ const WeeklySchedule = ({ schedule, isLoading }) => {
     } catch (error) {
       console.error('Error extracting original options:', error);
     }
+  };
+
+  const handleNotImplementedClick = (feature) => {
+    setNotImplementedFeature(feature);
+    setShowNotImplemented(true);
+  };
+
+  const handleSaveSchedule = () => {
+    if (!user) {
+      // Show login prompt
+      alert('Please sign in to save schedules');
+      return;
+    }
+    setShowSaveModal(true);
+  };
+
+  const handleScheduleSaved = (savedSchedule) => {
+    // Show success message
+    alert(`Schedule "${savedSchedule.name}" saved successfully!`);
   };
 
   if (isLoading) {
@@ -391,6 +434,18 @@ const WeeklySchedule = ({ schedule, isLoading }) => {
             </button>
           )}
           <button 
+            onClick={handleSaveSchedule}
+            className="action-button button-save"
+          >
+            💾 Save Schedule
+          </button>
+          <button 
+            onClick={() => handleNotImplementedClick('export-calendar')}
+            className="action-button button-calendar"
+          >
+            📅 Export to Calendar
+          </button>
+          <button 
             onClick={downloadPDF} 
             className="action-button button-download"
             disabled={isGeneratingPDF}
@@ -537,6 +592,22 @@ const WeeklySchedule = ({ schedule, isLoading }) => {
           </div>
         </div>
       )}
+
+      {/* Save Schedule Modal */}
+      <SaveScheduleModal
+        isOpen={showSaveModal}
+        onClose={() => setShowSaveModal(false)}
+        onSave={handleScheduleSaved}
+        schedule={currentSchedule}
+        user={user}
+      />
+
+      {/* Not Implemented Modal */}
+      <NotImplementedModal
+        isOpen={showNotImplemented}
+        onClose={() => setShowNotImplemented(false)}
+        feature={notImplementedFeature}
+      />
     </div>
   );
 };
