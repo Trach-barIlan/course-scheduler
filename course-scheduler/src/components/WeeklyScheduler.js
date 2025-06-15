@@ -55,8 +55,26 @@ const WeeklySchedule = ({ schedule, isLoading, user }) => {
   };
 
   const handleScheduleSaved = (savedSchedule) => {
-    // Show success message
-    alert(`Schedule "${savedSchedule.name}" saved successfully!`);
+    // Show success message and navigate back to dashboard
+    alert(`Schedule "${savedSchedule.schedule_name}" saved successfully!`);
+    
+    // Navigate back to dashboard after saving
+    if (window.history.length > 1) {
+      window.history.back();
+    } else {
+      // If no history, reload the page to go to dashboard
+      window.location.reload();
+    }
+  };
+
+  const handleBackToDashboard = () => {
+    // Navigate back to dashboard
+    if (window.history.length > 1) {
+      window.history.back();
+    } else {
+      // If no history, reload the page to go to dashboard
+      window.location.reload();
+    }
   };
 
   if (isLoading) {
@@ -404,7 +422,16 @@ const WeeklySchedule = ({ schedule, isLoading, user }) => {
   return (
     <div className="weekly-scheduler-container">
       <div className="scheduler-header">
-        <h2 className="scheduler-title">Weekly Schedule</h2>
+        <div className="header-left">
+          <button 
+            onClick={handleBackToDashboard}
+            className="back-button"
+            title="Back to Dashboard"
+          >
+            ← Back to Dashboard
+          </button>
+          <h2 className="scheduler-title">Weekly Schedule</h2>
+        </div>
         <div className="scheduler-actions">
           {draggedClass && (
             <button 

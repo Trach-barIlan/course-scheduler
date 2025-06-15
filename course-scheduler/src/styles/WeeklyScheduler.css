@@ -16,6 +16,34 @@
   gap: var(--space-4);
 }
 
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.back-button {
+  background: var(--gray-100);
+  border: 2px solid var(--border-color);
+  color: var(--text-secondary);
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-lg);
+  font-weight: 600;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.back-button:hover {
+  background: var(--primary-50);
+  border-color: var(--primary-200);
+  color: var(--primary-600);
+  transform: translateX(-2px);
+}
+
 .scheduler-title {
   font-size: 1.75rem;
   font-weight: 700;
@@ -439,6 +467,10 @@
     flex-direction: column;
     align-items: stretch;
     text-align: center;
+  }
+  
+  .header-left {
+    justify-content: center;
   }
   
   .scheduler-actions {

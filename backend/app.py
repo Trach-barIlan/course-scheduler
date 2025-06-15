@@ -5,6 +5,7 @@ from schedule.utils import parse_time_slot
 from schedule.parserAI import parse_course_text
 from ai_model.ml_parser import ScheduleParser
 from auth.routes_supabase import auth_bp  # Updated import
+from api.schedules import schedules_bp  # Add schedules API
 import os
 from dotenv import load_dotenv
 
@@ -22,14 +23,15 @@ app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 CORS(app, resources={
     r"/api/*": {
         "origins": ["http://localhost:3000"],
-        "methods": ["GET", "POST", "OPTIONS"],
+        "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
         "allow_headers": ["Content-Type"],
         "supports_credentials": True
     }
 }, supports_credentials=True)
 
-# Register auth blueprint
+# Register blueprints
 app.register_blueprint(auth_bp, url_prefix='/api/auth')
+app.register_blueprint(schedules_bp, url_prefix='/api/schedules')
 
 schedule_parser = ScheduleParser()
 model_nlp = schedule_parser.nlp

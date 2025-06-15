@@ -25,31 +25,37 @@ const SaveScheduleModal = ({ isOpen, onClose, onSave, schedule, user }) => {
     setError('');
 
     try {
-      // For now, we'll save to localStorage since backend isn't fully implemented
-      const savedSchedules = JSON.parse(localStorage.getItem('savedSchedules') || '[]');
-      
-      const newSchedule = {
-        id: Date.now().toString(),
-        name: scheduleName.trim(),
-        description: description.trim(),
-        schedule: schedule,
-        isPublic: isPublic,
-        userId: user.id,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
+      // Save to database via API
+      const response = await fetch('http://127.0.0.1:5000/api/schedules/save', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          name: scheduleName.trim(),
+          description: description.trim(),
+          schedule: schedule,
+          isPublic: isPublic,
+          constraints: [] // TODO: Include constraints if available
+        })
+      });
 
-      savedSchedules.push(newSchedule);
-      localStorage.setItem('savedSchedules', JSON.stringify(savedSchedules));
-
-      onSave(newSchedule);
-      onClose();
-      
-      // Reset form
-      setScheduleName('');
-      setDescription('');
-      setIsPublic(false);
+      if (response.ok) {
+        const data = await response.json();
+        onSave(data.schedule);
+        onClose();
+        
+        // Reset form
+        setScheduleName('');
+        setDescription('');
+        setIsPublic(false);
+      } else {
+        const errorData = await response.json();
+        setError(errorData.error || 'Failed to save schedule');
+      }
     } catch (err) {
+      console.error('Error saving schedule:', err);
       setError('Failed to save schedule. Please try again.');
     } finally {
       setIsSaving(false);
