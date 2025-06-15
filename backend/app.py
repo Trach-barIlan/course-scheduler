@@ -8,14 +8,14 @@ from auth.routes_supabase import auth_bp  # Updated import
 from api.schedules import schedules_bp  # Add schedules API
 import os
 from dotenv import load_dotenv
-from datetime import timedelta
+from datetime import timedelta, datetime
 
 # Load environment variables
 load_dotenv()
 
 app = Flask(__name__)
 
-# Enhanced session configuration
+# Enhanced session configuration for better persistence
 app.secret_key = os.environ.get('SECRET_KEY', 'your-secret-key-change-this-in-production')
 app.config['SESSION_COOKIE_SECURE'] = False  # Set to True in production with HTTPS
 app.config['SESSION_COOKIE_HTTPONLY'] = True
@@ -23,11 +23,13 @@ app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 app.config['SESSION_PERMANENT'] = True
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)  # Session lasts 7 days
 app.config['SESSION_COOKIE_NAME'] = 'schedgic_session'
+app.config['SESSION_COOKIE_PATH'] = '/'
+app.config['SESSION_COOKIE_DOMAIN'] = None  # Allow for localhost
 
 # Enhanced CORS configuration
 CORS(app, resources={
     r"/api/*": {
-        "origins": ["http://localhost:3000"],
+        "origins": ["http://localhost:3000", "http://127.0.0.1:3000"],
         "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
         "allow_headers": ["Content-Type", "Authorization"],
         "supports_credentials": True,
@@ -83,15 +85,32 @@ def normalize_text(text):
 
 @app.before_request
 def before_request():
-    """Make sessions permanent and log session info"""
+    """Make sessions permanent and log session info for debugging"""
     session.permanent = True
     
-    # Debug logging for session state
+    # Enhanced debug logging for session state
     if request.endpoint and 'api' in request.endpoint:
-        print(f"Request to {request.endpoint}")
+        print(f"\n🔍 === REQUEST DEBUG INFO ===")
+        print(f"Endpoint: {request.endpoint}")
+        print(f"Method: {request.method}")
         print(f"Session ID: {session.get('_id', 'No session ID')}")
+        print(f"Session permanent: {session.permanent}")
         print(f"Session data: {dict(session)}")
-        print(f"Cookies: {request.cookies}")
+        print(f"Request cookies: {dict(request.cookies)}")
+        print(f"User authenticated: {session.get('authenticated', False)}")
+        print(f"User ID: {session.get('user_id', 'None')}")
+        print(f"=== END DEBUG INFO ===\n")
+
+@app.after_request
+def after_request(response):
+    """Log response info for debugging"""
+    if request.endpoint and 'api' in request.endpoint:
+        print(f"\n📤 === RESPONSE DEBUG INFO ===")
+        print(f"Status: {response.status_code}")
+        print(f"Session after request: {dict(session)}")
+        print(f"Response headers: {dict(response.headers)}")
+        print(f"=== END RESPONSE INFO ===\n")
+    return response
 
 @app.route("/api/parse", methods=["POST"])
 def parse_input():
@@ -234,4 +253,4 @@ def api_schedule():
         return jsonify({"error": "Internal server error", "details": str(e)}), 500
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=True, host='127.0.0.1', port=5000)

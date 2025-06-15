@@ -25,34 +25,62 @@ const SaveScheduleModal = ({ isOpen, onClose, onSave, schedule, user }) => {
     setError('');
 
     try {
-      console.log('Attempting to save schedule with user:', user);
+      console.log('🔄 Starting save process...');
+      console.log('User:', user);
       console.log('Schedule data:', schedule);
 
-      // First, refresh the session to ensure it's still valid
-      const refreshResponse = await fetch('http://127.0.0.1:5000/api/auth/refresh-session', {
-        method: 'POST',
-        credentials: 'include'
-      });
-
-      if (!refreshResponse.ok) {
-        setError('Session expired. Please sign in again.');
-        return;
-      }
-
-      // Verify authentication status
+      // Step 1: Check current authentication status
+      console.log('📋 Step 1: Checking authentication...');
       const authCheck = await fetch('http://127.0.0.1:5000/api/auth/me', {
         credentials: 'include'
       });
 
+      console.log('Auth check response:', authCheck.status);
+
       if (!authCheck.ok) {
-        setError('Authentication expired. Please sign in again.');
-        return;
+        console.log('❌ Auth check failed, trying to refresh session...');
+        
+        // Step 2: Try to refresh the session
+        const refreshResponse = await fetch('http://127.0.0.1:5000/api/auth/refresh-session', {
+          method: 'POST',
+          credentials: 'include'
+        });
+
+        console.log('Refresh response:', refreshResponse.status);
+
+        if (!refreshResponse.ok) {
+          setError('Your session has expired. Please sign in again.');
+          return;
+        }
+
+        // Step 3: Verify authentication after refresh
+        const authRecheck = await fetch('http://127.0.0.1:5000/api/auth/me', {
+          credentials: 'include'
+        });
+
+        if (!authRecheck.ok) {
+          setError('Authentication failed. Please sign in again.');
+          return;
+        }
+
+        console.log('✅ Session refreshed successfully');
+      } else {
+        console.log('✅ Authentication verified');
       }
 
-      const authData = await authCheck.json();
-      console.log('Auth check result:', authData);
+      // Step 4: Debug session state
+      console.log('🔍 Step 4: Checking session debug info...');
+      const debugResponse = await fetch('http://127.0.0.1:5000/api/auth/debug', {
+        credentials: 'include'
+      });
+      
+      if (debugResponse.ok) {
+        const debugData = await debugResponse.json();
+        console.log('Session debug info:', debugData);
+      }
 
-      // Save to database via API
+      // Step 5: Save the schedule
+      console.log('💾 Step 5: Saving schedule...');
       const response = await fetch('http://127.0.0.1:5000/api/schedules/save', {
         method: 'POST',
         headers: {
@@ -72,7 +100,7 @@ const SaveScheduleModal = ({ isOpen, onClose, onSave, schedule, user }) => {
       
       if (response.ok) {
         const data = await response.json();
-        console.log('Save successful:', data);
+        console.log('✅ Save successful:', data);
         onSave(data.schedule);
         onClose();
         
@@ -82,12 +110,17 @@ const SaveScheduleModal = ({ isOpen, onClose, onSave, schedule, user }) => {
         setIsPublic(false);
       } else {
         const errorData = await response.json();
-        console.error('Save failed:', errorData);
-        setError(errorData.error || 'Failed to save schedule');
+        console.error('❌ Save failed:', errorData);
+        
+        if (response.status === 401) {
+          setError('Your session has expired. Please sign in again and try saving.');
+        } else {
+          setError(errorData.error || 'Failed to save schedule');
+        }
       }
     } catch (err) {
-      console.error('Error saving schedule:', err);
-      setError('Failed to save schedule. Please try again.');
+      console.error('❌ Error saving schedule:', err);
+      setError('Failed to save schedule. Please check your connection and try again.');
     } finally {
       setIsSaving(false);
     }
@@ -112,18 +145,23 @@ const SaveScheduleModal = ({ isOpen, onClose, onSave, schedule, user }) => {
         </div>
 
         <form onSubmit={handleSubmit} className="modal-form">
-          {/* Debug info - remove in production */}
+          {/* Enhanced debug info for troubleshooting */}
           {process.env.NODE_ENV === 'development' && (
             <div className="debug-info" style={{ 
-              background: '#f0f0f0', 
-              padding: '10px', 
-              marginBottom: '15px', 
-              fontSize: '12px',
-              borderRadius: '5px'
+              background: '#f0f8ff', 
+              border: '1px solid #ccc',
+              padding: '12px', 
+              marginBottom: '16px', 
+              fontSize: '11px',
+              borderRadius: '6px',
+              fontFamily: 'monospace'
             }}>
-              <strong>Debug Info:</strong><br/>
-              User: {user ? `${user.first_name} (ID: ${user.id})` : 'Not logged in'}<br/>
-              Schedule: {schedule ? `${schedule.length} courses` : 'No schedule'}
+              <strong>🔍 Debug Info:</strong><br/>
+              <strong>User:</strong> {user ? `${user.first_name} ${user.last_name} (ID: ${user.id})` : '❌ Not logged in'}<br/>
+              <strong>Email:</strong> {user?.email || 'N/A'}<br/>
+              <strong>Username:</strong> {user?.username || 'N/A'}<br/>
+              <strong>Schedule:</strong> {schedule ? `✅ ${schedule.length} courses` : '❌ No schedule'}<br/>
+              <strong>Courses:</strong> {schedule ? schedule.map(c => c.name).join(', ') : 'None'}
             </div>
           )}
 

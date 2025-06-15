@@ -56,6 +56,23 @@ def validate_password(password):
         return False, "Password must contain at least one number"
     return True, "Password is valid"
 
+def set_user_session(user_data):
+    """Set user session with all required data"""
+    session.permanent = True
+    session['user_id'] = user_data['id']
+    session['username'] = user_data.get('username', '')
+    session['email'] = user_data.get('email', '')
+    session['first_name'] = user_data.get('first_name', '')
+    session['last_name'] = user_data.get('last_name', '')
+    session['authenticated'] = True
+    
+    print(f"✅ Session set successfully:")
+    print(f"   User ID: {session.get('user_id')}")
+    print(f"   Username: {session.get('username')}")
+    print(f"   Email: {session.get('email')}")
+    print(f"   Session ID: {session.get('_id', 'No session ID')}")
+    print(f"   Full session: {dict(session)}")
+
 @auth_bp.route('/register', methods=['POST'])
 def register():
     supabase = get_supabase_client()
@@ -113,28 +130,21 @@ def register():
         user = supabase.create_user(email, password, user_metadata)
         
         if user:
-            # Set session with enhanced persistence
-            session.permanent = True
-            session['user_id'] = user['id']
-            session['username'] = user['username']
-            session['email'] = user['email']
-            session['first_name'] = user['first_name']
-            session['last_name'] = user['last_name']
+            # Set session with comprehensive user data
+            set_user_session(user)
             
-            print(f"User created successfully: {user['id']}")
-            print(f"Session set: user_id={session.get('user_id')}, username={session.get('username')}")
-            print(f"Full session data: {dict(session)}")
+            print(f"✅ User created and session set successfully: {user['id']}")
             
             return jsonify({
                 'message': 'User registered successfully',
                 'user': user
             }), 201
         else:
-            print("User creation failed - no user returned")
+            print("❌ User creation failed - no user returned")
             return jsonify({'error': 'Registration failed. Email may already be in use or invalid.'}), 400
         
     except Exception as e:
-        print(f"Registration error: {e}")
+        print(f"❌ Registration error: {e}")
         print(f"Error type: {type(e)}")
         
         # More specific error messages
@@ -180,17 +190,10 @@ def login():
         user = supabase.authenticate_user(email, password)
         
         if user:
-            # Set session with enhanced persistence
-            session.permanent = True
-            session['user_id'] = user['id']
-            session['username'] = user['username']
-            session['email'] = user['email']
-            session['first_name'] = user['first_name']
-            session['last_name'] = user['last_name']
+            # Set session with comprehensive user data
+            set_user_session(user)
             
-            print(f"User logged in successfully: {user['id']}")
-            print(f"Session set: user_id={session.get('user_id')}, username={session.get('username')}")
-            print(f"Full session data: {dict(session)}")
+            print(f"✅ User logged in and session set successfully: {user['id']}")
             
             return jsonify({
                 'message': 'Login successful',
@@ -200,29 +203,32 @@ def login():
             return jsonify({'error': 'Invalid email or password'}), 401
             
     except Exception as e:
-        print(f"Login error: {e}")
+        print(f"❌ Login error: {e}")
         return jsonify({'error': 'Login failed. Please try again.'}), 500
 
 @auth_bp.route('/logout', methods=['POST'])
 def logout():
-    print(f"Logout request - current session: {dict(session)}")
+    print(f"🔓 Logout request - current session: {dict(session)}")
     
     supabase = get_supabase_client()
     if supabase:
         supabase.logout_user()
     
     session.clear()
-    print("Session cleared after logout")
+    print("✅ Session cleared after logout")
     return jsonify({'message': 'Logged out successfully'}), 200
 
 @auth_bp.route('/me', methods=['GET'])
 def get_current_user():
-    print(f"Auth check - current session: {dict(session)}")
+    print(f"🔍 Auth check - current session: {dict(session)}")
     print(f"Session ID: {session.get('_id', 'No session ID')}")
+    print(f"Session permanent: {session.permanent}")
     
     user_id = session.get('user_id')
-    if not user_id:
-        print("No user_id in session")
+    authenticated = session.get('authenticated', False)
+    
+    if not user_id or not authenticated:
+        print(f"❌ Authentication failed - user_id: {user_id}, authenticated: {authenticated}")
         return jsonify({'error': 'Not authenticated'}), 401
     
     supabase = get_supabase_client()
@@ -231,26 +237,57 @@ def get_current_user():
     
     user = supabase.get_user_by_id(user_id)
     if user:
-        print(f"User found: {user}")
+        print(f"✅ User found: {user.get('username', 'Unknown')}")
         return jsonify({'user': user}), 200
     else:
-        print("User not found in database, clearing session")
+        print("❌ User not found in database, clearing session")
         session.clear()
         return jsonify({'error': 'User not found'}), 404
 
 @auth_bp.route('/refresh-session', methods=['POST'])
 def refresh_session():
-    """Refresh session to extend expiry"""
+    """Refresh session to extend expiry and verify authentication"""
+    print(f"🔄 Session refresh request - current session: {dict(session)}")
+    
     user_id = session.get('user_id')
-    if not user_id:
+    authenticated = session.get('authenticated', False)
+    
+    if not user_id or not authenticated:
+        print(f"❌ Session refresh failed - user_id: {user_id}, authenticated: {authenticated}")
         return jsonify({'error': 'Not authenticated'}), 401
     
-    # Refresh session by making it permanent again
+    # Verify user still exists in database
+    supabase = get_supabase_client()
+    if supabase:
+        user = supabase.get_user_by_id(user_id)
+        if not user:
+            print("❌ User no longer exists, clearing session")
+            session.clear()
+            return jsonify({'error': 'User not found'}), 401
+    
+    # Refresh session by making it permanent again and updating data
     session.permanent = True
+    session['last_refresh'] = str(datetime.now())
+    
+    print(f"✅ Session refreshed successfully for user: {user_id}")
     
     return jsonify({
         'message': 'Session refreshed',
-        'user_id': user_id
+        'user_id': user_id,
+        'authenticated': True
+    }), 200
+
+@auth_bp.route('/debug', methods=['GET'])
+def debug_session():
+    """Debug endpoint to check session state"""
+    return jsonify({
+        'session_data': dict(session),
+        'user_id': session.get('user_id'),
+        'username': session.get('username'),
+        'authenticated': session.get('authenticated', False),
+        'has_session': bool(session),
+        'session_id': session.get('_id', 'No session ID'),
+        'session_permanent': session.permanent
     }), 200
 
 @auth_bp.route('/stats', methods=['GET'])
