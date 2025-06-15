@@ -42,7 +42,8 @@ class SupabaseClient:
                 "email": email,
                 "password": password,
                 "options": {
-                    "data": user_metadata
+                    "data": user_metadata,
+                    "email_confirm": True  # Auto-confirm email
                 }
             })
             
@@ -53,19 +54,7 @@ class SupabaseClient:
                 return None
 
             user_id = auth_response.user.id
-            
-            # Step 2: Sign in the user to get proper authentication context
-            print(f"🔄 Signing in user to establish session...")
-            sign_in_response = self.supabase.auth.sign_in_with_password({
-                "email": email,
-                "password": password
-            })
-            
-            if not sign_in_response.user:
-                print(f"❌ Failed to sign in after registration")
-                return None
-                
-            print(f"✅ User signed in successfully: {sign_in_response.user.id}")
+            print(f"✅ Auth user created with ID: {user_id}")
             
             # Step 3: Create the profile with authenticated context
             profile_data = {
@@ -82,24 +71,20 @@ class SupabaseClient:
             profile_response = self.supabase.table("user_profiles").insert(profile_data).execute()
             print(f"✅ Profile creation response: {profile_response}")
             
-            if profile_response.data:
-                print(f"✅ Profile created successfully")
-                return {
-                    "id": user_id,
-                    "email": auth_response.user.email,
-                    "username": user_metadata.get("username"),
-                    "first_name": user_metadata.get("first_name"),
-                    "last_name": user_metadata.get("last_name"),
-                    "created_at": auth_response.user.created_at
-                }
-            else:
-                print(f"❌ Profile creation failed - no data returned")
-                # Clean up: try to delete the auth user (though this might not work with client SDK)
-                try:
-                    self.supabase.auth.sign_out()
-                except:
-                    pass
+            if not profile_response.data:
+                print("❌ Failed to create user profile")
                 return None
+            
+            print("✅ User profile created successfully")
+            
+            return {
+                "id": user_id,
+                "email": email,
+                "username": user_metadata.get("username"),
+                "first_name": user_metadata.get("first_name"),
+                "last_name": user_metadata.get("last_name"),
+                "created_at": auth_response.user.created_at
+            }
                         
         except Exception as e:
             print(f"❌ Detailed error creating user: {e}")

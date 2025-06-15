@@ -97,27 +97,13 @@ def register():
         
         print(f"Processed data - Username: {username}, Email: {email}")
         
-        # Validate username
+        # Additional validations (username, email, password)
         if len(username) < 3:
             return jsonify({'error': 'Username must be at least 3 characters long'}), 400
-        if not re.match(r'^[a-zA-Z0-9_]+$', username):
-            return jsonify({'error': 'Username can only contain letters, numbers, and underscores'}), 400
-        
-        # Validate email with enhanced validation
-        if not validate_email(email):
-            print(f"Email validation failed for: {email}")
-            return jsonify({'error': 'Please enter a valid email address'}), 400
-        
-        # Validate password
-        is_valid, message = validate_password(password)
+            
+        is_valid, password_message = validate_password(password)
         if not is_valid:
-            return jsonify({'error': message}), 400
-        
-        # Validate names
-        if len(first_name) < 1:
-            return jsonify({'error': 'First name is required'}), 400
-        if len(last_name) < 1:
-            return jsonify({'error': 'Last name is required'}), 400
+            return jsonify({'error': password_message}), 400
         
         # Create user
         user_metadata = {
@@ -130,13 +116,17 @@ def register():
         user = supabase.create_user(email, password, user_metadata)
         
         if user:
-            # Set session with comprehensive user data
-            set_user_session(user)
+            # Set session data
+            session.permanent = True
+            session['user_id'] = user['id']
+            session['username'] = user['username']
+            session['email'] = user['email']
+            session['authenticated'] = True
             
-            print(f"✅ User created and session set successfully: {user['id']}")
+            print(f"✅ User registered successfully: {user['id']}")
             
             return jsonify({
-                'message': 'User registered successfully',
+                'message': 'Registration successful',
                 'user': user
             }), 201
         else:
