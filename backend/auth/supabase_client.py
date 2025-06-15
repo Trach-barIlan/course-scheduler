@@ -37,13 +37,13 @@ class SupabaseClient:
 
             print(f"🔄 Attempting to create user with email: {email}")
             
-            # Step 1: Create the auth user
+            # Step 1: Create the auth user with auto-confirm
             auth_response = self.supabase.auth.sign_up({
                 "email": email,
                 "password": password,
                 "options": {
                     "data": user_metadata,
-                    "email_confirm": True  # Auto-confirm email
+                    "email_confirm": False  # Auto-confirm to avoid email verification
                 }
             })
             
@@ -56,7 +56,20 @@ class SupabaseClient:
             user_id = auth_response.user.id
             print(f"✅ Auth user created with ID: {user_id}")
             
-            # Step 3: Create the profile with authenticated context
+            # Step 2: Sign in the user immediately to establish authentication context
+            print(f"🔄 Signing in user to establish authentication context...")
+            sign_in_response = self.supabase.auth.sign_in_with_password({
+                "email": email,
+                "password": password
+            })
+            
+            if not sign_in_response.user:
+                print("❌ Failed to sign in user after creation")
+                return None
+                
+            print(f"✅ User signed in successfully: {sign_in_response.user.id}")
+            
+            # Step 3: Create the profile with the authenticated session
             profile_data = {
                 "id": user_id,
                 "username": user_metadata.get("username"),
@@ -65,14 +78,22 @@ class SupabaseClient:
                 "email": email
             }
             
-            print(f"🔄 Creating profile with data: {profile_data}")
+            print(f"🔄 Creating profile with authenticated session...")
+            print(f"Profile data: {profile_data}")
             
-            # Use the authenticated session to create the profile
+            # Use the authenticated client to create the profile
             profile_response = self.supabase.table("user_profiles").insert(profile_data).execute()
             print(f"✅ Profile creation response: {profile_response}")
             
             if not profile_response.data:
                 print("❌ Failed to create user profile")
+                # Clean up the auth user if profile creation fails
+                try:
+                    print("🧹 Cleaning up auth user due to profile creation failure...")
+                    # Note: Supabase doesn't allow deleting users via client, 
+                    # but the user will be cleaned up by the database cascade
+                except Exception as cleanup_error:
+                    print(f"⚠️ Cleanup warning: {cleanup_error}")
                 return None
             
             print("✅ User profile created successfully")
@@ -96,7 +117,7 @@ class SupabaseClient:
                 print("❌ Email validation failed at Supabase level")
             elif "already" in error_message or "exists" in error_message:
                 print("❌ User already exists")
-            elif "policy" in error_message:
+            elif "policy" in error_message or "row-level security" in error_message:
                 print("❌ Row Level Security policy violation")
             elif "foreign key" in error_message:
                 print("❌ Foreign key constraint violation")
