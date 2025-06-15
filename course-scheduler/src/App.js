@@ -1,5 +1,8 @@
 import React, { useState, useCallback, useEffect } from "react";
 import { BrowserRouter as Router } from "react-router-dom";
+import Navigation from './components/Navigation/Navigation';
+import Sidebar from './components/Sidebar/Sidebar';
+import Dashboard from './components/Dashboard/Dashboard';
 import CourseInput from './components/CourseInput';
 import WeeklyScheduler from './components/WeeklyScheduler';
 import ConstraintsDisplay from './components/ConstraintsDisplay';
@@ -16,6 +19,7 @@ function App({ setSchedule, setIsLoading, setParsedConstraints, parsedConstraint
   const [constraints, setConstraints] = useState("");
   const [error, setError] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [currentView, setCurrentView] = useState('dashboard');
 
   const handleCourseChange = (index, field, value) => {
     const newCourses = [...courses];
@@ -83,6 +87,7 @@ function App({ setSchedule, setIsLoading, setParsedConstraints, parsedConstraint
       if (data.schedule) {
         setSchedule(data.schedule);
         setError(null);
+        setCurrentView('scheduler'); // Switch to scheduler view when schedule is generated
       } else {
         setError(data.error || 'No valid schedule found with the given constraints. Try adjusting your requirements.');
       }
@@ -139,90 +144,140 @@ function App({ setSchedule, setIsLoading, setParsedConstraints, parsedConstraint
     }
   }, [onConstraintsUpdate, generateScheduleWithConstraints]);
 
-  return (
-    <div className="course-scheduler">
-      <div className="scheduler-header-section">
-        <h2>Course Scheduler</h2>
-        {user && (
-          <div className="user-welcome">
-            Welcome back, <strong>{user.first_name}</strong>!
-          </div>
-        )}
-      </div>
-      
-      <form onSubmit={handleSubmit}>
-        <div className="schedule-preference">
-          <label htmlFor="preference">Schedule Preference</label>
-          <select
-            id="preference"
-            value={preference}
-            onChange={(e) => setPreference(e.target.value)}
-          >
-            <option value="crammed">Crammed (fewer days, back-to-back classes)</option>
-            <option value="spaced">Spaced Out (more days, fewer gaps)</option>
-          </select>
-        </div>
+  const handleQuickAction = (actionId) => {
+    switch (actionId) {
+      case 'new-schedule':
+        setCurrentView('scheduler');
+        break;
+      case 'saved-schedules':
+        // TODO: Implement saved schedules view
+        console.log('Saved schedules view');
+        break;
+      case 'templates':
+        // TODO: Implement templates view
+        console.log('Templates view');
+        break;
+      case 'analytics':
+        // TODO: Implement analytics view
+        console.log('Analytics view');
+        break;
+      default:
+        break;
+    }
+  };
 
-        {courses.map((course, i) => (
-          <CourseInput
-            key={i}
-            course={course}
-            onChange={handleCourseChange}
-            onRemove={removeCourse}
-            index={i}
-            canRemove={courses.length > 1}
-          />
-        ))}
+  const renderCurrentView = () => {
+    switch (currentView) {
+      case 'dashboard':
+        return <Dashboard user={user} />;
+      case 'scheduler':
+        return (
+          <div className="scheduler-view">
+            <div className="scheduler-content">
+              <div className="course-scheduler">
+                <div className="scheduler-header-section">
+                  <h2>Course Scheduler</h2>
+                  {user && (
+                    <div className="user-welcome">
+                      Welcome back, <strong>{user.first_name}</strong>!
+                    </div>
+                  )}
+                </div>
+                
+                <form onSubmit={handleSubmit}>
+                  <div className="schedule-preference">
+                    <label htmlFor="preference">Schedule Preference</label>
+                    <select
+                      id="preference"
+                      value={preference}
+                      onChange={(e) => setPreference(e.target.value)}
+                    >
+                      <option value="crammed">Crammed (fewer days, back-to-back classes)</option>
+                      <option value="spaced">Spaced Out (more days, fewer gaps)</option>
+                    </select>
+                  </div>
 
-        <div className="constraints-section">
-          <label htmlFor="constraints">Additional Constraints</label>
-          <textarea
-            id="constraints"
-            className="constraints-input"
-            value={constraints}
-            onChange={(e) => setConstraints(e.target.value)}
-            placeholder="Enter your scheduling preferences in natural language:
+                  {courses.map((course, i) => (
+                    <CourseInput
+                      key={i}
+                      course={course}
+                      onChange={handleCourseChange}
+                      onRemove={removeCourse}
+                      index={i}
+                      canRemove={courses.length > 1}
+                    />
+                  ))}
+
+                  <div className="constraints-section">
+                    <label htmlFor="constraints">Additional Constraints</label>
+                    <textarea
+                      id="constraints"
+                      className="constraints-input"
+                      value={constraints}
+                      onChange={(e) => setConstraints(e.target.value)}
+                      placeholder="Enter your scheduling preferences in natural language:
 
 • No classes before 9am
 • No classes on Tuesday  
 • Avoid TA Smith
 • No classes after 5pm
 • Prefer morning sessions"
-            rows={6}
-          />
-        </div>
+                      rows={6}
+                    />
+                  </div>
 
-        <div className="button-group">
-          <button 
-            type="button" 
-            onClick={addCourse} 
-            className="add-button"
-            disabled={isSubmitting}
-          >
-            + Add Another Course
-          </button>
-          <button 
-            type="submit" 
-            className="submit-button"
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? (
-              <>
-                <div className="loading-spinner"></div>
-                Generating Schedule...
-              </>
-            ) : (
-              'Generate Schedule'
-            )}
-          </button>
-        </div>
-      </form>
+                  <div className="button-group">
+                    <button 
+                      type="button" 
+                      onClick={addCourse} 
+                      className="add-button"
+                      disabled={isSubmitting}
+                    >
+                      + Add Another Course
+                    </button>
+                    <button 
+                      type="submit" 
+                      className="submit-button"
+                      disabled={isSubmitting}
+                    >
+                      {isSubmitting ? (
+                        <>
+                          <div className="loading-spinner"></div>
+                          Generating Schedule...
+                        </>
+                      ) : (
+                        'Generate Schedule'
+                      )}
+                    </button>
+                  </div>
+                </form>
 
-      {error && (
-        <div className="error-message">
-          {error}
-        </div>
-      )}
+                {error && (
+                  <div className="error-message">
+                    {error}
+                  </div>
+                )}
+              </div>
+              
+              <div className="right-panel">
+                <ConstraintsDisplay 
+                  parsedConstraints={parsedConstraints} 
+                  onConstraintsUpdate={handleConstraintsUpdate}
+                  isRegenerating={isLoading}
+                />
+                <WeeklyScheduler schedule={schedule} isLoading={isLoading} />
+              </div>
+            </div>
+          </div>
+        );
+      default:
+        return <Dashboard user={user} />;
+    }
+  };
+
+  return (
+    <div className="app-main">
+      {renderCurrentView()}
     </div>
   );
 }
@@ -236,6 +291,7 @@ function AppWrapper() {
   const [showAuth, setShowAuth] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+  const [currentView, setCurrentView] = useState('dashboard');
 
   // Check if user is already logged in on app start
   useEffect(() => {
@@ -284,9 +340,32 @@ function AppWrapper() {
   const handleLogout = () => {
     setUser(null);
     setShowProfile(false);
+    setCurrentView('dashboard');
     // Clear any user-specific data
     setSchedule(null);
     setParsedConstraints(null);
+  };
+
+  const handleQuickAction = (actionId) => {
+    switch (actionId) {
+      case 'new-schedule':
+        setCurrentView('scheduler');
+        break;
+      case 'saved-schedules':
+        // TODO: Implement saved schedules view
+        console.log('Saved schedules view');
+        break;
+      case 'templates':
+        // TODO: Implement templates view
+        console.log('Templates view');
+        break;
+      case 'analytics':
+        // TODO: Implement analytics view
+        console.log('Analytics view');
+        break;
+      default:
+        break;
+    }
   };
 
   if (isCheckingAuth) {
@@ -301,53 +380,32 @@ function AppWrapper() {
   return (
     <Router>
       <div className="app-wrapper">
-        <div className="app-header">
-          <div className="app-logo">
-            <span className="logo-icon">📚</span>
-            <span className="logo-text">Course Scheduler</span>
-          </div>
-          <div className="app-nav">
-            {user ? (
-              <div className="user-menu">
-                <button 
-                  className="user-button"
-                  onClick={() => setShowProfile(true)}
-                >
-                  <div className="user-avatar">
-                    {user.first_name?.charAt(0)}{user.last_name?.charAt(0)}
-                  </div>
-                  <span className="user-name">{user.first_name}</span>
-                </button>
-              </div>
-            ) : (
-              <button 
-                className="auth-button"
-                onClick={() => setShowAuth(true)}
-              >
-                Sign In
-              </button>
-            )}
-          </div>
-        </div>
+        <Navigation 
+          user={user}
+          onAuthClick={() => setShowAuth(true)}
+          onProfileClick={() => setShowProfile(true)}
+        />
 
-        <div className="app-content">
-          <App 
-            setSchedule={setSchedule} 
-            setIsLoading={setIsLoading}
-            setParsedConstraints={setParsedConstraints}
-            parsedConstraints={parsedConstraints}
-            onConstraintsUpdate={handleSetConstraintsUpdateFunction}
+        <div className="app-layout">
+          <Sidebar 
             user={user}
-            setUser={setUser}
+            onQuickAction={handleQuickAction}
           />
-          <div className="right-panel">
-            <ConstraintsDisplay 
-              parsedConstraints={parsedConstraints} 
-              onConstraintsUpdate={handleConstraintsUpdate}
-              isRegenerating={isLoading}
+          
+          <main className="main-content">
+            <App 
+              setSchedule={setSchedule} 
+              setIsLoading={setIsLoading}
+              setParsedConstraints={setParsedConstraints}
+              parsedConstraints={parsedConstraints}
+              onConstraintsUpdate={handleSetConstraintsUpdateFunction}
+              user={user}
+              setUser={setUser}
+              schedule={schedule}
+              isLoading={isLoading}
+              handleConstraintsUpdate={handleConstraintsUpdate}
             />
-            <WeeklyScheduler schedule={schedule} isLoading={isLoading} />
-          </div>
+          </main>
         </div>
 
         {showAuth && (

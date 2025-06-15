@@ -2,119 +2,33 @@
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  background: linear-gradient(135deg, var(--primary-50) 0%, var(--bg-primary) 100%);
 }
 
-.app-header {
-  background: var(--bg-secondary);
-  border-bottom: 1px solid var(--border-color);
-  padding: var(--space-4) var(--space-6);
+.app-layout {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  box-shadow: var(--shadow-sm);
-  position: sticky;
-  top: 0;
-  z-index: 100;
-}
-
-.app-logo {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-}
-
-.logo-icon {
-  font-size: 1.75rem;
-}
-
-.logo-text {
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: var(--text-primary);
-  background: linear-gradient(135deg, var(--primary-600), var(--primary-500));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-.app-nav {
-  display: flex;
-  align-items: center;
-  gap: var(--space-4);
-}
-
-.auth-button {
-  background: linear-gradient(135deg, var(--primary-500), var(--primary-600));
-  color: white;
-  border: none;
-  padding: var(--space-3) var(--space-5);
-  border-radius: var(--radius-lg);
-  font-weight: 600;
-  cursor: pointer;
-  transition: all var(--transition-fast);
-  font-size: 0.875rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.auth-button:hover {
-  background: linear-gradient(135deg, var(--primary-600), var(--primary-500));
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-md);
-}
-
-.user-menu {
-  position: relative;
-}
-
-.user-button {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  background: var(--bg-tertiary);
-  border: 1px solid var(--border-color);
-  padding: var(--space-2) var(--space-4);
-  border-radius: var(--radius-lg);
-  cursor: pointer;
-  transition: all var(--transition-fast);
-  font-family: inherit;
-}
-
-.user-button:hover {
-  background: var(--primary-50);
-  border-color: var(--primary-200);
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-sm);
-}
-
-.user-avatar {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, var(--primary-500), var(--primary-600));
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.75rem;
-  font-weight: 700;
-}
-
-.user-name {
-  font-weight: 600;
-  color: var(--text-primary);
-  font-size: 0.875rem;
-}
-
-.app-content {
   flex: 1;
+}
+
+.main-content {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.app-main {
+  min-height: calc(100vh - 80px);
+}
+
+.scheduler-view {
   padding: var(--space-6);
+}
+
+.scheduler-content {
   display: grid;
   grid-template-columns: 1fr 2fr;
   gap: var(--space-8);
   max-width: 1400px;
   margin: 0 auto;
-  width: 100%;
 }
 
 .app-loading {
@@ -138,18 +52,10 @@
   font-weight: 500;
 }
 
-@media (max-width: 1024px) {
-  .app-content {
-    grid-template-columns: 1fr;
-    gap: var(--space-6);
-    padding: var(--space-4);
-  }
-}
-
 .right-panel {
   display: flex;
   flex-direction: column;
-  gap: 0; /* Remove gap since ConstraintsDisplay has its own margin */
+  gap: 0;
 }
 
 .course-scheduler {
@@ -160,7 +66,7 @@
   border: 1px solid var(--border-color);
   height: fit-content;
   position: sticky;
-  top: calc(var(--space-6) + 80px); /* Account for header height */
+  top: var(--space-6);
 }
 
 .scheduler-header-section {
@@ -372,23 +278,30 @@
 }
 
 /* Responsive Design */
+@media (max-width: 1024px) {
+  .app-layout {
+    flex-direction: column;
+  }
+  
+  .scheduler-content {
+    grid-template-columns: 1fr;
+    gap: var(--space-6);
+    padding: var(--space-4);
+  }
+  
+  .course-scheduler {
+    position: static;
+    top: auto;
+  }
+}
+
 @media (max-width: 768px) {
-  .app-header {
-    padding: var(--space-3) var(--space-4);
-  }
-  
-  .logo-text {
-    font-size: 1.1rem;
-  }
-  
-  .user-name {
-    display: none;
+  .scheduler-view {
+    padding: var(--space-4);
   }
   
   .course-scheduler {
     padding: var(--space-6);
-    position: static;
-    top: auto;
   }
   
   .course-scheduler h2 {
