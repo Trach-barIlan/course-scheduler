@@ -8,24 +8,30 @@ from auth.routes_supabase import auth_bp  # Updated import
 from api.schedules import schedules_bp  # Add schedules API
 import os
 from dotenv import load_dotenv
+from datetime import timedelta
 
 # Load environment variables
 load_dotenv()
 
 app = Flask(__name__)
 
-# Configure session
+# Enhanced session configuration
 app.secret_key = os.environ.get('SECRET_KEY', 'your-secret-key-change-this-in-production')
 app.config['SESSION_COOKIE_SECURE'] = False  # Set to True in production with HTTPS
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+app.config['SESSION_PERMANENT'] = True
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)  # Session lasts 7 days
+app.config['SESSION_COOKIE_NAME'] = 'schedgic_session'
 
+# Enhanced CORS configuration
 CORS(app, resources={
     r"/api/*": {
         "origins": ["http://localhost:3000"],
         "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-        "allow_headers": ["Content-Type"],
-        "supports_credentials": True
+        "allow_headers": ["Content-Type", "Authorization"],
+        "supports_credentials": True,
+        "expose_headers": ["Set-Cookie"]
     }
 }, supports_credentials=True)
 
@@ -74,6 +80,18 @@ def normalize_text(text):
         normalized = normalized.replace(day.upper(), day.title())
     
     return normalized
+
+@app.before_request
+def before_request():
+    """Make sessions permanent and log session info"""
+    session.permanent = True
+    
+    # Debug logging for session state
+    if request.endpoint and 'api' in request.endpoint:
+        print(f"Request to {request.endpoint}")
+        print(f"Session ID: {session.get('_id', 'No session ID')}")
+        print(f"Session data: {dict(session)}")
+        print(f"Cookies: {request.cookies}")
 
 @app.route("/api/parse", methods=["POST"])
 def parse_input():

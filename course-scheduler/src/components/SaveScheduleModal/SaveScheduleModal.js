@@ -28,7 +28,18 @@ const SaveScheduleModal = ({ isOpen, onClose, onSave, schedule, user }) => {
       console.log('Attempting to save schedule with user:', user);
       console.log('Schedule data:', schedule);
 
-      // First, verify authentication status
+      // First, refresh the session to ensure it's still valid
+      const refreshResponse = await fetch('http://127.0.0.1:5000/api/auth/refresh-session', {
+        method: 'POST',
+        credentials: 'include'
+      });
+
+      if (!refreshResponse.ok) {
+        setError('Session expired. Please sign in again.');
+        return;
+      }
+
+      // Verify authentication status
       const authCheck = await fetch('http://127.0.0.1:5000/api/auth/me', {
         credentials: 'include'
       });

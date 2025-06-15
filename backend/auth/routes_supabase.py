@@ -113,12 +113,17 @@ def register():
         user = supabase.create_user(email, password, user_metadata)
         
         if user:
-            # Set session with detailed logging
+            # Set session with enhanced persistence
+            session.permanent = True
             session['user_id'] = user['id']
             session['username'] = user['username']
+            session['email'] = user['email']
+            session['first_name'] = user['first_name']
+            session['last_name'] = user['last_name']
             
             print(f"User created successfully: {user['id']}")
             print(f"Session set: user_id={session.get('user_id')}, username={session.get('username')}")
+            print(f"Full session data: {dict(session)}")
             
             return jsonify({
                 'message': 'User registered successfully',
@@ -175,12 +180,17 @@ def login():
         user = supabase.authenticate_user(email, password)
         
         if user:
-            # Set session with detailed logging
+            # Set session with enhanced persistence
+            session.permanent = True
             session['user_id'] = user['id']
             session['username'] = user['username']
+            session['email'] = user['email']
+            session['first_name'] = user['first_name']
+            session['last_name'] = user['last_name']
             
             print(f"User logged in successfully: {user['id']}")
             print(f"Session set: user_id={session.get('user_id')}, username={session.get('username')}")
+            print(f"Full session data: {dict(session)}")
             
             return jsonify({
                 'message': 'Login successful',
@@ -208,6 +218,7 @@ def logout():
 @auth_bp.route('/me', methods=['GET'])
 def get_current_user():
     print(f"Auth check - current session: {dict(session)}")
+    print(f"Session ID: {session.get('_id', 'No session ID')}")
     
     user_id = session.get('user_id')
     if not user_id:
@@ -226,6 +237,21 @@ def get_current_user():
         print("User not found in database, clearing session")
         session.clear()
         return jsonify({'error': 'User not found'}), 404
+
+@auth_bp.route('/refresh-session', methods=['POST'])
+def refresh_session():
+    """Refresh session to extend expiry"""
+    user_id = session.get('user_id')
+    if not user_id:
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    # Refresh session by making it permanent again
+    session.permanent = True
+    
+    return jsonify({
+        'message': 'Session refreshed',
+        'user_id': user_id
+    }), 200
 
 @auth_bp.route('/stats', methods=['GET'])
 def get_stats():
