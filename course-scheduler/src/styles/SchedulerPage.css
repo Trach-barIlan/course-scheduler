@@ -1,0 +1,298 @@
+.scheduler-page {
+  flex: 1;
+  padding: var(--space-6);
+  max-width: 1400px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.scheduler-content {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: var(--space-8);
+  min-height: calc(100vh - 120px);
+}
+
+.left-panel {
+  display: flex;
+  flex-direction: column;
+}
+
+.right-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.course-scheduler {
+  background: var(--bg-secondary);
+  border-radius: var(--radius-xl);
+  padding: var(--space-8);
+  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--border-color);
+  height: fit-content;
+  position: sticky;
+  top: calc(var(--space-6) + 80px);
+}
+
+.scheduler-header-section {
+  margin-bottom: var(--space-8);
+}
+
+.course-scheduler h2 {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 var(--space-2) 0;
+  text-align: center;
+  background: linear-gradient(135deg, var(--primary-600), var(--primary-500));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.user-welcome {
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  margin: 0;
+}
+
+.user-welcome strong {
+  color: var(--primary-600);
+}
+
+.schedule-preference {
+  margin-bottom: var(--space-6);
+}
+
+.schedule-preference label {
+  display: block;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: var(--space-2);
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.schedule-preference select {
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  font-size: 1rem;
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+  transition: all var(--transition-fast);
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.schedule-preference select:hover {
+  border-color: var(--primary-300);
+}
+
+.schedule-preference select:focus {
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 3px var(--primary-100);
+}
+
+.constraints-section {
+  margin: var(--space-8) 0;
+  padding: var(--space-6);
+  background: var(--bg-tertiary);
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  transition: all var(--transition-fast);
+}
+
+.constraints-section:hover {
+  border-color: var(--primary-200);
+}
+
+.constraints-section label {
+  display: block;
+  color: var(--text-primary);
+  margin-bottom: var(--space-3);
+  font-weight: 600;
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.constraints-input {
+  width: 100%;
+  min-height: 120px;
+  padding: var(--space-4);
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-md);
+  font-size: 0.95rem;
+  line-height: 1.6;
+  resize: vertical;
+  font-family: inherit;
+  transition: all var(--transition-fast);
+}
+
+.constraints-input:hover {
+  border-color: var(--primary-200);
+}
+
+.constraints-input:focus {
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 3px var(--primary-100);
+}
+
+.constraints-input::placeholder {
+  color: var(--text-tertiary);
+  line-height: 1.5;
+}
+
+.button-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-top: var(--space-8);
+}
+
+.add-button, .submit-button {
+  padding: var(--space-4) var(--space-6);
+  border: none;
+  border-radius: var(--radius-lg);
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  font-family: inherit;
+  position: relative;
+  overflow: hidden;
+}
+
+.add-button {
+  background: linear-gradient(135deg, var(--success-500), var(--success-600));
+  color: white;
+  box-shadow: var(--shadow-md);
+}
+
+.add-button:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+  background: linear-gradient(135deg, var(--success-600), var(--success-500));
+}
+
+.add-button:active {
+  transform: translateY(0);
+}
+
+.submit-button {
+  background: linear-gradient(135deg, var(--primary-500), var(--primary-600));
+  color: white;
+  box-shadow: var(--shadow-md);
+}
+
+.submit-button:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+  background: linear-gradient(135deg, var(--primary-600), var(--primary-500));
+}
+
+.submit-button:active {
+  transform: translateY(0);
+}
+
+.submit-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.error-message {
+  color: var(--error-600);
+  background: var(--error-50);
+  border: 1px solid var(--error-500);
+  text-align: left;
+  margin-top: var(--space-6);
+  padding: var(--space-4);
+  border-radius: var(--radius-lg);
+  font-weight: 500;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+
+.error-message::before {
+  content: "⚠️";
+  font-size: 1.2em;
+  flex-shrink: 0;
+}
+
+.loading-spinner {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--primary-200);
+  border-radius: 50%;
+  border-top-color: var(--primary-600);
+  animation: spin 1s ease-in-out infinite;
+  margin-right: var(--space-2);
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .scheduler-content {
+    grid-template-columns: 1fr;
+    gap: var(--space-6);
+  }
+}
+
+@media (max-width: 768px) {
+  .scheduler-page {
+    padding: var(--space-4);
+  }
+  
+  .course-scheduler {
+    padding: var(--space-6);
+    position: static;
+    top: auto;
+  }
+  
+  .course-scheduler h2 {
+    font-size: 1.75rem;
+  }
+  
+  .button-group {
+    gap: var(--space-4);
+  }
+  
+  .add-button, .submit-button {
+    padding: var(--space-4);
+    font-size: 1.1rem;
+  }
+}
+
+/* Animation for form elements */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.course-scheduler > * {
+  animation: fadeInUp 0.6s ease-out forwards;
+}
+
+.course-scheduler > *:nth-child(2) { animation-delay: 0.1s; }
+.course-scheduler > *:nth-child(3) { animation-delay: 0.2s; }
+.course-scheduler > *:nth-child(4) { animation-delay: 0.3s; }
+.course-scheduler > *:nth-child(5) { animation-delay: 0.4s; }
