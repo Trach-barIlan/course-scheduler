@@ -70,6 +70,12 @@ A sophisticated AI-powered course scheduling application that automatically gene
    ```
    The frontend will run on `http://localhost:3000`
 
+3. **Build the Frontend for Production**
+   ```bash
+   cd course-scheduler
+   npm run build
+   ```
+
 ## 🏗️ Architecture
 
 ### Backend (Flask)
@@ -151,6 +157,12 @@ python test_email_validation.py
 ```bash
 cd course-scheduler
 npm test
+```
+
+### Build Frontend
+```bash
+cd course-scheduler
+npm run build
 ```
 
 ## 📦 Dependencies
