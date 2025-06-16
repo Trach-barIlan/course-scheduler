@@ -62,46 +62,47 @@ class SupabaseClient:
             user_id = auth_response.user.id
             print(f"✅ Auth user created with ID: {user_id}")
             
-            # Step 2: Create the profile using the service role client (bypasses RLS)
+            # Step 2: Wait a moment for the trigger to create the profile
             import time
-            time.sleep(1)
-
-            profile_data = {
-                "id": user_id,
-                "username": user_metadata.get("username"),
-                "first_name": user_metadata.get("first_name"),
-                "last_name": user_metadata.get("last_name"),
-                "email": email
-            }
+            time.sleep(2)
             
-            print(f"🔄 Creating profile using service role...")
-            print(f"Profile data: {profile_data}")
+            # Step 3: Check if profile was created by trigger
+            profile_check = self.service_supabase.table("user_profiles").select("*").eq("id", user_id).execute()
             
-            # Use the service role client to bypass RLS policies
-            profile_response = self.service_supabase.table("user_profiles").insert(profile_data).execute()
-            print(f"✅ Profile creation response: {profile_response}")
-            
-            if not profile_response.data:
-                print("❌ Failed to create user profile")
-                return None
-            
-            print("✅ User profile created successfully")
-            
-            # Step 3: Sign in the user to establish a session for the frontend
-            print(f"🔄 Signing in user to establish session...")
-            try:
-                sign_in_response = self.supabase.auth.sign_in_with_password({
-                    "email": email,
-                    "password": password
-                })
+            if profile_check.data:
+                print("✅ User profile created automatically by trigger")
+                profile_data = profile_check.data[0]
+            else:
+                print("⚠️ Profile not created by trigger, creating manually...")
                 
-                if sign_in_response.user:
-                    print(f"✅ User signed in successfully: {sign_in_response.user.id}")
-                else:
-                    print("⚠️ Warning: User created but sign-in failed - user may need to confirm email")
-            except Exception as sign_in_error:
-                print(f"⚠️ Sign-in failed but user was created: {sign_in_error}")
-                # This is not critical - the user was created successfully
+                # Step 4: Create the profile manually using the service role client
+                profile_data = {
+                    "id": user_id,
+                    "username": user_metadata.get("username"),
+                    "first_name": user_metadata.get("first_name"),
+                    "last_name": user_metadata.get("last_name"),
+                    "email": email
+                }
+                
+                print(f"🔄 Creating profile manually...")
+                print(f"Profile data: {profile_data}")
+                
+                # Use the service role client to bypass RLS policies
+                profile_response = self.service_supabase.table("user_profiles").insert(profile_data).execute()
+                print(f"✅ Manual profile creation response: {profile_response}")
+                
+                if not profile_response.data:
+                    print("❌ Failed to create user profile manually")
+                    # Don't return None here - the auth user was created successfully
+                    # We'll return the user data anyway and let them try to log in
+                    print("⚠️ Continuing with auth user data only")
+                
+                profile_data = profile_response.data[0] if profile_response.data else {
+                    "username": user_metadata.get("username"),
+                    "first_name": user_metadata.get("first_name"),
+                    "last_name": user_metadata.get("last_name"),
+                    "email": email
+                }
             
             return {
                 "id": user_id,
@@ -158,6 +159,43 @@ class SupabaseClient:
                     }
                 else:
                     print(f"❌ No profile found for user {response.user.id}")
+                    
+                    # Try to create a missing profile for this orphaned user
+                    print("🔄 Attempting to create missing profile...")
+                    try:
+                        # Get user metadata from auth user
+                        auth_user = self.service_supabase.auth.admin.get_user_by_id(response.user.id)
+                        if auth_user.user:
+                            metadata = auth_user.user.user_metadata or {}
+                            
+                            profile_data = {
+                                "id": response.user.id,
+                                "username": metadata.get("username", response.user.email.split('@')[0]),
+                                "first_name": metadata.get("first_name", "User"),
+                                "last_name": metadata.get("last_name", "Profile"),
+                                "email": response.user.email
+                            }
+                            
+                            # Create the missing profile
+                            create_result = self.service_supabase.table("user_profiles").insert(profile_data).execute()
+                            
+                            if create_result.data:
+                                print("✅ Successfully created missing profile")
+                                profile_data = create_result.data[0]
+                                return {
+                                    "id": response.user.id,
+                                    "email": response.user.email,
+                                    "username": profile_data.get("username"),
+                                    "first_name": profile_data.get("first_name"),
+                                    "last_name": profile_data.get("last_name"),
+                                    "created_at": response.user.created_at,
+                                    "last_login": response.user.last_sign_in_at
+                                }
+                            else:
+                                print("❌ Failed to create missing profile")
+                    except Exception as profile_error:
+                        print(f"❌ Error creating missing profile: {profile_error}")
+                    
                     return None
             
             return None
