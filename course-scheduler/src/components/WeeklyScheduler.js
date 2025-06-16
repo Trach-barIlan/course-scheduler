@@ -76,16 +76,6 @@ const WeeklySchedule = ({ schedule, isLoading, user }) => {
     }
   };
 
-  const handleBackToDashboard = () => {
-    // Navigate back to dashboard
-    if (window.history.length > 1) {
-      window.history.back();
-    } else {
-      // If no history, reload the page to go to dashboard
-      window.location.reload();
-    }
-  };
-
   if (isLoading) {
     return (
       <div className="weekly-scheduler-container">
@@ -431,16 +421,7 @@ const WeeklySchedule = ({ schedule, isLoading, user }) => {
   return (
     <div className="weekly-scheduler-container">
       <div className="scheduler-header">
-        <div className="header-left">
-          <button 
-            onClick={handleBackToDashboard}
-            className="back-button"
-            title="Back to Dashboard"
-          >
-            ← Back to Dashboard
-          </button>
-          <h2 className="scheduler-title">Weekly Schedule</h2>
-        </div>
+        <h2 className="scheduler-title">Weekly Schedule</h2>
         <div className="scheduler-actions">
           {draggedClass && (
             <button 

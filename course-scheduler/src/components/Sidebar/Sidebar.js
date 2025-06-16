@@ -59,6 +59,16 @@ const Sidebar = ({ user, onQuickAction }) => {
     }
   };
 
+  const handleBackToDashboard = () => {
+    // Navigate back to dashboard
+    if (window.history.length > 1) {
+      window.history.back();
+    } else {
+      // If no history, reload the page to go to dashboard
+      window.location.reload();
+    }
+  };
+
   return (
     <>
       <aside className={`sidebar ${isCollapsed ? 'collapsed' : ''}`}>
@@ -93,12 +103,24 @@ const Sidebar = ({ user, onQuickAction }) => {
                       <h4 className="action-title">
                         {action.title}
                         {!action.implemented && <span className="coming-soon-badge">Soon</span>}
-                        }
+                        
                       </h4>
                       <p className="action-description">{action.description}</p>
                     </div>
                   </button>
                 ))}
+
+                <button 
+                  className="quick-action-card primary"
+                  onClick={handleBackToDashboard}
+                  title="Back to Dashboard"
+                >
+                  <div className="action-icon">←</div>
+                  <div className="action-content">
+                    <h4 className="action-title">Back to Dashboard</h4>
+                    <p className="action-description">Return to the main dashboard</p>
+                  </div>
+                </button>
               </div>
 
               {user && (
@@ -149,7 +171,7 @@ const Sidebar = ({ user, onQuickAction }) => {
                 >
                   {action.icon}
                   {!action.implemented && <span className="mini-badge">!</span>}
-                  }
+                  
                 </button>
               ))}
             </div>
