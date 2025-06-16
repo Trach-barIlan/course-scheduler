@@ -46,13 +46,11 @@ class SupabaseClient:
             print(f"🔄 Attempting to create user with email: {email}")
             
             # Step 1: Create the auth user with auto-confirm enabled
-            auth_response = self.supabase.auth.sign_up({
+            auth_response = self.service_supabase.auth.admin.create_user({
                 "email": email,
                 "password": password,
-                "options": {
-                    "data": user_metadata,
-                    "email_confirm": False  # Disable email confirmation for immediate access
-                }
+                "email_confirm": True,
+                "user_metadata": user_metadata
             })
             
             print(f"✅ Supabase auth response: user={auth_response.user.id if auth_response.user else 'None'}")
@@ -65,6 +63,9 @@ class SupabaseClient:
             print(f"✅ Auth user created with ID: {user_id}")
             
             # Step 2: Create the profile using the service role client (bypasses RLS)
+            import time
+            time.sleep(1)
+
             profile_data = {
                 "id": user_id,
                 "username": user_metadata.get("username"),
@@ -76,27 +77,12 @@ class SupabaseClient:
             print(f"🔄 Creating profile using service role...")
             print(f"Profile data: {profile_data}")
             
-            # Test service role connection first
-            try:
-                test_query = self.service_supabase.table("user_profiles").select("id", count="exact").execute()
-                print(f"✅ Service role connection test: can access {test_query.count} existing profiles")
-            except Exception as test_error:
-                print(f"❌ Service role connection test failed: {test_error}")
-                return None
-            
             # Use the service role client to bypass RLS policies
             profile_response = self.service_supabase.table("user_profiles").insert(profile_data).execute()
             print(f"✅ Profile creation response: {profile_response}")
             
             if not profile_response.data:
                 print("❌ Failed to create user profile")
-                # Clean up the auth user if profile creation fails
-                try:
-                    print("🧹 Attempting to clean up auth user...")
-                    # Note: We can't easily delete auth users via client API
-                    # The user will remain in auth.users but without a profile
-                except Exception as cleanup_error:
-                    print(f"⚠️ Cleanup warning: {cleanup_error}")
                 return None
             
             print("✅ User profile created successfully")
