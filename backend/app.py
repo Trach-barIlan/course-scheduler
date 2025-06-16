@@ -192,8 +192,7 @@ def api_schedule():
                 "ta_times": [s for s in ta_slots if s]
             })
 
-        print(f"Parsed constraints: {parsed_constraints.get("constraints") if parsed_constraints else None}")
-
+        print(f"Parsed constraints: {parsed_constraints.get('constraints') if parsed_constraints else None}")
         # Generate schedule
         schedule = generate_schedule(
             courses=courses,
