@@ -7,14 +7,22 @@ class SupabaseClient:
     def __init__(self):
         url = os.environ.get("SUPABASE_URL")
         key = os.environ.get("SUPABASE_ANON_KEY")
+        service_key = os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
         
         if not url or not key:
             raise ValueError("SUPABASE_URL and SUPABASE_ANON_KEY environment variables are required")
         
         self.supabase: Client = create_client(url, key)
+        
+        # Create a service role client for admin operations
+        if service_key:
+            self.service_supabase: Client = create_client(url, service_key)
+        else:
+            print("⚠️ Warning: SUPABASE_SERVICE_ROLE_KEY not found, using anon key for admin operations")
+            self.service_supabase = self.supabase
 
     def validate_email_format(self, email: str) -> bool:
-        """Validate email format using a more comprehensive regex"""
+        """Validate email format using a comprehensive regex"""
         pattern = r'^[a-zA-Z0-9.!#$%&\'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$'
         return re.match(pattern, email) is not None
 
@@ -37,13 +45,13 @@ class SupabaseClient:
 
             print(f"🔄 Attempting to create user with email: {email}")
             
-            # Step 1: Create the auth user with auto-confirm
+            # Step 1: Create the auth user with auto-confirm enabled
             auth_response = self.supabase.auth.sign_up({
                 "email": email,
                 "password": password,
                 "options": {
                     "data": user_metadata,
-                    "email_confirm": False  # Auto-confirm to avoid email verification
+                    "email_confirm": False  # Disable email confirmation for immediate access
                 }
             })
             
@@ -56,20 +64,7 @@ class SupabaseClient:
             user_id = auth_response.user.id
             print(f"✅ Auth user created with ID: {user_id}")
             
-            # Step 2: Sign in the user immediately to establish authentication context
-            print(f"🔄 Signing in user to establish authentication context...")
-            sign_in_response = self.supabase.auth.sign_in_with_password({
-                "email": email,
-                "password": password
-            })
-            
-            if not sign_in_response.user:
-                print("❌ Failed to sign in user after creation")
-                return None
-                
-            print(f"✅ User signed in successfully: {sign_in_response.user.id}")
-            
-            # Step 3: Create the profile with the authenticated session
+            # Step 2: Create the profile using the service role client (bypasses RLS)
             profile_data = {
                 "id": user_id,
                 "username": user_metadata.get("username"),
@@ -78,25 +73,37 @@ class SupabaseClient:
                 "email": email
             }
             
-            print(f"🔄 Creating profile with authenticated session...")
+            print(f"🔄 Creating profile using service role...")
             print(f"Profile data: {profile_data}")
             
-            # Use the authenticated client to create the profile
-            profile_response = self.supabase.table("user_profiles").insert(profile_data).execute()
+            # Use the service role client to bypass RLS policies
+            profile_response = self.service_supabase.table("user_profiles").insert(profile_data).execute()
             print(f"✅ Profile creation response: {profile_response}")
             
             if not profile_response.data:
                 print("❌ Failed to create user profile")
                 # Clean up the auth user if profile creation fails
                 try:
-                    print("🧹 Cleaning up auth user due to profile creation failure...")
-                    # Note: Supabase doesn't allow deleting users via client, 
-                    # but the user will be cleaned up by the database cascade
+                    print("🧹 Attempting to clean up auth user...")
+                    # Note: We can't easily delete auth users via client API
+                    # The user will remain in auth.users but without a profile
                 except Exception as cleanup_error:
                     print(f"⚠️ Cleanup warning: {cleanup_error}")
                 return None
             
             print("✅ User profile created successfully")
+            
+            # Step 3: Sign in the user to establish a session for the frontend
+            print(f"🔄 Signing in user to establish session...")
+            sign_in_response = self.supabase.auth.sign_in_with_password({
+                "email": email,
+                "password": password
+            })
+            
+            if sign_in_response.user:
+                print(f"✅ User signed in successfully: {sign_in_response.user.id}")
+            else:
+                print("⚠️ Warning: User created but sign-in failed - user may need to confirm email")
             
             return {
                 "id": user_id,
