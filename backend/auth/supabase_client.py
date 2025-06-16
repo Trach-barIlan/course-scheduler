@@ -12,14 +12,14 @@ class SupabaseClient:
         if not url or not key:
             raise ValueError("SUPABASE_URL and SUPABASE_ANON_KEY environment variables are required")
         
+        if not service_key:
+            raise ValueError("SUPABASE_SERVICE_ROLE_KEY environment variable is required for user registration")
+        
         self.supabase: Client = create_client(url, key)
         
         # Create a service role client for admin operations
-        if service_key:
-            self.service_supabase: Client = create_client(url, service_key)
-        else:
-            print("⚠️ Warning: SUPABASE_SERVICE_ROLE_KEY not found, using anon key for admin operations")
-            self.service_supabase = self.supabase
+        self.service_supabase: Client = create_client(url, service_key)
+        print(f"✅ Service role client created successfully")
 
     def validate_email_format(self, email: str) -> bool:
         """Validate email format using a comprehensive regex"""
@@ -37,8 +37,8 @@ class SupabaseClient:
             # Clean and validate the email
             email = email.strip().lower()
             
-            # Check if username already exists
-            existing_user = self.supabase.table("user_profiles").select("username").eq("username", user_metadata.get("username")).execute()
+            # Check if username already exists using service role
+            existing_user = self.service_supabase.table("user_profiles").select("username").eq("username", user_metadata.get("username")).execute()
             if existing_user.data:
                 print(f"❌ Username already exists: {user_metadata.get('username')}")
                 return None
@@ -76,6 +76,14 @@ class SupabaseClient:
             print(f"🔄 Creating profile using service role...")
             print(f"Profile data: {profile_data}")
             
+            # Test service role connection first
+            try:
+                test_query = self.service_supabase.table("user_profiles").select("id", count="exact").execute()
+                print(f"✅ Service role connection test: can access {test_query.count} existing profiles")
+            except Exception as test_error:
+                print(f"❌ Service role connection test failed: {test_error}")
+                return None
+            
             # Use the service role client to bypass RLS policies
             profile_response = self.service_supabase.table("user_profiles").insert(profile_data).execute()
             print(f"✅ Profile creation response: {profile_response}")
@@ -95,15 +103,19 @@ class SupabaseClient:
             
             # Step 3: Sign in the user to establish a session for the frontend
             print(f"🔄 Signing in user to establish session...")
-            sign_in_response = self.supabase.auth.sign_in_with_password({
-                "email": email,
-                "password": password
-            })
-            
-            if sign_in_response.user:
-                print(f"✅ User signed in successfully: {sign_in_response.user.id}")
-            else:
-                print("⚠️ Warning: User created but sign-in failed - user may need to confirm email")
+            try:
+                sign_in_response = self.supabase.auth.sign_in_with_password({
+                    "email": email,
+                    "password": password
+                })
+                
+                if sign_in_response.user:
+                    print(f"✅ User signed in successfully: {sign_in_response.user.id}")
+                else:
+                    print("⚠️ Warning: User created but sign-in failed - user may need to confirm email")
+            except Exception as sign_in_error:
+                print(f"⚠️ Sign-in failed but user was created: {sign_in_error}")
+                # This is not critical - the user was created successfully
             
             return {
                 "id": user_id,
