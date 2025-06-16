@@ -156,9 +156,7 @@ const Sidebar = ({ user, onQuickAction }) => {
                       <h4 className="action-title">
                         {action.title}
                         {!action.implemented && <span className="coming-soon-badge">Soon</span>}
-                        }
                         {action.path === location.pathname && <span className="active-badge">Current</span>}
-                        }
                       </h4>
                       <p className="action-description">{action.description}</p>
                     </div>
@@ -216,9 +214,7 @@ const Sidebar = ({ user, onQuickAction }) => {
                 >
                   {action.icon}
                   {!action.implemented && <span className="mini-badge">!</span>}
-                  }
                   {action.path === location.pathname && <span className="mini-active-badge">•</span>}
-                  }
                 </button>
               ))}
               

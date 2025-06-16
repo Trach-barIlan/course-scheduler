@@ -33,7 +33,7 @@ const SchedulerPage = ({ user }) => {
     }
   };
 
-  const validateForm = () => {
+  const validateForm = useCallback(() => {
     for (const course of courses) {
       if (!course.name.trim()) {
         throw new Error("Please fill in all course names");
@@ -45,48 +45,48 @@ const SchedulerPage = ({ user }) => {
         throw new Error(`Please add TA session times for ${course.name}`);
       }
     }
-  };
+  }, [courses]);
 
-  const generateScheduleWithConstraints = useCallback(async (constraintsToUse) => {
-    try {
-      validateForm();
+const generateScheduleWithConstraints = useCallback(async (constraintsToUse) => {
+  try {
+    validateForm(); // Using validateForm inside useCallback
 
-      const formattedCourses = courses.map((c) => ({
-        name: c.name.trim(),
-        lectures: c.lectures.split(",").map((s) => s.trim()).filter(s => s),
-        ta_times: c.ta_times.split(",").map((s) => s.trim()).filter(s => s),
-      }));
+    const formattedCourses = courses.map((c) => ({
+      name: c.name.trim(),
+      lectures: c.lectures.split(",").map((s) => s.trim()).filter(s => s),
+      ta_times: c.ta_times.split(",").map((s) => s.trim()).filter(s => s),
+    }));
 
-      localStorage.setItem('originalCourseOptions', JSON.stringify(formattedCourses));
+    localStorage.setItem('originalCourseOptions', JSON.stringify(formattedCourses));
 
-      const scheduleRes = await fetch("http://127.0.0.1:5000/api/schedule", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: 'include',
-        body: JSON.stringify({
-          preference,
-          courses: formattedCourses,
-          constraints: constraintsToUse
-        }),
-      });
+    const scheduleRes = await fetch("http://127.0.0.1:5000/api/schedule", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: 'include',
+      body: JSON.stringify({
+        preference,
+        courses: formattedCourses,
+        constraints: constraintsToUse
+      }),
+    });
 
-      if (!scheduleRes.ok) {
-        const errorData = await scheduleRes.json();
-        throw new Error(errorData.error || 'Failed to generate schedule');
-      }
-
-      const data = await scheduleRes.json();
-      
-      if (data.schedule) {
-        setSchedule(data.schedule);
-        setError(null);
-      } else {
-        setError(data.error || 'No valid schedule found with the given constraints. Try adjusting your requirements.');
-      }
-    } catch (err) {
-      setError(err.message || 'Failed to connect to backend. Please make sure the server is running.');
+    if (!scheduleRes.ok) {
+      const errorData = await scheduleRes.json();
+      throw new Error(errorData.error || 'Failed to generate schedule');
     }
-  }, [courses, preference]);
+
+    const data = await scheduleRes.json();
+    
+    if (data.schedule) {
+      setSchedule(data.schedule);
+      setError(null);
+    } else {
+      setError(data.error || 'No valid schedule found with the given constraints. Try adjusting your requirements.');
+    }
+  } catch (err) {
+    setError(err.message || 'Failed to connect to backend. Please make sure the server is running.');
+  }
+}, [courses, preference, validateForm]); // Include validateForm in the dependency array
 
   const handleSubmit = async (e) => {
     e.preventDefault();
