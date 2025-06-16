@@ -1,11 +1,23 @@
 import React from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import './Navigation.css';
 
 const Navigation = ({ user, onAuthClick, onProfileClick }) => {
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const handleNavClick = (path) => {
+    navigate(path);
+  };
+
+  const isActive = (path) => {
+    return location.pathname === path;
+  };
+
   return (
     <nav className="main-navigation">
       <div className="nav-container">
-        <div className="nav-brand">
+        <div className="nav-brand" onClick={() => handleNavClick('/')}>
           <div className="brand-icon">
             <img 
               src="/ChatGPT Image Jun 15, 2025, 02_51_46 PM.png" 
@@ -21,9 +33,24 @@ const Navigation = ({ user, onAuthClick, onProfileClick }) => {
 
         <div className="nav-menu">
           <div className="nav-links">
-            <a href="#features" className="nav-link">Features</a>
-            <a href="#how-it-works" className="nav-link">How It Works</a>
-            <a href="#about" className="nav-link">About</a>
+            <button 
+              className={`nav-link ${isActive('/') ? 'active' : ''}`}
+              onClick={() => handleNavClick('/')}
+            >
+              Home
+            </button>
+            <button 
+              className={`nav-link ${isActive('/scheduler') ? 'active' : ''}`}
+              onClick={() => handleNavClick('/scheduler')}
+            >
+              Scheduler
+            </button>
+            <button 
+              className={`nav-link ${isActive('/about') ? 'active' : ''}`}
+              onClick={() => handleNavClick('/about')}
+            >
+              About
+            </button>
           </div>
 
           <div className="nav-actions">

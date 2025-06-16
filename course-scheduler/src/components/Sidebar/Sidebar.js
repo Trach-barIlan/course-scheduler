@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import NotImplementedModal from '../NotImplementedModal/NotImplementedModal';
 import './Sidebar.css';
 
@@ -6,15 +7,27 @@ const Sidebar = ({ user, onQuickAction }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [showNotImplemented, setShowNotImplemented] = useState(false);
   const [notImplementedFeature, setNotImplementedFeature] = useState('');
+  const navigate = useNavigate();
+  const location = useLocation();
 
   const quickActions = [
+    {
+      id: 'home',
+      icon: '🏠',
+      title: 'Home',
+      description: 'Go to dashboard',
+      color: 'primary',
+      implemented: true,
+      path: '/'
+    },
     {
       id: 'new-schedule',
       icon: '📅',
       title: 'New Schedule',
       description: 'Create a fresh schedule',
       color: 'primary',
-      implemented: true
+      implemented: true,
+      path: '/scheduler'
     },
     {
       id: 'saved-schedules',
@@ -52,20 +65,39 @@ const Sidebar = ({ user, onQuickAction }) => {
     const action = quickActions.find(a => a.id === actionId);
     
     if (action && action.implemented) {
-      onQuickAction(actionId);
+      if (action.path) {
+        navigate(action.path);
+      } else if (onQuickAction) {
+        onQuickAction(actionId);
+      }
     } else {
       setNotImplementedFeature(actionId);
       setShowNotImplemented(true);
     }
   };
 
-  const handleBackToDashboard = () => {
-    // Navigate back to dashboard
-    if (window.history.length > 1) {
-      window.history.back();
+  const handleBackNavigation = () => {
+    // Smart back navigation based on current location
+    if (location.pathname === '/scheduler') {
+      navigate('/');
+    } else if (location.pathname === '/about') {
+      navigate('/');
     } else {
-      // If no history, reload the page to go to dashboard
-      window.location.reload();
+      // If we're on home or unknown route, go to home
+      navigate('/');
+    }
+  };
+
+  const getCurrentPageTitle = () => {
+    switch (location.pathname) {
+      case '/':
+        return 'Dashboard';
+      case '/scheduler':
+        return 'Schedule Builder';
+      case '/about':
+        return 'About Schedgic';
+      default:
+        return 'Navigation';
     }
   };
 
@@ -91,11 +123,32 @@ const Sidebar = ({ user, onQuickAction }) => {
         <div className="sidebar-content">
           {!isCollapsed && (
             <>
+              {/* Navigation Section */}
+              <div className="navigation-section">
+                <div className="current-page">
+                  <span className="page-indicator">📍</span>
+                  <span className="page-title">{getCurrentPageTitle()}</span>
+                </div>
+                
+                {location.pathname !== '/' && (
+                  <button 
+                    className="back-navigation-button"
+                    onClick={handleBackNavigation}
+                    title="Go back"
+                  >
+                    <span className="back-icon">←</span>
+                    <span className="back-text">Back to Home</span>
+                  </button>
+                )}
+              </div>
+
               <div className="quick-actions">
                 {quickActions.map((action) => (
                   <button
                     key={action.id}
-                    className={`quick-action-card ${action.color} ${!action.implemented ? 'not-implemented' : ''}`}
+                    className={`quick-action-card ${action.color} ${!action.implemented ? 'not-implemented' : ''} ${
+                      action.path === location.pathname ? 'active' : ''
+                    }`}
                     onClick={() => handleQuickAction(action.id)}
                   >
                     <div className="action-icon">{action.icon}</div>
@@ -103,24 +156,12 @@ const Sidebar = ({ user, onQuickAction }) => {
                       <h4 className="action-title">
                         {action.title}
                         {!action.implemented && <span className="coming-soon-badge">Soon</span>}
-                        
+                        {action.path === location.pathname && <span className="active-badge">Current</span>}
                       </h4>
                       <p className="action-description">{action.description}</p>
                     </div>
                   </button>
                 ))}
-
-                <button 
-                  className="quick-action-card primary"
-                  onClick={handleBackToDashboard}
-                  title="Back to Dashboard"
-                >
-                  <div className="action-icon">←</div>
-                  <div className="action-content">
-                    <h4 className="action-title">Back to Dashboard</h4>
-                    <p className="action-description">Return to the main dashboard</p>
-                  </div>
-                </button>
               </div>
 
               {user && (
@@ -165,15 +206,27 @@ const Sidebar = ({ user, onQuickAction }) => {
               {quickActions.map((action) => (
                 <button
                   key={action.id}
-                  className={`collapsed-action ${!action.implemented ? 'not-implemented' : ''}`}
+                  className={`collapsed-action ${!action.implemented ? 'not-implemented' : ''} ${
+                    action.path === location.pathname ? 'active' : ''
+                  }`}
                   onClick={() => handleQuickAction(action.id)}
                   title={action.title}
                 >
                   {action.icon}
                   {!action.implemented && <span className="mini-badge">!</span>}
-                  
+                  {action.path === location.pathname && <span className="mini-active-badge">•</span>}
                 </button>
               ))}
+              
+              {location.pathname !== '/' && (
+                <button
+                  className="collapsed-action back-action"
+                  onClick={handleBackNavigation}
+                  title="Go back"
+                >
+                  ←
+                </button>
+              )}
             </div>
           )}
         </div>
