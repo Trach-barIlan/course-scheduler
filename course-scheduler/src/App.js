@@ -17,20 +17,47 @@ function AppContent() {
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const navigate = useNavigate();
 
-  // Check if user is already logged in on app start
+  // Enhanced authentication check with session restoration
   useEffect(() => {
     const checkAuthStatus = async () => {
       try {
+        console.log('🔍 Checking authentication status...');
+        
+        // First, try to get current user
         const response = await fetch('http://127.0.0.1:5000/api/auth/me', {
           credentials: 'include'
         });
         
         if (response.ok) {
           const data = await response.json();
+          console.log('✅ User authenticated:', data.user?.username);
           setUser(data.user);
+        } else {
+          console.log('❌ No active session found');
+          
+          // Try to refresh session if we have any session data
+          try {
+            const refreshResponse = await fetch('http://127.0.0.1:5000/api/auth/refresh-session', {
+              method: 'POST',
+              credentials: 'include'
+            });
+            
+            if (refreshResponse.ok) {
+              const refreshData = await refreshResponse.json();
+              console.log('✅ Session refreshed:', refreshData.user?.username);
+              setUser(refreshData.user);
+            } else {
+              console.log('❌ Session refresh failed');
+              setUser(null);
+            }
+          } catch (refreshError) {
+            console.log('❌ Session refresh error:', refreshError);
+            setUser(null);
+          }
         }
       } catch (error) {
-        console.error('Auth check failed:', error);
+        console.error('❌ Auth check failed:', error);
+        setUser(null);
       } finally {
         setIsCheckingAuth(false);
       }
@@ -39,12 +66,45 @@ function AppContent() {
     checkAuthStatus();
   }, []);
 
+  // Periodic session validation (every 5 minutes)
+  useEffect(() => {
+    if (!user) return;
+
+    const validateSession = async () => {
+      try {
+        const response = await fetch('http://127.0.0.1:5000/api/auth/me', {
+          credentials: 'include'
+        });
+        
+        if (!response.ok) {
+          console.log('⚠️ Session validation failed, user may have been logged out');
+          setUser(null);
+        }
+      } catch (error) {
+        console.error('❌ Session validation error:', error);
+      }
+    };
+
+    const interval = setInterval(validateSession, 5 * 60 * 1000); // 5 minutes
+    return () => clearInterval(interval);
+  }, [user]);
+
   const handleAuthSuccess = (userData) => {
+    console.log('✅ Authentication successful:', userData?.username);
     setUser(userData);
     setShowAuth(false);
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      await fetch('http://127.0.0.1:5000/api/auth/logout', {
+        method: 'POST',
+        credentials: 'include'
+      });
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+    
     setUser(null);
     setShowProfile(false);
     // Navigate to home after logout

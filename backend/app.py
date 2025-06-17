@@ -18,24 +18,26 @@ load_dotenv()
 app = Flask(__name__)
 
 # Enhanced session configuration for better persistence
-app.secret_key = os.environ.get('FLASK_SECRET_KEY')
+app.secret_key = os.environ.get('FLASK_SECRET_KEY', 'your-secret-key-change-this-in-production')
 app.config['SESSION_COOKIE_SECURE'] = False  # Set to True in production with HTTPS
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 app.config['SESSION_PERMANENT'] = True
-app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)  # Session lasts 7 days
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=30)  # Extended to 30 days
 app.config['SESSION_COOKIE_NAME'] = 'schedgic_session'
 app.config['SESSION_COOKIE_PATH'] = '/'
 app.config['SESSION_COOKIE_DOMAIN'] = None  # Allow for localhost
+app.config['SESSION_COOKIE_MAX_AGE'] = timedelta(days=30).total_seconds()  # Explicit max age
 
-# Enhanced CORS configuration
+# Enhanced CORS configuration with credentials support
 CORS(app, resources={
     r"/api/*": {
         "origins": ["http://localhost:3000", "http://127.0.0.1:3000"],
         "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
         "allow_headers": ["Content-Type", "Authorization"],
         "supports_credentials": True,
-        "expose_headers": ["Set-Cookie"]
+        "expose_headers": ["Set-Cookie"],
+        "max_age": 86400  # Cache preflight requests for 24 hours
     }
 }, supports_credentials=True)
 
@@ -88,7 +90,7 @@ def normalize_text(text):
 
 @app.before_request
 def before_request():
-    """Make sessions permanent and log session info for debugging"""
+    """Enhanced session management and authentication check"""
     session.permanent = True
     
     # Enhanced debug logging for session state
@@ -96,7 +98,7 @@ def before_request():
         print(f"\n🔍 === REQUEST DEBUG INFO ===")
         print(f"Endpoint: {request.endpoint}")
         print(f"Method: {request.method}")
-        print(f"Session ID: {session.get('_id', 'No session ID')}")
+        print(f"Session ID: {session.get('user_id', 'No session ID')}")
         print(f"Session permanent: {session.permanent}")
         print(f"Session data: {dict(session)}")
         print(f"Request cookies: {dict(request.cookies)}")
@@ -104,15 +106,59 @@ def before_request():
         print(f"User ID: {session.get('user_id', 'None')}")
         print(f"=== END DEBUG INFO ===\n")
 
+    # Auto-refresh session for authenticated endpoints (except auth endpoints)
+    if (request.endpoint and 
+        'api' in request.endpoint and 
+        'auth' not in request.endpoint and 
+        request.method != 'OPTIONS'):
+        
+        user_id = session.get('user_id')
+        authenticated = session.get('authenticated', False)
+        
+        # If we have a user_id but not authenticated flag, try to restore session
+        if user_id and not authenticated:
+            print(f"🔄 Attempting to restore session for user: {user_id}")
+            try:
+                from auth.supabase_client import SupabaseClient
+                supabase = SupabaseClient()
+                
+                # Try to get user profile to verify they still exist
+                profile = supabase.supabase.table("user_profiles").select("*").eq("id", user_id).execute()
+                
+                if profile.data:
+                    user_data = profile.data[0]
+                    # Restore full session
+                    session['user_id'] = user_data['id']
+                    session['username'] = user_data.get('username', '')
+                    session['email'] = user_data.get('email', '')
+                    session['first_name'] = user_data.get('first_name', '')
+                    session['last_name'] = user_data.get('last_name', '')
+                    session['authenticated'] = True
+                    session.permanent = True
+                    print(f"✅ Session restored for user: {user_data.get('username')}")
+                else:
+                    print(f"❌ User {user_id} no longer exists, clearing session")
+                    session.clear()
+                    
+            except Exception as e:
+                print(f"❌ Error restoring session: {e}")
+
 @app.after_request
 def after_request(response):
-    """Log response info for debugging"""
+    """Enhanced response handling with session persistence"""
     if request.endpoint and 'api' in request.endpoint:
         print(f"\n📤 === RESPONSE DEBUG INFO ===")
         print(f"Status: {response.status_code}")
         print(f"Session after request: {dict(session)}")
         print(f"Response headers: {dict(response.headers)}")
         print(f"=== END RESPONSE INFO ===\n")
+    
+    # Ensure session cookies are properly set
+    if session.get('user_id'):
+        response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+        response.headers['Pragma'] = 'no-cache'
+        response.headers['Expires'] = '0'
+    
     return response
 
 @app.route("/api/parse", methods=["POST"])
