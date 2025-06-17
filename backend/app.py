@@ -23,11 +23,10 @@ app.config['SESSION_COOKIE_SECURE'] = False  # Set to True in production with HT
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 app.config['SESSION_PERMANENT'] = True
-app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=30)  # Extended to 30 days
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)
 app.config['SESSION_COOKIE_NAME'] = 'schedgic_session'
 app.config['SESSION_COOKIE_PATH'] = '/'
 app.config['SESSION_COOKIE_DOMAIN'] = None  # Allow for localhost
-app.config['SESSION_COOKIE_MAX_AGE'] = timedelta(days=30).total_seconds()  # Explicit max age
 
 # Enhanced CORS configuration with credentials support
 CORS(app, resources={

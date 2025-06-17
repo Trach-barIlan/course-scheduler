@@ -121,6 +121,8 @@ const LoginRegister = ({ onAuthSuccess, onClose }) => {
         body: JSON.stringify(payload)
       });
 
+      await new Promise(resolve => setTimeout(resolve, 2000));  // short delay
+
       const data = await response.json();
       const debug = await fetch('http://127.0.0.1:5000/api/auth/debug', {
         method: 'GET',
