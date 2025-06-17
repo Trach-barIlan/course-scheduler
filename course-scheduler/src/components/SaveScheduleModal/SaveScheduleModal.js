@@ -29,8 +29,8 @@ const SaveScheduleModal = ({ isOpen, onClose, onSave, schedule, user }) => {
       console.log('User:', user);
       console.log('Schedule data:', schedule);
 
-      // Step 1: Check current authentication status
-      console.log('📋 Step 1: Checking authentication...');
+      // Step 1: Verify current authentication status
+      console.log('📋 Step 1: Verifying authentication...');
       const authCheck = await fetch('http://127.0.0.1:5000/api/auth/me', {
         credentials: 'include'
       });
@@ -38,49 +38,16 @@ const SaveScheduleModal = ({ isOpen, onClose, onSave, schedule, user }) => {
       console.log('Auth check response:', authCheck.status);
 
       if (!authCheck.ok) {
-        console.log('❌ Auth check failed, trying to refresh session...');
-        
-        // Step 2: Try to refresh the session
-        const refreshResponse = await fetch('http://127.0.0.1:5000/api/auth/refresh-session', {
-          method: 'POST',
-          credentials: 'include'
-        });
-
-        console.log('Refresh response:', refreshResponse.status);
-
-        if (!refreshResponse.ok) {
-          setError('Your session has expired. Please sign in again.');
-          return;
-        }
-
-        // Step 3: Verify authentication after refresh
-        const authRecheck = await fetch('http://127.0.0.1:5000/api/auth/me', {
-          credentials: 'include'
-        });
-
-        if (!authRecheck.ok) {
-          setError('Authentication failed. Please sign in again.');
-          return;
-        }
-
-        console.log('✅ Session refreshed successfully');
-      } else {
-        console.log('✅ Authentication verified');
+        console.log('❌ Auth check failed, user may need to sign in again');
+        setError('Your session has expired. Please refresh the page and sign in again.');
+        return;
       }
 
-      // Step 4: Debug session state
-      console.log('🔍 Step 4: Checking session debug info...');
-      const debugResponse = await fetch('http://127.0.0.1:5000/api/auth/debug', {
-        credentials: 'include'
-      });
-      
-      if (debugResponse.ok) {
-        const debugData = await debugResponse.json();
-        console.log('Session debug info:', debugData);
-      }
+      const authData = await authCheck.json();
+      console.log('✅ Authentication verified for user:', authData.user?.username);
 
-      // Step 5: Save the schedule
-      console.log('💾 Step 5: Saving schedule...');
+      // Step 2: Save the schedule with enhanced error handling
+      console.log('💾 Step 2: Saving schedule...');
       const response = await fetch('http://127.0.0.1:5000/api/schedules/save', {
         method: 'POST',
         headers: {
@@ -113,7 +80,7 @@ const SaveScheduleModal = ({ isOpen, onClose, onSave, schedule, user }) => {
         console.error('❌ Save failed:', errorData);
         
         if (response.status === 401) {
-          setError('Your session has expired. Please sign in again and try saving.');
+          setError('Your session has expired. Please refresh the page and sign in again.');
         } else {
           setError(errorData.error || 'Failed to save schedule');
         }

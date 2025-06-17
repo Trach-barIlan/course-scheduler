@@ -45,7 +45,7 @@ const WeeklySchedule = ({ schedule, isLoading, user }) => {
     setShowNotImplemented(true);
   };
 
-  const handleSaveSchedule = () => {
+  const handleSaveSchedule = async () => {
     console.log('Save schedule clicked, user:', user);
     
     if (!user) {
@@ -59,21 +59,43 @@ const WeeklySchedule = ({ schedule, isLoading, user }) => {
       return;
     }
     
-    console.log('Opening save modal with schedule:', currentSchedule);
-    setShowSaveModal(true);
+    // Verify authentication before opening modal
+    try {
+      console.log('🔍 Verifying authentication before opening save modal...');
+      const authCheck = await fetch('http://127.0.0.1:5000/api/auth/me', {
+        credentials: 'include'
+      });
+
+      if (!authCheck.ok) {
+        console.log('❌ Authentication check failed');
+        alert('Your session has expired. Please refresh the page and sign in again.');
+        return;
+      }
+
+      const authData = await authCheck.json();
+      console.log('✅ Authentication verified, opening save modal');
+      console.log('Opening save modal with schedule:', currentSchedule);
+      setShowSaveModal(true);
+    } catch (error) {
+      console.error('❌ Error checking authentication:', error);
+      alert('Unable to verify authentication. Please refresh the page and try again.');
+    }
   };
 
   const handleScheduleSaved = (savedSchedule) => {
-    // Show success message and navigate back to dashboard
+    // Show success message
     alert(`Schedule "${savedSchedule.schedule_name}" saved successfully!`);
     
-    // Navigate back to dashboard after saving
-    if (window.history.length > 1) {
-      window.history.back();
-    } else {
-      // If no history, reload the page to go to dashboard
-      window.location.reload();
-    }
+    // Close the modal
+    setShowSaveModal(false);
+    
+    // Optional: Navigate back to dashboard after saving
+    // if (window.history.length > 1) {
+    //   window.history.back();
+    // } else {
+    //   // If no history, reload the page to go to dashboard
+    //   window.location.reload();
+    // }
   };
 
   if (isLoading) {

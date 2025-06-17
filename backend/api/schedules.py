@@ -22,12 +22,43 @@ def save_schedule():
     print(f"Request headers: {dict(request.headers)}")
     print(f"Request cookies: {request.cookies}")
     
+    # Enhanced authentication check
     user_id = session.get('user_id')
-    print(f"User ID from session: {user_id}")
+    authenticated = session.get('authenticated', False)
     
-    if not user_id:
-        print("❌ No user_id in session - authentication required")
-        return jsonify({'error': 'Authentication required. Please sign in again.'}), 401
+    print(f"User ID from session: {user_id}")
+    print(f"Authenticated flag: {authenticated}")
+    
+    if not user_id or not authenticated:
+        print("❌ No user_id or not authenticated - checking if session needs refresh")
+        
+        # Try to refresh/verify the session
+        supabase = get_supabase_client()
+        if supabase:
+            try:
+                # Check if we can get current user from Supabase
+                current_user = supabase.get_current_user()
+                if current_user:
+                    print(f"✅ Found current user in Supabase: {current_user['id']}")
+                    # Update session with current user data
+                    session.permanent = True
+                    session['user_id'] = current_user['id']
+                    session['username'] = current_user.get('username', '')
+                    session['email'] = current_user.get('email', '')
+                    session['first_name'] = current_user.get('first_name', '')
+                    session['last_name'] = current_user.get('last_name', '')
+                    session['authenticated'] = True
+                    user_id = current_user['id']
+                    print(f"✅ Session refreshed with user ID: {user_id}")
+                else:
+                    print("❌ No current user found in Supabase")
+                    return jsonify({'error': 'Authentication required. Please sign in again.'}), 401
+            except Exception as e:
+                print(f"❌ Error checking current user: {e}")
+                return jsonify({'error': 'Authentication required. Please sign in again.'}), 401
+        else:
+            print("❌ Failed to get Supabase client")
+            return jsonify({'error': 'Authentication required. Please sign in again.'}), 401
 
     supabase = get_supabase_client()
     if not supabase:
@@ -60,13 +91,33 @@ def save_schedule():
 
         print(f"✅ Attempting to save schedule data: {schedule_data}")
 
-        # Save to database
-        result = supabase.supabase.table("saved_schedules").insert(schedule_data).execute()
+        # Save to database using service role for reliable access
+        result = supabase.service_supabase.table("saved_schedules").insert(schedule_data).execute()
         print(f"Database insert result: {result}")
         
         if result.data:
             saved_schedule = result.data[0]
             print(f"✅ Schedule saved successfully: {saved_schedule}")
+            
+            # Log the save activity
+            try:
+                log_data = {
+                    'user_id': user_id,
+                    'schedule_id': saved_schedule['id'],
+                    'courses_count': len(data['schedule']) if isinstance(data['schedule'], list) else 0,
+                    'constraints_count': len(data.get('constraints', [])),
+                    'generation_time_ms': 0,  # This is a save operation, not generation
+                    'schedule_type': 'saved',
+                    'success': True,
+                    'error_message': None
+                }
+                
+                supabase.service_supabase.table("schedule_generation_logs").insert(log_data).execute()
+                print(f"✅ Save activity logged")
+            except Exception as log_error:
+                print(f"⚠️ Failed to log save activity: {log_error}")
+                # Don't fail the save if logging fails
+            
             return jsonify({
                 'message': 'Schedule saved successfully',
                 'schedule': saved_schedule
@@ -215,6 +266,7 @@ def debug_session():
         'session_data': dict(session),
         'user_id': session.get('user_id'),
         'username': session.get('username'),
+        'authenticated': session.get('authenticated', False),
         'has_session': bool(session),
         'session_id': session.get('_id', 'No session ID')
     }), 200

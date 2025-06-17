@@ -228,25 +228,34 @@ class SupabaseClient:
             return False
 
     def get_current_user(self) -> Optional[Dict]:
-        """Get current authenticated user"""
+        """Get current authenticated user from Supabase session"""
         try:
-            user = self.supabase.auth.get_user()
-            if user and user.user:
-                profile = self.supabase.table("user_profiles").select("*").eq("id", user.user.id).execute()
-                
-                if profile.data:
-                    profile_data = profile.data[0]
-                    return {
-                        "id": user.user.id,
-                        "email": user.user.email,
-                        "username": profile_data.get("username"),
-                        "first_name": profile_data.get("first_name"),
-                        "last_name": profile_data.get("last_name"),
-                        "created_at": user.user.created_at,
-                        "last_login": user.user.last_sign_in_at
-                    }
+            # Get the current session
+            session = self.supabase.auth.get_session()
+            if not session or not session.user:
+                print("❌ No active Supabase session found")
+                return None
             
-            return None
+            user = session.user
+            print(f"✅ Found active Supabase session for user: {user.id}")
+            
+            # Get profile data
+            profile = self.supabase.table("user_profiles").select("*").eq("id", user.id).execute()
+            
+            if profile.data:
+                profile_data = profile.data[0]
+                return {
+                    "id": user.id,
+                    "email": user.email,
+                    "username": profile_data.get("username"),
+                    "first_name": profile_data.get("first_name"),
+                    "last_name": profile_data.get("last_name"),
+                    "created_at": user.created_at,
+                    "last_login": user.last_sign_in_at
+                }
+            else:
+                print(f"❌ No profile found for authenticated user {user.id}")
+                return None
             
         except Exception as e:
             print(f"❌ Error getting current user: {e}")
