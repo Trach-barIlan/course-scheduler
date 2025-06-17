@@ -1,8 +1,32 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './UserProfile.css';
 
 const UserProfile = ({ user, onLogout, onClose }) => {
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [statistics, setStatistics] = useState(null);
+
+  useEffect(() => {
+    if (user) {
+      fetchUserStatistics();
+    }
+  }, [user]);
+
+  const fetchUserStatistics = async () => {
+    try {
+      const response = await fetch('http://127.0.0.1:5000/api/statistics/user', {
+        credentials: 'include'
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setStatistics(data.statistics);
+      } else {
+        console.error('Failed to fetch statistics for profile');
+      }
+    } catch (error) {
+      console.error('Error fetching statistics for profile:', error);
+    }
+  };
 
   const handleLogout = async () => {
     setIsLoggingOut(true);
@@ -82,15 +106,37 @@ const UserProfile = ({ user, onLogout, onClose }) => {
               <div className="stat-card">
                 <div className="stat-icon">📚</div>
                 <div className="stat-content">
-                  <div className="stat-number">0</div>
+                  <div className="stat-number">
+                    {statistics ? statistics.saved_schedules_count : 0}
+                  </div>
                   <div className="stat-label">Saved Schedules</div>
                 </div>
               </div>
               <div className="stat-card">
                 <div className="stat-icon">⏰</div>
                 <div className="stat-content">
-                  <div className="stat-number">0</div>
+                  <div className="stat-number">
+                    {statistics ? statistics.schedules_this_week : 0}
+                  </div>
                   <div className="stat-label">Generated This Week</div>
+                </div>
+              </div>
+              <div className="stat-card">
+                <div className="stat-icon">🎯</div>
+                <div className="stat-content">
+                  <div className="stat-number">
+                    {statistics ? statistics.total_courses_scheduled : 0}
+                  </div>
+                  <div className="stat-label">Total Courses</div>
+                </div>
+              </div>
+              <div className="stat-card">
+                <div className="stat-icon">📊</div>
+                <div className="stat-content">
+                  <div className="stat-number">
+                    {statistics ? `${statistics.success_rate}%` : '98%'}
+                  </div>
+                  <div className="stat-label">Success Rate</div>
                 </div>
               </div>
             </div>
@@ -101,11 +147,19 @@ const UserProfile = ({ user, onLogout, onClose }) => {
             <div className="preferences-grid">
               <div className="preference-item">
                 <span className="preference-label">Default Schedule Type</span>
-                <span className="preference-value">Crammed</span>
+                <span className="preference-value">
+                  {statistics ? statistics.preferred_schedule_type : 'Crammed'}
+                </span>
               </div>
               <div className="preference-item">
                 <span className="preference-label">Theme</span>
                 <span className="preference-value">Light</span>
+              </div>
+              <div className="preference-item">
+                <span className="preference-label">Avg Generation Time</span>
+                <span className="preference-value">
+                  {statistics ? `${statistics.average_generation_time}ms` : 'N/A'}
+                </span>
               </div>
             </div>
           </div>

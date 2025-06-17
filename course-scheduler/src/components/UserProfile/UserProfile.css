@@ -18,7 +18,7 @@
   border-radius: var(--radius-xl);
   box-shadow: var(--shadow-xl);
   width: 90%;
-  max-width: 500px;
+  max-width: 600px;
   max-height: 90vh;
   overflow-y: auto;
   position: relative;
@@ -177,15 +177,20 @@
   border-radius: var(--radius-md);
 }
 
+.stat-card.success .stat-icon { background: var(--success-50); }
+.stat-card.warning .stat-icon { background: var(--warning-50); }
+.stat-card.info .stat-icon { background: #F0F9FF; }
+
 .stat-content {
   flex: 1;
 }
 
 .stat-number {
   font-size: 1.25rem;
-  font-weight: 700;
+  font-weight: 800;
   color: var(--text-primary);
   line-height: 1;
+  margin-bottom: var(--space-1);
 }
 
 .stat-label {
@@ -194,7 +199,12 @@
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  margin-top: var(--space-1);
+}
+
+.stat-change {
+  font-size: 0.8rem;
+  color: var(--success-600);
+  font-weight: 500;
 }
 
 .preferences-grid {

@@ -6,9 +6,11 @@ from schedule.parserAI import parse_course_text
 from ai_model.ml_parser import ScheduleParser
 from auth.routes_supabase import auth_bp  # Updated import
 from api.schedules import schedules_bp  # Add schedules API
+from api.statistics import statistics_bp  # Add statistics API
 import os
 from dotenv import load_dotenv
 from datetime import timedelta, datetime
+import time
 
 # Load environment variables
 load_dotenv()
@@ -40,6 +42,7 @@ CORS(app, resources={
 # Register blueprints
 app.register_blueprint(auth_bp, url_prefix='/api/auth')
 app.register_blueprint(schedules_bp, url_prefix='/api/schedules')
+app.register_blueprint(statistics_bp, url_prefix='/api/statistics')
 
 schedule_parser = ScheduleParser()
 model_nlp = schedule_parser.nlp
@@ -169,6 +172,9 @@ def parse_input():
 @app.route("/api/schedule", methods=["POST"])
 def api_schedule():
     app.logger.debug(f"Received data: {request.json}")
+    
+    # Track generation start time
+    generation_start_time = time.time()
 
     # Validate request data
     data = request.json
@@ -190,7 +196,6 @@ def api_schedule():
     parsed_constraints = {"constraints": constraints} if isinstance(constraints, list) else parse_course_text(constraints)
 
     try:
-
         # Validate and parse course data
         courses = []
         for i, c in enumerate(data["courses"]):
@@ -240,6 +245,47 @@ def api_schedule():
             constraints=parsed_constraints.get("constraints") if parsed_constraints else None
         )
 
+        # Calculate generation time
+        generation_time_ms = int((time.time() - generation_start_time) * 1000)
+        
+        # Log the generation attempt (if user is authenticated)
+        user_id = session.get('user_id')
+        if user_id:
+            try:
+                # Import here to avoid circular imports
+                from api.statistics import statistics_bp
+                from auth.supabase_client import SupabaseClient
+                
+                supabase = SupabaseClient()
+                
+                # Log generation
+                log_data = {
+                    'user_id': user_id,
+                    'courses_count': len(courses),
+                    'constraints_count': len(parsed_constraints.get("constraints", [])) if parsed_constraints else 0,
+                    'generation_time_ms': generation_time_ms,
+                    'schedule_type': preference,
+                    'success': schedule is not None,
+                    'error_message': None if schedule else 'No valid schedule found'
+                }
+                
+                supabase.supabase.table("schedule_generation_logs").insert(log_data).execute()
+                
+                # Update user statistics if successful
+                if schedule:
+                    supabase.supabase.rpc('update_user_statistics', {
+                        'p_user_id': user_id,
+                        'p_courses_count': len(courses),
+                        'p_constraints_count': len(parsed_constraints.get("constraints", [])) if parsed_constraints else 0,
+                        'p_generation_time_ms': generation_time_ms,
+                        'p_schedule_type': preference,
+                        'p_success': True
+                    }).execute()
+                    
+            except Exception as stats_error:
+                print(f"Error logging statistics: {stats_error}")
+                # Don't fail the request if statistics logging fails
+
         if schedule is None:
             return jsonify({
                 "error": "No valid schedule found",
@@ -250,6 +296,30 @@ def api_schedule():
 
     except Exception as e:
         app.logger.error(f"Error generating schedule: {str(e)}")
+        
+        # Log failed generation attempt
+        user_id = session.get('user_id')
+        if user_id:
+            try:
+                from auth.supabase_client import SupabaseClient
+                supabase = SupabaseClient()
+                
+                generation_time_ms = int((time.time() - generation_start_time) * 1000)
+                log_data = {
+                    'user_id': user_id,
+                    'courses_count': len(data.get("courses", [])),
+                    'constraints_count': len(parsed_constraints.get("constraints", [])) if parsed_constraints else 0,
+                    'generation_time_ms': generation_time_ms,
+                    'schedule_type': preference,
+                    'success': False,
+                    'error_message': str(e)
+                }
+                
+                supabase.supabase.table("schedule_generation_logs").insert(log_data).execute()
+                
+            except Exception as stats_error:
+                print(f"Error logging failed generation: {stats_error}")
+        
         return jsonify({"error": "Internal server error", "details": str(e)}), 500
 
 if __name__ == "__main__":

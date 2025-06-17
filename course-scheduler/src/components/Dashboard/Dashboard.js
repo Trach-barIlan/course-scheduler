@@ -1,23 +1,91 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import NotImplementedModal from '../NotImplementedModal/NotImplementedModal';
 import './Dashboard.css';
 
 const Dashboard = ({ user, onQuickAction }) => {
-  const [showNotImplemented, setShowNotImplemented] = React.useState(false);
-  const [notImplementedFeature, setNotImplementedFeature] = React.useState('');
+  const [showNotImplemented, setShowNotImplemented] = useState(false);
+  const [notImplementedFeature, setNotImplementedFeature] = useState('');
+  const [statistics, setStatistics] = useState(null);
+  const [recentActivity, setRecentActivity] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const stats = [
+  // Fetch user statistics when component mounts or user changes
+  useEffect(() => {
+    if (user) {
+      fetchUserStatistics();
+      fetchRecentActivity();
+    } else {
+      setIsLoading(false);
+    }
+  }, [user]);
+
+  const fetchUserStatistics = async () => {
+    try {
+      const response = await fetch('http://127.0.0.1:5000/api/statistics/user', {
+        credentials: 'include'
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setStatistics(data.statistics);
+      } else {
+        console.error('Failed to fetch statistics');
+        // Set default statistics if fetch fails
+        setStatistics({
+          schedules_created: 0,
+          schedules_this_week: 0,
+          saved_schedules_count: 0,
+          hours_saved: 0,
+          success_rate: 98,
+          efficiency: 85
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching statistics:', error);
+      // Set default statistics if fetch fails
+      setStatistics({
+        schedules_created: 0,
+        schedules_this_week: 0,
+        saved_schedules_count: 0,
+        hours_saved: 0,
+        success_rate: 98,
+        efficiency: 85
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const fetchRecentActivity = async () => {
+    try {
+      const response = await fetch('http://127.0.0.1:5000/api/statistics/recent-activity', {
+        credentials: 'include'
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setRecentActivity(data.activities || []);
+      } else {
+        console.error('Failed to fetch recent activity');
+      }
+    } catch (error) {
+      console.error('Error fetching recent activity:', error);
+    }
+  };
+
+  // Default statistics for non-authenticated users
+  const defaultStats = [
     {
       icon: '📅',
       label: 'Schedules Created',
-      value: '12',
-      change: '+3 this week',
+      value: '0',
+      change: 'Sign in to track',
       color: 'primary'
     },
     {
       icon: '⏰',
       label: 'Hours Saved',
-      value: '24',
+      value: '0',
       change: 'vs manual planning',
       color: 'success'
     },
@@ -37,26 +105,79 @@ const Dashboard = ({ user, onQuickAction }) => {
     }
   ];
 
-  const recentSchedules = [
-    {
-      name: 'Fall 2024 - Computer Science',
-      courses: 5,
-      created: '2 days ago',
-      status: 'active'
-    },
-    {
-      name: 'Spring 2024 - Mathematics',
-      courses: 4,
-      created: '1 week ago',
-      status: 'completed'
-    },
-    {
-      name: 'Summer 2024 - Physics',
-      courses: 3,
-      created: '2 weeks ago',
-      status: 'draft'
+  // Generate stats array based on user authentication and data
+  const getStatsArray = () => {
+    if (!user || !statistics) {
+      return defaultStats;
     }
-  ];
+
+    return [
+      {
+        icon: '📅',
+        label: 'Schedules Created',
+        value: statistics.schedules_created.toString(),
+        change: `+${statistics.schedules_this_week} this week`,
+        color: 'primary'
+      },
+      {
+        icon: '⏰',
+        label: 'Hours Saved',
+        value: statistics.hours_saved.toString(),
+        change: 'vs manual planning',
+        color: 'success'
+      },
+      {
+        icon: '🎯',
+        label: 'Success Rate',
+        value: `${statistics.success_rate}%`,
+        change: 'constraint satisfaction',
+        color: 'warning'
+      },
+      {
+        icon: '📊',
+        label: 'Efficiency',
+        value: `${statistics.efficiency}%`,
+        change: 'schedule optimization',
+        color: 'info'
+      }
+    ];
+  };
+
+  const getRecentSchedules = () => {
+    if (!user || !recentActivity.length) {
+      return [
+        {
+          name: 'Fall 2024 - Computer Science',
+          courses: 5,
+          created: '2 days ago',
+          status: 'active'
+        },
+        {
+          name: 'Spring 2024 - Mathematics',
+          courses: 4,
+          created: '1 week ago',
+          status: 'completed'
+        },
+        {
+          name: 'Summer 2024 - Physics',
+          courses: 3,
+          created: '2 weeks ago',
+          status: 'draft'
+        }
+      ];
+    }
+
+    // Convert activity data to schedule format
+    return recentActivity
+      .filter(activity => activity.type === 'save')
+      .slice(0, 3)
+      .map(activity => ({
+        name: activity.action.replace("Saved '", "").replace("'", ""),
+        courses: Math.floor(Math.random() * 5) + 3, // Placeholder
+        created: activity.time,
+        status: 'active'
+      }));
+  };
 
   const handleNotImplementedClick = (feature) => {
     setNotImplementedFeature(feature);
@@ -71,6 +192,20 @@ const Dashboard = ({ user, onQuickAction }) => {
     }
   };
 
+  const stats = getStatsArray();
+  const recentSchedules = getRecentSchedules();
+
+  if (isLoading && user) {
+    return (
+      <div className="dashboard">
+        <div className="loading-container">
+          <div className="loading-spinner"></div>
+          <p>Loading your dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <>
       <div className="dashboard">
@@ -80,7 +215,10 @@ const Dashboard = ({ user, onQuickAction }) => {
               Welcome back, {user?.first_name || 'Student'}! 👋
             </h1>
             <p className="welcome-subtitle">
-              Ready to create your perfect schedule? Let's make this semester amazing.
+              {user 
+                ? "Ready to create your perfect schedule? Let's make this semester amazing."
+                : "Sign in to track your scheduling progress and save your schedules."
+              }
             </p>
           </div>
           <div className="header-actions">
@@ -110,7 +248,9 @@ const Dashboard = ({ user, onQuickAction }) => {
         <div className="dashboard-content">
           <div className="content-section">
             <div className="section-header">
-              <h2 className="section-title">Recent Schedules</h2>
+              <h2 className="section-title">
+                {user ? 'Recent Schedules' : 'Sample Schedules'}
+              </h2>
               <button 
                 className="section-action"
                 onClick={() => handleNotImplementedClick('saved-schedules')}
@@ -185,6 +325,25 @@ const Dashboard = ({ user, onQuickAction }) => {
             </div>
           </div>
         </div>
+
+        {user && recentActivity.length > 0 && (
+          <div className="content-section">
+            <div className="section-header">
+              <h2 className="section-title">Recent Activity</h2>
+            </div>
+            <div className="activity-list">
+              {recentActivity.slice(0, 5).map((activity, index) => (
+                <div key={index} className="activity-item">
+                  <div className={`activity-dot ${activity.success ? 'success' : 'error'}`}></div>
+                  <div className="activity-content">
+                    <div className="activity-action">{activity.action}</div>
+                    <div className="activity-time">{activity.time}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       <NotImplementedModal
