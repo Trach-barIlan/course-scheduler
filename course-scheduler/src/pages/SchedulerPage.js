@@ -239,7 +239,7 @@ const generateScheduleWithConstraints = useCallback(async (constraintsToUse) => 
             onConstraintsUpdate={handleConstraintsUpdate}
             isRegenerating={isLoading}
           />
-          <WeeklyScheduler schedule={schedule} isLoading={isLoading} />
+          <WeeklyScheduler user={user} schedule={schedule} isLoading={isLoading} />
         </div>
       </div>
     </div>

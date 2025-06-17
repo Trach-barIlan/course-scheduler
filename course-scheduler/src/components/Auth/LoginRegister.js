@@ -122,6 +122,12 @@ const LoginRegister = ({ onAuthSuccess, onClose }) => {
       });
 
       const data = await response.json();
+      const debug = await fetch('http://127.0.0.1:5000/api/auth/debug', {
+        method: 'GET',
+        credentials: 'include'
+      });
+      const debugData = await debug.json();
+      console.log('Debug Info:', debugData);
 
       if (response.ok) {
         onAuthSuccess(data.user);

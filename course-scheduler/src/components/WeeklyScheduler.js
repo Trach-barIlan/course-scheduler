@@ -68,11 +68,12 @@ const WeeklySchedule = ({ schedule, isLoading, user }) => {
 
       if (!authCheck.ok) {
         console.log('❌ Authentication check failed');
+        console.error('Authentication check failed:', authCheck.statusText);
         alert('Your session has expired. Please refresh the page and sign in again.');
         return;
       }
 
-      const authData = await authCheck.json();
+      await authCheck.json();
       console.log('✅ Authentication verified, opening save modal');
       console.log('Opening save modal with schedule:', currentSchedule);
       setShowSaveModal(true);

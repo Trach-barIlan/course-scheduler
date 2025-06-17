@@ -1,0 +1,4 @@
+api/__pycache__
+auth/__pycache__
+# Ignore Python cache files
+__pycache__/

@@ -183,7 +183,7 @@ def login():
             # Set session with comprehensive user data
             set_user_session(user)
             
-            print(f"✅ User logged in and session set successfully: {user['id']}")
+            print(f"✅ session id set to: {session.get('user_id', 'No session ID')}")
             
             return jsonify({
                 'message': 'Login successful',
@@ -211,7 +211,7 @@ def logout():
 @auth_bp.route('/me', methods=['GET'])
 def get_current_user():
     print(f"🔍 Auth check - current session: {dict(session)}")
-    print(f"Session ID: {session.get('_id', 'No session ID')}")
+    print(f"Session ID: {session.get('user_id', 'No session ID')}")
     print(f"Session permanent: {session.permanent}")
     
     user_id = session.get('user_id')
