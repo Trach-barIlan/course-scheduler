@@ -18,7 +18,8 @@ load_dotenv()
 app = Flask(__name__)
 
 # Enhanced session configuration for better persistence
-app.secret_key = os.environ.get('FLASK_SECRET_KEY', 'your-secret-key-change-this-in-production')
+#app.secret_key = os.environ.get('FLASK_SECRET_KEY', 'your-secret-key-change-this-in-production')
+app.secret_key = "your-secret-key-change-this-in-production"  # Replace with your actual secret key
 app.config['SESSION_COOKIE_SECURE'] = False  # Set to True in production with HTTPS
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
