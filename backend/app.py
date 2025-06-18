@@ -26,7 +26,7 @@ app.config['SESSION_PERMANENT'] = True
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)
 app.config['SESSION_COOKIE_NAME'] = 'schedgic_session'
 app.config['SESSION_COOKIE_PATH'] = '/'
-app.config['SESSION_COOKIE_DOMAIN'] = '127.0.0.1'  # Allow for localhost
+app.config['SESSION_COOKIE_DOMAIN'] = 'localhost'  # Allow for localhost
 
 # Enhanced CORS configuration with credentials support
 CORS(app, resources={
