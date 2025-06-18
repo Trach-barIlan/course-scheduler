@@ -17,16 +17,21 @@ function AppContent() {
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const navigate = useNavigate();
 
-  // Enhanced authentication check with session restoration
+  // Enhanced authentication check
   useEffect(() => {
     const checkAuthStatus = async () => {
       try {
         console.log('🔍 Checking authentication status...');
         
-        // First, try to get current user
         const response = await fetch('http://127.0.0.1:5000/api/auth/me', {
-          credentials: 'include'
+          method: 'GET',
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json',
+          }
         });
+        
+        console.log('Auth check response status:', response.status);
         
         if (response.ok) {
           const data = await response.json();
@@ -34,26 +39,7 @@ function AppContent() {
           setUser(data.user);
         } else {
           console.log('❌ No active session found');
-          
-          // Try to refresh session if we have any session data
-          try {
-            const refreshResponse = await fetch('http://127.0.0.1:5000/api/auth/refresh-session', {
-              method: 'POST',
-              credentials: 'include'
-            });
-            
-            if (refreshResponse.ok) {
-              const refreshData = await refreshResponse.json();
-              console.log('✅ Session refreshed:', refreshData.user?.username);
-              setUser(refreshData.user);
-            } else {
-              console.log('❌ Session refresh failed');
-              setUser(null);
-            }
-          } catch (refreshError) {
-            console.log('❌ Session refresh error:', refreshError);
-            setUser(null);
-          }
+          setUser(null);
         }
       } catch (error) {
         console.error('❌ Auth check failed:', error);
@@ -66,48 +52,46 @@ function AppContent() {
     checkAuthStatus();
   }, []);
 
-  // Periodic session validation (every 5 minutes)
-  useEffect(() => {
-    if (!user) return;
-
-    const validateSession = async () => {
-      try {
-        const response = await fetch('http://127.0.0.1:5000/api/auth/me', {
-          credentials: 'include'
-        });
-        
-        if (!response.ok) {
-          console.log('⚠️ Session validation failed, user may have been logged out');
-          setUser(null);
-        }
-      } catch (error) {
-        console.error('❌ Session validation error:', error);
-      }
-    };
-
-    const interval = setInterval(validateSession, 5 * 60 * 1000); // 5 minutes
-    return () => clearInterval(interval);
-  }, [user]);
-
   const handleAuthSuccess = (userData) => {
     console.log('✅ Authentication successful:', userData?.username);
     setUser(userData);
     setShowAuth(false);
+    
+    // Verify the session was set correctly
+    setTimeout(async () => {
+      try {
+        const response = await fetch('http://127.0.0.1:5000/api/auth/debug', {
+          credentials: 'include'
+        });
+        const debugData = await response.json();
+        console.log('🔍 Post-auth debug:', debugData);
+      } catch (error) {
+        console.error('Debug check failed:', error);
+      }
+    }, 1000);
   };
 
   const handleLogout = async () => {
     try {
-      await fetch('http://127.0.0.1:5000/api/auth/logout', {
+      const response = await fetch('http://127.0.0.1:5000/api/auth/logout', {
         method: 'POST',
-        credentials: 'include'
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        }
       });
+      
+      if (response.ok) {
+        console.log('✅ Logout successful');
+      } else {
+        console.error('❌ Logout failed');
+      }
     } catch (error) {
       console.error('Logout error:', error);
     }
     
     setUser(null);
     setShowProfile(false);
-    // Navigate to home after logout
     navigate('/');
   };
 

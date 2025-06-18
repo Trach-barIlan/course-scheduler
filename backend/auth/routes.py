@@ -30,8 +30,14 @@ def validate_password(password):
 
 def set_user_session(user_data):
     """Set user session with all required data"""
+    # Clear any existing session data first
+    session.clear()
+    
+    # Set session as permanent
     session.permanent = True
-    session['user_id'] = user_data['id']
+    
+    # Set all user data
+    session['user_id'] = str(user_data['id'])  # Ensure it's a string
     session['username'] = user_data.get('username', '')
     session['email'] = user_data.get('email', '')
     session['first_name'] = user_data.get('first_name', '')
@@ -39,7 +45,11 @@ def set_user_session(user_data):
     session['authenticated'] = True
     session['login_time'] = datetime.now().isoformat()
     
+    # Force session to be saved
+    session.modified = True
+    
     print(f"✅ Session set for user: {user_data.get('username')}")
+    print(f"   Session data: {dict(session)}")
 
 @auth_bp.route('/register', methods=['POST'])
 def register():
@@ -88,8 +98,11 @@ def register():
         user = auth_manager.create_user(username, email, password, first_name, last_name)
         
         if user:
+            # Set session immediately after user creation
             set_user_session(user)
-            print(f"✅ User registered successfully: {user['username']}")
+            
+            print(f"✅ User registered and logged in: {user['username']}")
+            print(f"   Final session: {dict(session)}")
             
             return jsonify({
                 'message': 'Registration successful',
@@ -130,8 +143,11 @@ def login():
         user = auth_manager.authenticate_user(username_or_email, password)
         
         if user:
+            # Set session immediately after authentication
             set_user_session(user)
+            
             print(f"✅ User logged in successfully: {user['username']}")
+            print(f"   Final session: {dict(session)}")
             
             return jsonify({
                 'message': 'Login successful',
@@ -149,6 +165,7 @@ def login():
 def logout():
     print(f"🔓 Logout request - current session: {dict(session)}")
     session.clear()
+    session.modified = True
     print("✅ Session cleared after logout")
     return jsonify({'message': 'Logged out successfully'}), 200
 
@@ -158,6 +175,9 @@ def get_current_user():
     
     user_id = session.get('user_id')
     authenticated = session.get('authenticated', False)
+    
+    print(f"   user_id: {user_id} (type: {type(user_id)})")
+    print(f"   authenticated: {authenticated} (type: {type(authenticated)})")
     
     if not user_id or not authenticated:
         print(f"❌ Authentication failed - user_id: {user_id}, authenticated: {authenticated}")
@@ -170,12 +190,13 @@ def get_current_user():
     user = auth_manager.get_user_by_id(user_id)
     if user:
         print(f"✅ User found: {user.get('username', 'Unknown')}")
-        # Refresh session data
+        # Refresh session data to ensure consistency
         set_user_session(user)
         return jsonify({'user': user}), 200
     else:
         print("❌ User not found in database, clearing session")
         session.clear()
+        session.modified = True
         return jsonify({'error': 'User not found'}), 404
 
 @auth_bp.route('/refresh-session', methods=['POST'])
@@ -206,19 +227,24 @@ def refresh_session():
     else:
         print("❌ User no longer exists, clearing session")
         session.clear()
+        session.modified = True
         return jsonify({'error': 'User not found'}), 401
 
 @auth_bp.route('/debug', methods=['GET'])
 def debug_session():
     """Debug endpoint to check session state"""
+    session_data = dict(session)
+    print(f"🔍 Debug session data: {session_data}")
+    
     return jsonify({
-        'session_data': dict(session),
+        'session_data': session_data,
         'user_id': session.get('user_id'),
         'username': session.get('username'),
         'authenticated': session.get('authenticated', False),
         'has_session': bool(session),
         'session_permanent': session.permanent,
-        'login_time': session.get('login_time')
+        'login_time': session.get('login_time'),
+        'session_keys': list(session.keys())
     }), 200
 
 @auth_bp.route('/stats', methods=['GET'])

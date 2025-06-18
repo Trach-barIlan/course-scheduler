@@ -112,6 +112,9 @@ const LoginRegister = ({ onAuthSuccess, onClose }) => {
             last_name: formData.lastName
           };
 
+      console.log(`🔄 Attempting ${isLogin ? 'login' : 'registration'}...`);
+      console.log('Payload:', payload);
+
       const response = await fetch(`http://127.0.0.1:5000${endpoint}`, {
         method: 'POST',
         headers: {
@@ -121,22 +124,31 @@ const LoginRegister = ({ onAuthSuccess, onClose }) => {
         body: JSON.stringify(payload)
       });
 
-      await new Promise(resolve => setTimeout(resolve, 2000));  // short delay
-
+      console.log('Response status:', response.status);
       const data = await response.json();
-      const debug = await fetch('http://127.0.0.1:5000/api/auth/debug', {
-        method: 'GET',
-        credentials: 'include'
-      });
-      const debugData = await debug.json();
-      console.log('Debug Info:', debugData);
+      console.log('Response data:', data);
 
       if (response.ok) {
+        console.log('✅ Authentication successful');
+        
+        // Verify session was set by checking debug endpoint
+        try {
+          const debugResponse = await fetch('http://127.0.0.1:5000/api/auth/debug', {
+            credentials: 'include'
+          });
+          const debugData = await debugResponse.json();
+          console.log('🔍 Session debug after auth:', debugData);
+        } catch (debugError) {
+          console.error('Debug check failed:', debugError);
+        }
+        
         onAuthSuccess(data.user);
       } else {
+        console.error('❌ Authentication failed:', data.error);
         setErrors({ general: data.error || 'Authentication failed' });
       }
     } catch (error) {
+      console.error('❌ Network error:', error);
       setErrors({ general: 'Network error. Please check your connection and try again.' });
     } finally {
       setIsLoading(false);
