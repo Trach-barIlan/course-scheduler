@@ -17,27 +17,25 @@ load_dotenv()
 
 app = Flask(__name__)
 
-# Enhanced session configuration
+# Enhanced session configuration for cross-origin requests
 app.secret_key = os.environ.get('SECRET_KEY', 'your-secret-key-change-this-in-production')
 app.config['SESSION_COOKIE_SECURE'] = False  # Set to True in production with HTTPS
 app.config['SESSION_COOKIE_HTTPONLY'] = True
-app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+app.config['SESSION_COOKIE_SAMESITE'] = None  # Changed from 'Lax' to None for cross-origin
 app.config['SESSION_PERMANENT'] = True
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)
 app.config['SESSION_COOKIE_NAME'] = 'schedgic_session'
 app.config['SESSION_COOKIE_PATH'] = '/'
+app.config['SESSION_COOKIE_DOMAIN'] = None  # Allow cookies across different ports
 
-# Enhanced CORS configuration
-CORS(app, resources={
-    r"/api/*": {
-        "origins": ["http://localhost:3000", "http://127.0.0.1:3000"],
-        "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-        "allow_headers": ["Content-Type", "Authorization"],
-        "supports_credentials": True,
-        "expose_headers": ["Set-Cookie"],
-        "max_age": 86400
-    }
-}, supports_credentials=True)
+# Enhanced CORS configuration with explicit cookie support
+CORS(app, 
+     origins=["http://localhost:3000", "http://127.0.0.1:3000"],
+     supports_credentials=True,
+     allow_headers=["Content-Type", "Authorization", "Cookie"],
+     expose_headers=["Set-Cookie"],
+     methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+)
 
 # Register blueprints
 app.register_blueprint(auth_bp, url_prefix='/api/auth')
@@ -92,18 +90,42 @@ def normalize_text(text):
 
 @app.before_request
 def before_request():
-    """Session management"""
+    """Enhanced session management with debugging"""
     session.permanent = True
+    
+    # Add CORS headers for preflight requests
+    if request.method == 'OPTIONS':
+        response = jsonify({'status': 'ok'})
+        response.headers.add('Access-Control-Allow-Origin', request.headers.get('Origin', '*'))
+        response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization,Cookie')
+        response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
+        response.headers.add('Access-Control-Allow-Credentials', 'true')
+        return response
     
     if request.endpoint and 'api' in request.endpoint:
         print(f"🔍 Request: {request.method} {request.endpoint}")
-        print(f"Session: user_id={session.get('user_id')}, authenticated={session.get('authenticated', False)}")
+        print(f"Session ID: {session.get('user_id', 'None')}")
+        print(f"Session data: {dict(session)}")
+        print(f"Cookies received: {request.cookies}")
 
 @app.after_request
 def after_request(response):
-    """Response handling"""
+    """Enhanced response handling with CORS and cookie debugging"""
+    # Ensure CORS headers are set
+    origin = request.headers.get('Origin')
+    if origin in ["http://localhost:3000", "http://127.0.0.1:3000"]:
+        response.headers.add('Access-Control-Allow-Origin', origin)
+        response.headers.add('Access-Control-Allow-Credentials', 'true')
+        response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization,Cookie')
+        response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
+    
     if request.endpoint and 'api' in request.endpoint:
         print(f"📤 Response: {response.status_code}")
+        print(f"Response headers: {dict(response.headers)}")
+        
+        # Check if session was modified
+        if session.modified:
+            print(f"✅ Session modified: {dict(session)}")
     
     return response
 
@@ -257,6 +279,18 @@ def api_schedule():
     except Exception as e:
         print(f"Error generating schedule: {str(e)}")
         return jsonify({"error": "Internal server error", "details": str(e)}), 500
+
+# Add a test endpoint to check session status
+@app.route("/api/test-session", methods=["GET"])
+def test_session():
+    """Test endpoint to check session status"""
+    return jsonify({
+        "session_data": dict(session),
+        "user_id": session.get('user_id'),
+        "authenticated": session.get('authenticated', False),
+        "cookies": dict(request.cookies),
+        "headers": dict(request.headers)
+    }), 200
 
 if __name__ == "__main__":
     app.run(debug=True, host='127.0.0.1', port=5000)

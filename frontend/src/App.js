@@ -17,7 +17,7 @@ function AppContent() {
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const navigate = useNavigate();
 
-  // Enhanced authentication check
+  // Enhanced authentication check with better cookie handling
   useEffect(() => {
     const checkAuthStatus = async () => {
       try {
@@ -25,13 +25,14 @@ function AppContent() {
         
         const response = await fetch('http://127.0.0.1:5000/api/auth/me', {
           method: 'GET',
-          credentials: 'include',
+          credentials: 'include', // This is crucial for sending cookies
           headers: {
             'Content-Type': 'application/json',
           }
         });
         
         console.log('Auth check response status:', response.status);
+        console.log('Auth check response headers:', response.headers);
         
         if (response.ok) {
           const data = await response.json();
@@ -40,6 +41,29 @@ function AppContent() {
         } else {
           console.log('❌ No active session found');
           setUser(null);
+          
+          // Try to refresh session if we have any indication of a previous login
+          const hasSessionIndicator = document.cookie.includes('schedgic_session');
+          if (hasSessionIndicator) {
+            console.log('🔄 Attempting session refresh...');
+            try {
+              const refreshResponse = await fetch('http://127.0.0.1:5000/api/auth/refresh-session', {
+                method: 'POST',
+                credentials: 'include',
+                headers: {
+                  'Content-Type': 'application/json',
+                }
+              });
+              
+              if (refreshResponse.ok) {
+                const refreshData = await refreshResponse.json();
+                console.log('✅ Session refreshed successfully');
+                setUser(refreshData.user);
+              }
+            } catch (refreshError) {
+              console.error('❌ Session refresh failed:', refreshError);
+            }
+          }
         }
       } catch (error) {
         console.error('❌ Auth check failed:', error);
@@ -57,14 +81,31 @@ function AppContent() {
     setUser(userData);
     setShowAuth(false);
     
-    // Verify the session was set correctly
+    // Verify the session was set correctly with enhanced debugging
     setTimeout(async () => {
       try {
-        const response = await fetch('http://127.0.0.1:5000/api/auth/debug', {
+        console.log('🔍 Post-auth verification...');
+        
+        // Check debug endpoint
+        const debugResponse = await fetch('http://127.0.0.1:5000/api/auth/debug', {
           credentials: 'include'
         });
-        const debugData = await response.json();
+        const debugData = await debugResponse.json();
         console.log('🔍 Post-auth debug:', debugData);
+        
+        // Check test session endpoint
+        const testResponse = await fetch('http://127.0.0.1:5000/api/test-session', {
+          credentials: 'include'
+        });
+        const testData = await testResponse.json();
+        console.log('🔍 Test session data:', testData);
+        
+        // Verify /me endpoint works
+        const meResponse = await fetch('http://127.0.0.1:5000/api/auth/me', {
+          credentials: 'include'
+        });
+        console.log('🔍 /me endpoint status:', meResponse.status);
+        
       } catch (error) {
         console.error('Debug check failed:', error);
       }

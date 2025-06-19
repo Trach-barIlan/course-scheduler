@@ -29,7 +29,7 @@ def validate_password(password):
     return True, "Password is valid"
 
 def set_user_session(user_data):
-    """Set user session with all required data"""
+    """Set user session with all required data and force session persistence"""
     # Clear any existing session data first
     session.clear()
     
@@ -45,11 +45,13 @@ def set_user_session(user_data):
     session['authenticated'] = True
     session['login_time'] = datetime.now().isoformat()
     
-    # Force session to be saved
+    # Force session to be saved immediately
     session.modified = True
     
     print(f"✅ Session set for user: {user_data.get('username')}")
+    print(f"   Session ID: {session.get('user_id')}")
     print(f"   Session data: {dict(session)}")
+    print(f"   Session permanent: {session.permanent}")
 
 @auth_bp.route('/register', methods=['POST'])
 def register():
@@ -104,10 +106,17 @@ def register():
             print(f"✅ User registered and logged in: {user['username']}")
             print(f"   Final session: {dict(session)}")
             
-            return jsonify({
+            # Create response with explicit session cookie
+            response = jsonify({
                 'message': 'Registration successful',
                 'user': user
-            }), 201
+            })
+            response.status_code = 201
+            
+            # Ensure session cookie is set properly
+            response.headers['Set-Cookie'] = f"schedgic_session={session.sid if hasattr(session, 'sid') else 'active'}; Path=/; HttpOnly; SameSite=None"
+            
+            return response
         else:
             return jsonify({'error': 'Registration failed'}), 400
         
@@ -149,10 +158,17 @@ def login():
             print(f"✅ User logged in successfully: {user['username']}")
             print(f"   Final session: {dict(session)}")
             
-            return jsonify({
+            # Create response with explicit session handling
+            response = jsonify({
                 'message': 'Login successful',
                 'user': user
-            }), 200
+            })
+            response.status_code = 200
+            
+            # Ensure session cookie is set properly
+            response.headers['Set-Cookie'] = f"schedgic_session={session.sid if hasattr(session, 'sid') else 'active'}; Path=/; HttpOnly; SameSite=None"
+            
+            return response
         else:
             print(f"❌ Login failed for: {username_or_email}")
             return jsonify({'error': 'Invalid username/email or password'}), 401
@@ -167,11 +183,19 @@ def logout():
     session.clear()
     session.modified = True
     print("✅ Session cleared after logout")
-    return jsonify({'message': 'Logged out successfully'}), 200
+    
+    response = jsonify({'message': 'Logged out successfully'})
+    response.status_code = 200
+    
+    # Clear the session cookie
+    response.headers['Set-Cookie'] = "schedgic_session=; Path=/; HttpOnly; SameSite=None; Expires=Thu, 01 Jan 1970 00:00:00 GMT"
+    
+    return response
 
 @auth_bp.route('/me', methods=['GET'])
 def get_current_user():
     print(f"🔍 Auth check - current session: {dict(session)}")
+    print(f"   Request cookies: {dict(request.cookies)}")
     
     user_id = session.get('user_id')
     authenticated = session.get('authenticated', False)
@@ -219,11 +243,17 @@ def refresh_session():
         set_user_session(user)
         print(f"✅ Session refreshed successfully for user: {user.get('username')}")
         
-        return jsonify({
+        response = jsonify({
             'message': 'Session refreshed',
             'user': user,
             'authenticated': True
-        }), 200
+        })
+        response.status_code = 200
+        
+        # Ensure session cookie is refreshed
+        response.headers['Set-Cookie'] = f"schedgic_session={session.sid if hasattr(session, 'sid') else 'active'}; Path=/; HttpOnly; SameSite=None"
+        
+        return response
     else:
         print("❌ User no longer exists, clearing session")
         session.clear()
@@ -244,7 +274,9 @@ def debug_session():
         'has_session': bool(session),
         'session_permanent': session.permanent,
         'login_time': session.get('login_time'),
-        'session_keys': list(session.keys())
+        'session_keys': list(session.keys()),
+        'request_cookies': dict(request.cookies),
+        'session_modified': session.modified
     }), 200
 
 @auth_bp.route('/stats', methods=['GET'])
