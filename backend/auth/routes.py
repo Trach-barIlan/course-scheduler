@@ -30,10 +30,10 @@ def validate_password(password):
 
 def set_user_session(user_data):
     """Set user session with all required data and force session persistence"""
-    # Clear any existing session data first
-    session.clear()
+    print(f"🔧 Setting session for user: {user_data.get('username')}")
+    print(f"   Before clear - Session: {dict(session)}")
     
-    # Set session as permanent
+    # Don't clear the session, just update it
     session.permanent = True
     
     # Set all user data
@@ -52,6 +52,7 @@ def set_user_session(user_data):
     print(f"   Session ID: {session.get('user_id')}")
     print(f"   Session data: {dict(session)}")
     print(f"   Session permanent: {session.permanent}")
+    print(f"   Session modified: {getattr(session, 'modified', 'unknown')}")
 
 @auth_bp.route('/register', methods=['POST'])
 def register():
@@ -113,9 +114,6 @@ def register():
             })
             response.status_code = 201
             
-            # Ensure session cookie is set properly
-            response.headers['Set-Cookie'] = f"schedgic_session={session.sid if hasattr(session, 'sid') else 'active'}; Path=/; HttpOnly; SameSite=None"
-            
             return response
         else:
             return jsonify({'error': 'Registration failed'}), 400
@@ -165,9 +163,6 @@ def login():
             })
             response.status_code = 200
             
-            # Ensure session cookie is set properly
-            response.headers['Set-Cookie'] = f"schedgic_session={session.sid if hasattr(session, 'sid') else 'active'}; Path=/; HttpOnly; SameSite=None"
-            
             return response
         else:
             print(f"❌ Login failed for: {username_or_email}")
@@ -186,9 +181,6 @@ def logout():
     
     response = jsonify({'message': 'Logged out successfully'})
     response.status_code = 200
-    
-    # Clear the session cookie
-    response.headers['Set-Cookie'] = "schedgic_session=; Path=/; HttpOnly; SameSite=None; Expires=Thu, 01 Jan 1970 00:00:00 GMT"
     
     return response
 
@@ -214,8 +206,7 @@ def get_current_user():
     user = auth_manager.get_user_by_id(user_id)
     if user:
         print(f"✅ User found: {user.get('username', 'Unknown')}")
-        # Refresh session data to ensure consistency
-        set_user_session(user)
+        # Don't refresh session data here to avoid clearing it
         return jsonify({'user': user}), 200
     else:
         print("❌ User not found in database, clearing session")
@@ -240,7 +231,10 @@ def refresh_session():
     
     user = auth_manager.get_user_by_id(user_id)
     if user:
-        set_user_session(user)
+        # Just update the login time, don't reset the entire session
+        session['login_time'] = datetime.now().isoformat()
+        session.modified = True
+        
         print(f"✅ Session refreshed successfully for user: {user.get('username')}")
         
         response = jsonify({
@@ -249,9 +243,6 @@ def refresh_session():
             'authenticated': True
         })
         response.status_code = 200
-        
-        # Ensure session cookie is refreshed
-        response.headers['Set-Cookie'] = f"schedgic_session={session.sid if hasattr(session, 'sid') else 'active'}; Path=/; HttpOnly; SameSite=None"
         
         return response
     else:
@@ -276,7 +267,7 @@ def debug_session():
         'login_time': session.get('login_time'),
         'session_keys': list(session.keys()),
         'request_cookies': dict(request.cookies),
-        'session_modified': session.modified
+        'session_modified': getattr(session, 'modified', 'unknown')
     }), 200
 
 @auth_bp.route('/stats', methods=['GET'])

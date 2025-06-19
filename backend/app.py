@@ -20,13 +20,14 @@ app = Flask(__name__)
 # Enhanced session configuration for cross-origin requests
 app.secret_key = os.environ.get('SECRET_KEY', 'your-secret-key-change-this-in-production')
 app.config['SESSION_COOKIE_SECURE'] = False  # Set to True in production with HTTPS
-app.config['SESSION_COOKIE_HTTPONLY'] = True
-app.config['SESSION_COOKIE_SAMESITE'] = None  # Changed from 'Lax' to None for cross-origin
+app.config['SESSION_COOKIE_HTTPONLY'] = False  # Changed to False to allow JavaScript access for debugging
+app.config['SESSION_COOKIE_SAMESITE'] = None  # Allow cross-origin cookies
 app.config['SESSION_PERMANENT'] = True
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)
 app.config['SESSION_COOKIE_NAME'] = 'schedgic_session'
 app.config['SESSION_COOKIE_PATH'] = '/'
 app.config['SESSION_COOKIE_DOMAIN'] = None  # Allow cookies across different ports
+app.config['SESSION_TYPE'] = 'filesystem'  # Use filesystem for session storage
 
 # Enhanced CORS configuration with explicit cookie support
 CORS(app, 
@@ -104,9 +105,8 @@ def before_request():
     
     if request.endpoint and 'api' in request.endpoint:
         print(f"🔍 Request: {request.method} {request.endpoint}")
-        print(f"Session ID: {session.get('user_id', 'None')}")
-        print(f"Session data: {dict(session)}")
-        print(f"Cookies received: {request.cookies}")
+        print(f"Session before: {dict(session)}")
+        print(f"Cookies received: {dict(request.cookies)}")
 
 @app.after_request
 def after_request(response):
@@ -121,11 +121,11 @@ def after_request(response):
     
     if request.endpoint and 'api' in request.endpoint:
         print(f"📤 Response: {response.status_code}")
-        print(f"Response headers: {dict(response.headers)}")
+        print(f"Session after: {dict(session)}")
         
         # Check if session was modified
-        if session.modified:
-            print(f"✅ Session modified: {dict(session)}")
+        if hasattr(session, 'modified') and session.modified:
+            print(f"✅ Session was modified")
     
     return response
 
@@ -289,7 +289,9 @@ def test_session():
         "user_id": session.get('user_id'),
         "authenticated": session.get('authenticated', False),
         "cookies": dict(request.cookies),
-        "headers": dict(request.headers)
+        "headers": dict(request.headers),
+        "session_permanent": session.permanent,
+        "session_new": session.new if hasattr(session, 'new') else 'unknown'
     }), 200
 
 if __name__ == "__main__":
