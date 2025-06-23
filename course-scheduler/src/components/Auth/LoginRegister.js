@@ -98,6 +98,8 @@ const LoginRegister = ({ onAuthSuccess, onClose }) => {
     setErrors({});
 
     try {
+      console.log('🔄 Attempting login...');
+      
       const endpoint = isLogin ? '/api/auth/login' : '/api/auth/register';
       const payload = isLogin 
         ? {
@@ -112,8 +114,7 @@ const LoginRegister = ({ onAuthSuccess, onClose }) => {
             last_name: formData.lastName
           };
 
-      console.log('Making request to:', `http://127.0.0.1:5000${endpoint}`);
-      console.log('Request payload:', payload);
+      console.log('Payload:', payload);
 
       const response = await fetch(`http://127.0.0.1:5000${endpoint}`, {
         method: 'POST',
@@ -125,16 +126,32 @@ const LoginRegister = ({ onAuthSuccess, onClose }) => {
       });
 
       console.log('Response status:', response.status);
-      console.log('Response headers:', response.headers);
 
       const data = await response.json();
       console.log('Response data:', data);
 
       if (response.ok) {
-        // Wait a moment for the session to be established
-        setTimeout(() => {
-          onAuthSuccess(data.user);
-        }, 100);
+        console.log('✅ Authentication successful');
+        
+        // Debug: Check session immediately after login
+        try {
+          const debugResponse = await fetch('http://127.0.0.1:5000/api/debug/session', {
+            method: 'GET',
+            credentials: 'include',
+            headers: {
+              'Content-Type': 'application/json',
+            }
+          });
+          
+          if (debugResponse.ok) {
+            const debugData = await debugResponse.json();
+            console.log('🔍 Session debug after auth:', debugData);
+          }
+        } catch (debugError) {
+          console.error('Debug request failed:', debugError);
+        }
+        
+        onAuthSuccess(data.user);
       } else {
         setErrors({ general: data.error || 'Authentication failed' });
       }

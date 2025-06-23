@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify, session
 from .supabase_client import SupabaseClient
 import re
+from datetime import datetime
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -117,6 +118,7 @@ def register():
             session.permanent = True
             session['user_id'] = user['id']
             session['username'] = user['username']
+            session['login_time'] = datetime.utcnow().isoformat()
             session.modified = True  # Force session save
             
             print(f"User created successfully: {user['id']}")
@@ -187,14 +189,20 @@ def login():
         user = supabase.authenticate_user(email, password)
         
         if user:
+            # Clear any existing session data first
+            session.clear()
+            
             # Set session with explicit session management
             session.permanent = True
             session['user_id'] = user['id']
             session['username'] = user['username']
+            session['login_time'] = datetime.utcnow().isoformat()
             session.modified = True  # Force session save
             
             print(f"Login successful for user: {user['id']}")
             print(f"Session set: user_id={session.get('user_id')}, username={session.get('username')}")
+            print(f"Session permanent: {session.permanent}")
+            print(f"Session modified: {session.modified}")
             
             response = jsonify({
                 'message': 'Login successful',
@@ -243,6 +251,8 @@ def get_current_user():
     user_id = session.get('user_id')
     print(f"Auth check - session user_id: {user_id}")
     print(f"Full session: {dict(session)}")
+    print(f"Session permanent: {session.permanent}")
+    print(f"Session new: {session.new}")
     
     if not user_id:
         print("No user_id in session")

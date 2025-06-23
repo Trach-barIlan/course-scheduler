@@ -17,8 +17,10 @@ app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'your-secret-key-change-this-in-production')
 app.config['SESSION_COOKIE_SECURE'] = False  # Set to True in production with HTTPS
 app.config['SESSION_COOKIE_HTTPONLY'] = True
-app.config['SESSION_COOKIE_SAMESITE'] = 'None'  # Changed from 'Lax' to 'None' for cross-origin
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'  # Changed back to Lax for localhost
 app.config['SESSION_COOKIE_DOMAIN'] = None  # Let Flask handle this automatically
+app.config['SESSION_PERMANENT'] = True
+app.config['PERMANENT_SESSION_LIFETIME'] = 86400  # 24 hours
 
 # More explicit CORS configuration
 CORS(app, 
@@ -85,6 +87,24 @@ def before_request():
     app.logger.debug(f"Session ID: {session.get('_id', 'No session')}")
     app.logger.debug(f"User ID in session: {session.get('user_id', 'No user')}")
     app.logger.debug(f"Cookies: {request.cookies}")
+
+# Add a debug endpoint to check session status
+@app.route("/api/debug/session", methods=["GET"])
+def debug_session():
+    """Debug endpoint to check session status"""
+    return jsonify({
+        "session_data": dict(session),
+        "session_keys": list(session.keys()),
+        "user_id": session.get('user_id'),
+        "username": session.get('username'),
+        "authenticated": session.get('user_id') is not None,
+        "session_permanent": session.permanent,
+        "session_modified": session.modified,
+        "session_new": session.new,
+        "has_session": bool(session),
+        "request_cookies": dict(request.cookies),
+        "login_time": session.get('login_time')
+    })
 
 @app.route("/api/parse", methods=["POST"])
 def parse_input():

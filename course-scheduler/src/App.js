@@ -18,7 +18,7 @@ function App() {
   useEffect(() => {
     const checkAuthStatus = async () => {
       try {
-        console.log('Checking auth status...');
+        console.log('🔍 Checking auth status...');
         const response = await fetch('http://127.0.0.1:5000/api/auth/me', {
           method: 'GET',
           credentials: 'include', // Include cookies
@@ -31,10 +31,10 @@ function App() {
         
         if (response.ok) {
           const data = await response.json();
-          console.log('Auth check successful:', data);
+          console.log('✅ Auth check successful:', data);
           setUser(data.user);
         } else {
-          console.log('Auth check failed:', response.status);
+          console.log('❌ Auth check failed:', response.status);
         }
       } catch (error) {
         console.error('Auth check failed:', error);
@@ -56,10 +56,52 @@ function App() {
     }
   };
 
-  const handleAuthSuccess = (userData) => {
-    console.log('Auth success, setting user:', userData);
+  const handleAuthSuccess = async (userData) => {
+    console.log('✅ Authentication successful:', userData.first_name);
     setUser(userData);
     setShowAuth(false);
+    
+    // Debug: Check session after setting user
+    try {
+      console.log('🔍 Post-auth verification...');
+      
+      // Check cookies
+      console.log('🍪 Cookies after auth:', document.cookie);
+      
+      // Test session endpoint
+      const debugResponse = await fetch('http://127.0.0.1:5000/api/debug/session', {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      if (debugResponse.ok) {
+        const debugData = await debugResponse.json();
+        console.log('🔍 Post-auth debug:', debugData);
+      }
+      
+      // Test /me endpoint
+      const testResponse = await fetch('http://127.0.0.1:5000/api/auth/me', {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      if (testResponse.ok) {
+        const testData = await testResponse.json();
+        console.log('🔍 Test session data:', testData);
+      } else {
+        console.log('❌ Test session failed:', testResponse.status);
+      }
+      
+    } catch (error) {
+      console.error('Post-auth verification failed:', error);
+    }
+    
     // If user was trying to access a protected page, navigate there
     if (currentPage === 'scheduler' && (window.location.hash === '#schedules' || window.location.hash === '#profile')) {
       setCurrentPage(window.location.hash.substring(1));
@@ -68,7 +110,7 @@ function App() {
 
   const handleLogout = async () => {
     try {
-      console.log('Logging out...');
+      console.log('🔄 Logging out...');
       const response = await fetch('http://127.0.0.1:5000/api/auth/logout', {
         method: 'POST',
         credentials: 'include',
@@ -82,7 +124,7 @@ function App() {
       if (response.ok) {
         setUser(null);
         setCurrentPage('scheduler');
-        console.log('Logout successful');
+        console.log('✅ Logout successful');
       }
     } catch (error) {
       console.error('Logout error:', error);
