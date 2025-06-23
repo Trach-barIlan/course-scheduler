@@ -113,16 +113,27 @@ def register():
         user = supabase.create_user(email, password, user_metadata)
         
         if user:
-            # Set session
+            # Set session with explicit session management
+            session.permanent = True
             session['user_id'] = user['id']
             session['username'] = user['username']
+            session.modified = True  # Force session save
             
             print(f"User created successfully: {user['id']}")
+            print(f"Session set: user_id={session.get('user_id')}, username={session.get('username')}")
             
-            return jsonify({
+            response = jsonify({
                 'message': 'User registered successfully',
                 'user': user
-            }), 201
+            })
+            response.status_code = 201
+            
+            # Ensure session cookie is set properly
+            response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+            response.headers['Pragma'] = 'no-cache'
+            response.headers['Expires'] = '0'
+            
+            return response
         else:
             print("User creation failed - no user returned")
             return jsonify({'error': 'Registration failed. Email may already be in use or invalid.'}), 400
@@ -150,6 +161,7 @@ def login():
 
     try:
         data = request.get_json()
+        print(f"Login attempt with data: {data}")
         
         username_or_email = str(data.get('username_or_email', '')).strip()
         password = str(data.get('password', ''))
@@ -171,17 +183,31 @@ def login():
             except:
                 return jsonify({'error': 'Invalid username or password'}), 401
         
+        print(f"Attempting login with email: {email}")
         user = supabase.authenticate_user(email, password)
         
         if user:
-            # Set session
+            # Set session with explicit session management
+            session.permanent = True
             session['user_id'] = user['id']
             session['username'] = user['username']
+            session.modified = True  # Force session save
             
-            return jsonify({
+            print(f"Login successful for user: {user['id']}")
+            print(f"Session set: user_id={session.get('user_id')}, username={session.get('username')}")
+            
+            response = jsonify({
                 'message': 'Login successful',
                 'user': user
-            }), 200
+            })
+            response.status_code = 200
+            
+            # Ensure session cookie is set properly
+            response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+            response.headers['Pragma'] = 'no-cache'
+            response.headers['Expires'] = '0'
+            
+            return response
         else:
             return jsonify({'error': 'Invalid email or password'}), 401
             
@@ -191,17 +217,35 @@ def login():
 
 @auth_bp.route('/logout', methods=['POST'])
 def logout():
+    print(f"Logout request - current session: user_id={session.get('user_id')}")
+    
     supabase = get_supabase_client()
     if supabase:
         supabase.logout_user()
     
     session.clear()
-    return jsonify({'message': 'Logged out successfully'}), 200
+    session.modified = True  # Force session save
+    
+    print("Session cleared")
+    
+    response = jsonify({'message': 'Logged out successfully'})
+    response.status_code = 200
+    
+    # Clear any cached responses
+    response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '0'
+    
+    return response
 
 @auth_bp.route('/me', methods=['GET'])
 def get_current_user():
     user_id = session.get('user_id')
+    print(f"Auth check - session user_id: {user_id}")
+    print(f"Full session: {dict(session)}")
+    
     if not user_id:
+        print("No user_id in session")
         return jsonify({'error': 'Not authenticated'}), 401
     
     supabase = get_supabase_client()
@@ -210,9 +254,16 @@ def get_current_user():
     
     user = supabase.get_user_by_id(user_id)
     if user:
-        return jsonify({'user': user}), 200
+        print(f"User found: {user}")
+        response = jsonify({'user': user})
+        response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+        response.headers['Pragma'] = 'no-cache'
+        response.headers['Expires'] = '0'
+        return response
     else:
+        print("User not found in database")
         session.clear()
+        session.modified = True
         return jsonify({'error': 'User not found'}), 404
 
 @auth_bp.route('/stats', methods=['GET'])

@@ -112,23 +112,34 @@ const LoginRegister = ({ onAuthSuccess, onClose }) => {
             last_name: formData.lastName
           };
 
+      console.log('Making request to:', `http://127.0.0.1:5000${endpoint}`);
+      console.log('Request payload:', payload);
+
       const response = await fetch(`http://127.0.0.1:5000${endpoint}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        credentials: 'include',
+        credentials: 'include', // This is crucial for cookies
         body: JSON.stringify(payload)
       });
 
+      console.log('Response status:', response.status);
+      console.log('Response headers:', response.headers);
+
       const data = await response.json();
+      console.log('Response data:', data);
 
       if (response.ok) {
-        onAuthSuccess(data.user);
+        // Wait a moment for the session to be established
+        setTimeout(() => {
+          onAuthSuccess(data.user);
+        }, 100);
       } else {
         setErrors({ general: data.error || 'Authentication failed' });
       }
     } catch (error) {
+      console.error('Network error:', error);
       setErrors({ general: 'Network error. Please check your connection and try again.' });
     } finally {
       setIsLoading(false);

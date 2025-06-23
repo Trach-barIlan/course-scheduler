@@ -18,13 +18,23 @@ function App() {
   useEffect(() => {
     const checkAuthStatus = async () => {
       try {
+        console.log('Checking auth status...');
         const response = await fetch('http://127.0.0.1:5000/api/auth/me', {
-          credentials: 'include'
+          method: 'GET',
+          credentials: 'include', // Include cookies
+          headers: {
+            'Content-Type': 'application/json',
+          }
         });
+        
+        console.log('Auth check response status:', response.status);
         
         if (response.ok) {
           const data = await response.json();
+          console.log('Auth check successful:', data);
           setUser(data.user);
+        } else {
+          console.log('Auth check failed:', response.status);
         }
       } catch (error) {
         console.error('Auth check failed:', error);
@@ -47,6 +57,7 @@ function App() {
   };
 
   const handleAuthSuccess = (userData) => {
+    console.log('Auth success, setting user:', userData);
     setUser(userData);
     setShowAuth(false);
     // If user was trying to access a protected page, navigate there
@@ -55,10 +66,30 @@ function App() {
     }
   };
 
-  const handleLogout = () => {
-    setUser(null);
-    setCurrentPage('scheduler');
-    // Clear any user-specific data
+  const handleLogout = async () => {
+    try {
+      console.log('Logging out...');
+      const response = await fetch('http://127.0.0.1:5000/api/auth/logout', {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      console.log('Logout response status:', response.status);
+      
+      if (response.ok) {
+        setUser(null);
+        setCurrentPage('scheduler');
+        console.log('Logout successful');
+      }
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Still clear the user state even if the request fails
+      setUser(null);
+      setCurrentPage('scheduler');
+    }
   };
 
   const renderCurrentPage = () => {

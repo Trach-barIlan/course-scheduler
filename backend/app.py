@@ -13,20 +13,21 @@ load_dotenv()
 
 app = Flask(__name__)
 
-# Configure session
+# Configure session with more explicit settings
 app.secret_key = os.environ.get('SECRET_KEY', 'your-secret-key-change-this-in-production')
 app.config['SESSION_COOKIE_SECURE'] = False  # Set to True in production with HTTPS
 app.config['SESSION_COOKIE_HTTPONLY'] = True
-app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+app.config['SESSION_COOKIE_SAMESITE'] = 'None'  # Changed from 'Lax' to 'None' for cross-origin
+app.config['SESSION_COOKIE_DOMAIN'] = None  # Let Flask handle this automatically
 
-CORS(app, resources={
-    r"/api/*": {
-        "origins": ["http://localhost:3000"],
-        "methods": ["GET", "POST", "OPTIONS"],
-        "allow_headers": ["Content-Type"],
-        "supports_credentials": True
-    }
-}, supports_credentials=True)
+# More explicit CORS configuration
+CORS(app, 
+     origins=["http://localhost:3000", "http://127.0.0.1:3000"],
+     methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+     allow_headers=["Content-Type", "Authorization", "Cookie"],
+     expose_headers=["Set-Cookie"],
+     supports_credentials=True,
+     send_wildcard=False)
 
 # Register auth blueprint
 app.register_blueprint(auth_bp, url_prefix='/api/auth')
@@ -72,6 +73,18 @@ def normalize_text(text):
         normalized = normalized.replace(day.upper(), day.title())
     
     return normalized
+
+@app.before_request
+def before_request():
+    """Handle preflight requests and log session info for debugging"""
+    if request.method == 'OPTIONS':
+        return '', 200
+    
+    # Debug logging
+    app.logger.debug(f"Request: {request.method} {request.path}")
+    app.logger.debug(f"Session ID: {session.get('_id', 'No session')}")
+    app.logger.debug(f"User ID in session: {session.get('user_id', 'No user')}")
+    app.logger.debug(f"Cookies: {request.cookies}")
 
 @app.route("/api/parse", methods=["POST"])
 def parse_input():
@@ -213,4 +226,4 @@ def api_schedule():
         return jsonify({"error": "Internal server error", "details": str(e)}), 500
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=True, host='127.0.0.1', port=5000)
