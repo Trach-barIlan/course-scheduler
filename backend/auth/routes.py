@@ -1,9 +1,19 @@
 from flask import Blueprint, request, jsonify, session
+from flask_cors import CORS
 from .auth_manager import AuthManager
 import re
 from datetime import datetime, timedelta
 
 auth_bp = Blueprint('auth', __name__)
+
+# Apply CORS specifically to this blueprint
+CORS(auth_bp, 
+     origins=["http://localhost:3000"],
+     supports_credentials=True,
+     allow_headers=["Content-Type", "Authorization", "Cookie"],
+     expose_headers=["Set-Cookie"],
+     methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+)
 
 def get_auth_manager():
     """Get AuthManager instance"""
