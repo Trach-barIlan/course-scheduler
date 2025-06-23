@@ -27,11 +27,10 @@ app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)
 app.config['SESSION_COOKIE_NAME'] = 'schedgic_session'
 app.config['SESSION_COOKIE_PATH'] = '/'
 app.config['SESSION_COOKIE_DOMAIN'] = None  # Allow cookies across different ports
-app.config['SESSION_TYPE'] = 'filesystem'  # Use filesystem for session storage
 
 # Enhanced CORS configuration with explicit cookie support
 CORS(app, 
-     origins=["http://localhost:3000", "http://127.0.0.1:3000"],
+     origins=["http://localhost:3000"],
      supports_credentials=True,
      allow_headers=["Content-Type", "Authorization", "Cookie"],
      expose_headers=["Set-Cookie"],
@@ -107,27 +106,6 @@ def before_request():
         print(f"🔍 Request: {request.method} {request.endpoint}")
         print(f"Session before: {dict(session)}")
         print(f"Cookies received: {dict(request.cookies)}")
-
-@app.after_request
-def after_request(response):
-    """Enhanced response handling with CORS and cookie debugging"""
-    # Ensure CORS headers are set
-    origin = request.headers.get('Origin')
-    if origin in ["http://localhost:3000", "http://127.0.0.1:3000"]:
-        response.headers.add('Access-Control-Allow-Origin', origin)
-        response.headers.add('Access-Control-Allow-Credentials', 'true')
-        response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization,Cookie')
-        response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
-    
-    if request.endpoint and 'api' in request.endpoint:
-        print(f"📤 Response: {response.status_code}")
-        print(f"Session after: {dict(session)}")
-        
-        # Check if session was modified
-        if hasattr(session, 'modified') and session.modified:
-            print(f"✅ Session was modified")
-    
-    return response
 
 @app.route("/api/parse", methods=["POST"])
 def parse_input():
@@ -295,4 +273,4 @@ def test_session():
     }), 200
 
 if __name__ == "__main__":
-    app.run(debug=True, host='127.0.0.1', port=5000)
+    app.run(debug=True, host='localhost', port=5000)

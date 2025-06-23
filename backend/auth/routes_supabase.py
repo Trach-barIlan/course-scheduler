@@ -147,10 +147,6 @@ def register():
         else:
             return jsonify({'error': 'Registration failed. Please try again.'}), 500
 
-@auth_bp.after_request
-def after_request(response):
-    print(f"📤 Response headers: {response.headers}")
-    return response
 @auth_bp.route('/login', methods=['POST'])
 def login():
     supabase = get_supabase_client()
