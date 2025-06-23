@@ -13,7 +13,7 @@ const UserProfile = ({ user, onLogout, onClose }) => {
 
   const fetchUserStatistics = async () => {
     try {
-      const response = await fetch('http://127.0.0.1:5000/api/statistics/user', {
+      const response = await fetch('http://localhost:5000/api/statistics/user', {
         credentials: 'include'
       });
 
@@ -31,7 +31,7 @@ const UserProfile = ({ user, onLogout, onClose }) => {
   const handleLogout = async () => {
     setIsLoggingOut(true);
     try {
-      const response = await fetch('http://127.0.0.1:5000/api/auth/logout', {
+      const response = await fetch('http://localhost:5000/api/auth/logout', {
         method: 'POST',
         credentials: 'include'
       });

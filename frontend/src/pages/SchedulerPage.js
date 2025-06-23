@@ -59,7 +59,7 @@ const generateScheduleWithConstraints = useCallback(async (constraintsToUse) => 
 
     localStorage.setItem('originalCourseOptions', JSON.stringify(formattedCourses));
 
-    const scheduleRes = await fetch("http://127.0.0.1:5000/api/schedule", {
+    const scheduleRes = await fetch("http://localhost:5000/api/schedule", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: 'include',
@@ -99,7 +99,7 @@ const generateScheduleWithConstraints = useCallback(async (constraintsToUse) => 
       let parsedConstraints = [];
       let constraintsData = null;
       if (constraints.trim()) {
-        const parseRes = await fetch("http://127.0.0.1:5000/api/parse", {
+        const parseRes = await fetch("http://localhost:5000/api/parse", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           credentials: 'include',

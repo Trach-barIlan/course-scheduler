@@ -41,7 +41,10 @@ def set_user_session(user_data):
     session['authenticated'] = True
     session['login_time'] = datetime.now().isoformat()
     session.modified = True
-    
+    # Log the session cookie value if available
+    cookie_name = session._get_cookie_name() if hasattr(session, '_get_cookie_name') else 'session'
+    cookie_value = request.cookies.get(cookie_name)
+    print(f"   Session cookie ({cookie_name}): {cookie_value}")
     print(f"✅ Session set for user: {user_data.get('username')}")
     print(f"   Session ID: {session.get('user_id')}")
 

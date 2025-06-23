@@ -21,7 +21,7 @@ app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'your-secret-key-change-this-in-production')
 app.config['SESSION_COOKIE_SECURE'] = False  # Set to True in production with HTTPS
 app.config['SESSION_COOKIE_HTTPONLY'] = False  # Changed to False to allow JavaScript access for debugging
-app.config['SESSION_COOKIE_SAMESITE'] = None  # Allow cross-origin cookies
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'  # Allow cross-origin cookies
 app.config['SESSION_PERMANENT'] = True
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)
 app.config['SESSION_COOKIE_NAME'] = 'schedgic_session'
@@ -87,25 +87,6 @@ def normalize_text(text):
         normalized = normalized.replace(day.upper(), day.title())
     
     return normalized
-
-@app.before_request
-def before_request():
-    """Enhanced session management with debugging"""
-    session.permanent = True
-    
-    # Add CORS headers for preflight requests
-    if request.method == 'OPTIONS':
-        response = jsonify({'status': 'ok'})
-        response.headers.add('Access-Control-Allow-Origin', request.headers.get('Origin', '*'))
-        response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization,Cookie')
-        response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
-        response.headers.add('Access-Control-Allow-Credentials', 'true')
-        return response
-    
-    if request.endpoint and 'api' in request.endpoint:
-        print(f"🔍 Request: {request.method} {request.endpoint}")
-        print(f"Session before: {dict(session)}")
-        print(f"Cookies received: {dict(request.cookies)}")
 
 @app.route("/api/parse", methods=["POST"])
 def parse_input():

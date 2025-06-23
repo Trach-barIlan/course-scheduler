@@ -21,7 +21,7 @@ const Dashboard = ({ user, onQuickAction }) => {
 
   const fetchUserStatistics = async () => {
     try {
-      const response = await fetch('http://127.0.0.1:5000/api/statistics/user', {
+      const response = await fetch('http://localhost:5000/api/statistics/user', {
         credentials: 'include'
       });
 
@@ -58,7 +58,7 @@ const Dashboard = ({ user, onQuickAction }) => {
 
   const fetchRecentActivity = async () => {
     try {
-      const response = await fetch('http://127.0.0.1:5000/api/statistics/recent-activity', {
+      const response = await fetch('http://localhost:5000/api/statistics/recent-activity', {
         credentials: 'include'
       });
 
