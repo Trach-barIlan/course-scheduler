@@ -4,7 +4,7 @@ from schedule.logic import generate_schedule
 from schedule.utils import parse_time_slot
 from schedule.parserAI import parse_course_text
 from ai_model.ml_parser import ScheduleParser
-from auth.routes import auth_bp  # Updated import
+from auth.routes import auth_bp
 from api.schedules import schedules_bp
 from api.statistics import statistics_bp
 import os
@@ -226,10 +226,10 @@ def api_schedule():
         user_id = session.get('user_id')
         if user_id:
             try:
-                from api.statistics import statistics_bp
                 from auth.auth_manager import AuthManager
                 
                 auth_manager = AuthManager()
+                client = auth_manager.get_client_for_user(user_id)
                 
                 log_data = {
                     'user_id': user_id,
@@ -241,7 +241,7 @@ def api_schedule():
                     'error_message': None if schedule else 'No valid schedule found'
                 }
                 
-                auth_manager.service_supabase.table("schedule_generation_logs").insert(log_data).execute()
+                client.table("schedule_generation_logs").insert(log_data).execute()
                 
             except Exception as stats_error:
                 print(f"Error logging statistics: {stats_error}")

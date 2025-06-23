@@ -25,20 +25,22 @@ def get_user_statistics():
         return jsonify({'error': 'Authentication service unavailable'}), 500
 
     try:
+        client = auth_manager.get_client_for_user(user_id)
+        
         # Get user statistics
-        stats_result = auth_manager.service_supabase.table("user_statistics")\
+        stats_result = client.table("user_statistics")\
             .select("*")\
             .eq("user_id", user_id)\
             .execute()
 
         # Get saved schedules count
-        schedules_result = auth_manager.service_supabase.table("saved_schedules")\
+        schedules_result = client.table("saved_schedules")\
             .select("id", count="exact")\
             .eq("user_id", user_id)\
             .execute()
 
         # Get recent generation logs for success rate calculation
-        logs_result = auth_manager.service_supabase.table("schedule_generation_logs")\
+        logs_result = client.table("schedule_generation_logs")\
             .select("success")\
             .eq("user_id", user_id)\
             .order("created_at", desc=True)\
@@ -111,8 +113,10 @@ def get_recent_activity():
         return jsonify({'error': 'Authentication service unavailable'}), 500
 
     try:
+        client = auth_manager.get_client_for_user(user_id)
+        
         # Get recent schedule generations
-        logs_result = auth_manager.service_supabase.table("schedule_generation_logs")\
+        logs_result = client.table("schedule_generation_logs")\
             .select("*")\
             .eq("user_id", user_id)\
             .order("created_at", desc=True)\
@@ -120,7 +124,7 @@ def get_recent_activity():
             .execute()
 
         # Get recent saved schedules
-        schedules_result = auth_manager.service_supabase.table("saved_schedules")\
+        schedules_result = client.table("saved_schedules")\
             .select("schedule_name, created_at")\
             .eq("user_id", user_id)\
             .order("created_at", desc=True)\

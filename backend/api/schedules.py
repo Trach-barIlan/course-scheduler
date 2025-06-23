@@ -43,27 +43,26 @@ def save_schedule():
         if not data.get('schedule'):
             return jsonify({'error': 'Schedule data is required'}), 400
 
+        # Get client with user context
+        client = auth_manager.get_client_for_user(user_id)
+
         schedule_data = {
             'user_id': user_id,
             'schedule_name': data['name'].strip(),
             'schedule_data': data['schedule'],
             'constraints_data': data.get('constraints', [])
         }
-        
-        if 'description' in data and data['description']:
-            schedule_data['description'] = data['description']
-        if 'isPublic' in data:
-            schedule_data['is_public'] = data['isPublic']
 
         print(f"✅ Attempting to save schedule data: {schedule_data}")
 
-        result = auth_manager.service_supabase.table("saved_schedules").insert(schedule_data).execute()
+        result = client.table("saved_schedules").insert(schedule_data).execute()
         print(f"Database insert result: {result}")
         
         if result.data:
             saved_schedule = result.data[0]
             print(f"✅ Schedule saved successfully: {saved_schedule}")
             
+            # Log the save activity
             try:
                 log_data = {
                     'user_id': user_id,
@@ -76,7 +75,7 @@ def save_schedule():
                     'error_message': None
                 }
                 
-                auth_manager.service_supabase.table("schedule_generation_logs").insert(log_data).execute()
+                client.table("schedule_generation_logs").insert(log_data).execute()
                 print(f"✅ Save activity logged")
             except Exception as log_error:
                 print(f"⚠️ Failed to log save activity: {log_error}")
@@ -107,7 +106,9 @@ def list_schedules():
         return jsonify({'error': 'Authentication service unavailable'}), 500
 
     try:
-        result = auth_manager.service_supabase.table("saved_schedules")\
+        client = auth_manager.get_client_for_user(user_id)
+        
+        result = client.table("saved_schedules")\
             .select("*")\
             .eq("user_id", user_id)\
             .order("created_at", desc=True)\
@@ -133,7 +134,9 @@ def get_schedule(schedule_id):
         return jsonify({'error': 'Authentication service unavailable'}), 500
 
     try:
-        result = auth_manager.service_supabase.table("saved_schedules")\
+        client = auth_manager.get_client_for_user(user_id)
+        
+        result = client.table("saved_schedules")\
             .select("*")\
             .eq("id", schedule_id)\
             .eq("user_id", user_id)\
@@ -162,7 +165,9 @@ def delete_schedule(schedule_id):
         return jsonify({'error': 'Authentication service unavailable'}), 500
 
     try:
-        result = auth_manager.service_supabase.table("saved_schedules")\
+        client = auth_manager.get_client_for_user(user_id)
+        
+        result = client.table("saved_schedules")\
             .delete()\
             .eq("id", schedule_id)\
             .eq("user_id", user_id)\

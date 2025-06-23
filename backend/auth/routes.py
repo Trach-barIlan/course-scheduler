@@ -29,30 +29,21 @@ def validate_password(password):
     return True, "Password is valid"
 
 def set_user_session(user_data):
-    """Set user session with all required data and force session persistence"""
+    """Set user session with all required data"""
     print(f"🔧 Setting session for user: {user_data.get('username')}")
-    print(f"   Before clear - Session: {dict(session)}")
     
-    # Don't clear the session, just update it
     session.permanent = True
-    
-    # Set all user data
-    session['user_id'] = str(user_data['id'])  # Ensure it's a string
+    session['user_id'] = str(user_data['id'])
     session['username'] = user_data.get('username', '')
     session['email'] = user_data.get('email', '')
     session['first_name'] = user_data.get('first_name', '')
     session['last_name'] = user_data.get('last_name', '')
     session['authenticated'] = True
     session['login_time'] = datetime.now().isoformat()
-    
-    # Force session to be saved immediately
     session.modified = True
     
     print(f"✅ Session set for user: {user_data.get('username')}")
     print(f"   Session ID: {session.get('user_id')}")
-    print(f"   Session data: {dict(session)}")
-    print(f"   Session permanent: {session.permanent}")
-    print(f"   Session modified: {getattr(session, 'modified', 'unknown')}")
 
 @auth_bp.route('/register', methods=['POST'])
 def register():
@@ -101,20 +92,13 @@ def register():
         user = auth_manager.create_user(username, email, password, first_name, last_name)
         
         if user:
-            # Set session immediately after user creation
             set_user_session(user)
-            
             print(f"✅ User registered and logged in: {user['username']}")
-            print(f"   Final session: {dict(session)}")
             
-            # Create response with explicit session cookie
-            response = jsonify({
+            return jsonify({
                 'message': 'Registration successful',
                 'user': user
-            })
-            response.status_code = 201
-            
-            return response
+            }), 201
         else:
             return jsonify({'error': 'Registration failed'}), 400
         
@@ -150,20 +134,13 @@ def login():
         user = auth_manager.authenticate_user(username_or_email, password)
         
         if user:
-            # Set session immediately after authentication
             set_user_session(user)
-            
             print(f"✅ User logged in successfully: {user['username']}")
-            print(f"   Final session: {dict(session)}")
             
-            # Create response with explicit session handling
-            response = jsonify({
+            return jsonify({
                 'message': 'Login successful',
                 'user': user
-            })
-            response.status_code = 200
-            
-            return response
+            }), 200
         else:
             print(f"❌ Login failed for: {username_or_email}")
             return jsonify({'error': 'Invalid username/email or password'}), 401
@@ -179,15 +156,11 @@ def logout():
     session.modified = True
     print("✅ Session cleared after logout")
     
-    response = jsonify({'message': 'Logged out successfully'})
-    response.status_code = 200
-    
-    return response
+    return jsonify({'message': 'Logged out successfully'}), 200
 
 @auth_bp.route('/me', methods=['GET'])
 def get_current_user():
     print(f"🔍 Auth check - current session: {dict(session)}")
-    print(f"   Request cookies: {dict(request.cookies)}")
     
     user_id = session.get('user_id')
     authenticated = session.get('authenticated', False)
@@ -206,7 +179,6 @@ def get_current_user():
     user = auth_manager.get_user_by_id(user_id)
     if user:
         print(f"✅ User found: {user.get('username', 'Unknown')}")
-        # Don't refresh session data here to avoid clearing it
         return jsonify({'user': user}), 200
     else:
         print("❌ User not found in database, clearing session")
@@ -237,14 +209,11 @@ def refresh_session():
         
         print(f"✅ Session refreshed successfully for user: {user.get('username')}")
         
-        response = jsonify({
+        return jsonify({
             'message': 'Session refreshed',
             'user': user,
             'authenticated': True
-        })
-        response.status_code = 200
-        
-        return response
+        }), 200
     else:
         print("❌ User no longer exists, clearing session")
         session.clear()

@@ -14,9 +14,19 @@ class AuthManager:
         if not url or not key or not service_key:
             raise ValueError("Missing required Supabase environment variables")
         
-        self.supabase: Client = create_client(url, key)
+        # Use service role client for all operations since we're managing auth ourselves
+        self.supabase: Client = create_client(url, service_key)
         self.service_supabase: Client = create_client(url, service_key)
-        print("✅ AuthManager initialized successfully")
+        print("✅ AuthManager initialized successfully with custom auth")
+
+    def set_user_context(self, user_id: str):
+        """Set the current user context for RLS policies"""
+        try:
+            # Execute the function to set current user ID in session
+            self.service_supabase.rpc('set_current_user_id', {'user_id': user_id}).execute()
+            print(f"✅ User context set for: {user_id}")
+        except Exception as e:
+            print(f"⚠️ Failed to set user context: {e}")
 
     def hash_password(self, password: str) -> str:
         """Hash password with salt"""
@@ -40,7 +50,7 @@ class AuthManager:
         return password_hash.hex() == stored_hash
 
     def create_user(self, username: str, email: str, password: str, first_name: str, last_name: str) -> Optional[Dict]:
-        """Create a new user"""
+        """Create a new user in user_profiles table"""
         try:
             # Check if user already exists
             existing = self.service_supabase.table("user_profiles").select("id").eq("email", email).execute()
@@ -69,6 +79,19 @@ class AuthManager:
                 user = result.data[0]
                 # Remove password hash from response
                 user.pop('password_hash', None)
+                
+                # Set user context for subsequent operations
+                self.set_user_context(user['id'])
+                
+                # Initialize user statistics
+                try:
+                    stats_data = {
+                        "user_id": user['id']
+                    }
+                    self.service_supabase.table("user_statistics").insert(stats_data).execute()
+                except Exception as stats_error:
+                    print(f"⚠️ Failed to create user statistics: {stats_error}")
+                
                 return user
             
             return None
@@ -93,6 +116,9 @@ class AuthManager:
             
             # Verify password
             if self.verify_password(password, user['password_hash']):
+                # Set user context
+                self.set_user_context(user['id'])
+                
                 # Update last login
                 self.service_supabase.table("user_profiles").update({
                     "last_login": datetime.now().isoformat()
@@ -111,6 +137,9 @@ class AuthManager:
     def get_user_by_id(self, user_id: str) -> Optional[Dict]:
         """Get user by ID"""
         try:
+            # Set user context
+            self.set_user_context(user_id)
+            
             result = self.service_supabase.table("user_profiles").select("*").eq("id", user_id).execute()
             
             if result.data:
@@ -123,3 +152,8 @@ class AuthManager:
         except Exception as e:
             print(f"❌ Error getting user: {e}")
             return None
+
+    def get_client_for_user(self, user_id: str) -> Client:
+        """Get a Supabase client with user context set"""
+        self.set_user_context(user_id)
+        return self.service_supabase
