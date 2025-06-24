@@ -2,9 +2,6 @@ import React, { useState, useEffect } from 'react';
 import NotImplementedModal from '../NotImplementedModal/NotImplementedModal';
 import './Dashboard.css';
 
-// Use consistent API URL
-const API_BASE_URL = 'http://127.0.0.1:5000';
-
 const Dashboard = ({ user, onQuickAction }) => {
   const [showNotImplemented, setShowNotImplemented] = useState(false);
   const [notImplementedFeature, setNotImplementedFeature] = useState('');
@@ -24,7 +21,8 @@ const Dashboard = ({ user, onQuickAction }) => {
 
   const fetchUserStatistics = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/statistics/user`, {
+      // Using relative URL since we have a proxy configured
+      const response = await fetch('/api/statistics/user', {
         credentials: 'include'
       });
 
@@ -61,7 +59,8 @@ const Dashboard = ({ user, onQuickAction }) => {
 
   const fetchRecentActivity = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/statistics/recent-activity`, {
+      // Using relative URL since we have a proxy configured
+      const response = await fetch('/api/statistics/recent-activity', {
         credentials: 'include'
       });
 

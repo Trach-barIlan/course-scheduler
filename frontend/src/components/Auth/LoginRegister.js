@@ -1,9 +1,6 @@
 import React, { useState } from 'react';
 import './Auth.css';
 
-// Use consistent API URL
-const API_BASE_URL = 'http://127.0.0.1:5000';
-
 const LoginRegister = ({ onAuthSuccess, onClose }) => {
   const [isLogin, setIsLogin] = useState(true);
   const [formData, setFormData] = useState({
@@ -118,7 +115,8 @@ const LoginRegister = ({ onAuthSuccess, onClose }) => {
       console.log(`🔄 Attempting ${isLogin ? 'login' : 'registration'}...`);
       console.log('Payload:', payload);
 
-      const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      // Using relative URL since we have a proxy configured
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -136,7 +134,7 @@ const LoginRegister = ({ onAuthSuccess, onClose }) => {
         
         // Verify session was set by checking debug endpoint
         try {
-          const debugResponse = await fetch(`${API_BASE_URL}/api/auth/debug`, {
+          const debugResponse = await fetch('/api/auth/debug', {
             credentials: 'include'
           });
           const debugData = await debugResponse.json();

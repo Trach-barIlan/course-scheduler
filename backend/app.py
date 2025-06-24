@@ -17,20 +17,20 @@ load_dotenv()
 
 app = Flask(__name__)
 
-# Enhanced session configuration for cross-origin requests
+# Enhanced session configuration for development
 app.secret_key = os.environ.get('SECRET_KEY', 'your-secret-key-change-this-in-production')
 app.config['SESSION_COOKIE_SECURE'] = False  # Set to True in production with HTTPS
 app.config['SESSION_COOKIE_HTTPONLY'] = False  # Allow JavaScript access for debugging
-app.config['SESSION_COOKIE_SAMESITE'] = 'None'  # Allow cross-origin cookies
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'  # Use Lax for same-origin requests via proxy
 app.config['SESSION_PERMANENT'] = True
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)
 app.config['SESSION_COOKIE_NAME'] = 'schedgic_session'
 app.config['SESSION_COOKIE_PATH'] = '/'
-app.config['SESSION_COOKIE_DOMAIN'] = None  # Allow cookies across different ports
+app.config['SESSION_COOKIE_DOMAIN'] = None  # Let Flask handle domain automatically
 
-# Enhanced CORS configuration with explicit cookie support
+# Simplified CORS configuration for proxy setup
 CORS(app, 
-     origins=["http://localhost:3000", "http://127.0.0.1:3000"],
+     origins=["http://localhost:3000"],  # Only need localhost since we're using proxy
      supports_credentials=True,
      allow_headers=["Content-Type", "Authorization", "Cookie"],
      expose_headers=["Set-Cookie"],
@@ -255,5 +255,5 @@ def test_session():
     }), 200
 
 if __name__ == "__main__":
-    # Use 127.0.0.1 consistently
+    # Run on 127.0.0.1 for consistency
     app.run(debug=True, host='127.0.0.1', port=5000)

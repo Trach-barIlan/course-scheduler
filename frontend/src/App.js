@@ -10,9 +10,6 @@ import UserProfile from './components/UserProfile/UserProfile';
 import './styles/base.css';
 import './styles/App.css';
 
-// Use consistent API URL
-const API_BASE_URL = 'http://127.0.0.1:5000';
-
 function AppContent() {
   const [user, setUser] = useState(null);
   const [showAuth, setShowAuth] = useState(false);
@@ -20,17 +17,14 @@ function AppContent() {
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const navigate = useNavigate();
 
-  // Enhanced authentication check with better session persistence
+  // Enhanced authentication check with proxy-based requests
   useEffect(() => {
     const checkAuthStatus = async () => {
       try {
         console.log('🔍 Checking authentication status...');
         
-        // First, check if we have any session cookies
-        const cookies = document.cookie;
-        console.log('🍪 Current cookies:', cookies);
-        
-        const response = await fetch(`${API_BASE_URL}/api/auth/me`, {
+        // Using relative URL since we have a proxy configured
+        const response = await fetch('/api/auth/me', {
           method: 'GET',
           credentials: 'include', // This is crucial for sending cookies
           headers: {
@@ -51,7 +45,7 @@ function AppContent() {
           
           // Try to get more debug information
           try {
-            const debugResponse = await fetch(`${API_BASE_URL}/api/test-session`, {
+            const debugResponse = await fetch('/api/test-session', {
               credentials: 'include'
             });
             const debugData = await debugResponse.json();
@@ -81,25 +75,22 @@ function AppContent() {
       try {
         console.log('🔍 Post-auth verification...');
         
-        // Check cookies after auth
-        console.log('🍪 Cookies after auth:', document.cookie);
-        
         // Check debug endpoint
-        const debugResponse = await fetch(`${API_BASE_URL}/api/auth/debug`, {
+        const debugResponse = await fetch('/api/auth/debug', {
           credentials: 'include'
         });
         const debugData = await debugResponse.json();
         console.log('🔍 Post-auth debug:', debugData);
         
         // Check test session endpoint
-        const testResponse = await fetch(`${API_BASE_URL}/api/test-session`, {
+        const testResponse = await fetch('/api/test-session', {
           credentials: 'include'
         });
         const testData = await testResponse.json();
         console.log('🔍 Test session data:', testData);
         
         // Verify /me endpoint works
-        const meResponse = await fetch(`${API_BASE_URL}/api/auth/me`, {
+        const meResponse = await fetch('/api/auth/me', {
           credentials: 'include'
         });
         console.log('🔍 /me endpoint status:', meResponse.status);
@@ -123,7 +114,7 @@ function AppContent() {
 
   const handleLogout = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/auth/logout`, {
+      const response = await fetch('/api/auth/logout', {
         method: 'POST',
         credentials: 'include',
         headers: {

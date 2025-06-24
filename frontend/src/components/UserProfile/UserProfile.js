@@ -1,9 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import './UserProfile.css';
 
-// Use consistent API URL
-const API_BASE_URL = 'http://127.0.0.1:5000';
-
 const UserProfile = ({ user, onLogout, onClose }) => {
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [statistics, setStatistics] = useState(null);
@@ -16,7 +13,8 @@ const UserProfile = ({ user, onLogout, onClose }) => {
 
   const fetchUserStatistics = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/statistics/user`, {
+      // Using relative URL since we have a proxy configured
+      const response = await fetch('/api/statistics/user', {
         credentials: 'include'
       });
 
@@ -34,7 +32,8 @@ const UserProfile = ({ user, onLogout, onClose }) => {
   const handleLogout = async () => {
     setIsLoggingOut(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/api/auth/logout`, {
+      // Using relative URL since we have a proxy configured
+      const response = await fetch('/api/auth/logout', {
         method: 'POST',
         credentials: 'include'
       });
