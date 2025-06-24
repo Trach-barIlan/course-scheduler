@@ -115,8 +115,7 @@ const LoginRegister = ({ onAuthSuccess, onClose }) => {
       console.log(`🔄 Attempting ${isLogin ? 'login' : 'registration'}...`);
       console.log('Payload:', payload);
 
-      // Using relative URL since we have a proxy configured
-      const response = await fetch(endpoint, {
+      const response = await fetch(`http://localhost:5000${endpoint}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -134,7 +133,7 @@ const LoginRegister = ({ onAuthSuccess, onClose }) => {
         
         // Verify session was set by checking debug endpoint
         try {
-          const debugResponse = await fetch('/api/auth/debug', {
+          const debugResponse = await fetch('http://localhost:5000/api/auth/debug', {
             credentials: 'include'
           });
           const debugData = await debugResponse.json();
