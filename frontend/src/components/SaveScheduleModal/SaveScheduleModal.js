@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
 import './SaveScheduleModal.css';
 
+// Use consistent API URL
+const API_BASE_URL = 'http://127.0.0.1:5000';
+
 const SaveScheduleModal = ({ isOpen, onClose, onSave, schedule, user }) => {
   const [scheduleName, setScheduleName] = useState('');
   const [description, setDescription] = useState('');
@@ -31,7 +34,7 @@ const SaveScheduleModal = ({ isOpen, onClose, onSave, schedule, user }) => {
 
       // Step 1: Verify current authentication status
       console.log('📋 Step 1: Verifying authentication...');
-      const authCheck = await fetch('http://localhost:5000/api/auth/me', {
+      const authCheck = await fetch(`${API_BASE_URL}/api/auth/me`, {
         credentials: 'include'
       });
 
@@ -48,7 +51,7 @@ const SaveScheduleModal = ({ isOpen, onClose, onSave, schedule, user }) => {
 
       // Step 2: Save the schedule with enhanced error handling
       console.log('💾 Step 2: Saving schedule...');
-      const response = await fetch('http://localhost:5000/api/schedules/save', {
+      const response = await fetch(`${API_BASE_URL}/api/schedules/save`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
