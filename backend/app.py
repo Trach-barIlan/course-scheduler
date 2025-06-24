@@ -88,34 +88,6 @@ def normalize_text(text):
     
     return normalized
 
-@app.before_request
-def before_request():
-    """Handle CORS preflight requests and session management"""
-    session.permanent = True
-    
-    # Handle CORS preflight requests
-    if request.method == 'OPTIONS':
-        response = jsonify({'status': 'ok'})
-        response.headers.add('Access-Control-Allow-Origin', 'http://localhost:3000')
-        response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization,Cookie')
-        response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
-        response.headers.add('Access-Control-Allow-Credentials', 'true')
-        return response
-    
-    if request.endpoint and 'api' in request.endpoint:
-        print(f"🔍 Request: {request.method} {request.endpoint}")
-        print(f"Session before: {dict(session)}")
-        print(f"Cookies received: {dict(request.cookies)}")
-
-@app.after_request
-def after_request(response):
-    """Add CORS headers to all responses"""
-    response.headers.add('Access-Control-Allow-Origin', 'http://localhost:3000')
-    response.headers.add('Access-Control-Allow-Credentials', 'true')
-    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization,Cookie')
-    response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
-    return response
-
 @app.route("/api/parse", methods=["POST"])
 def parse_input():
     if not schedule_parser:
