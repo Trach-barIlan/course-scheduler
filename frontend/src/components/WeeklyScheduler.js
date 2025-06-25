@@ -16,7 +16,6 @@ const WeeklySchedule = ({ schedule, isLoading, user, authToken }) => {
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [showNotImplemented, setShowNotImplemented] = useState(false);
   const [notImplementedFeature, setNotImplementedFeature] = useState('');
-  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://127.0.0.1:5000/';
 
   // Update current schedule when prop changes
   React.useEffect(() => {
@@ -63,7 +62,7 @@ const WeeklySchedule = ({ schedule, isLoading, user, authToken }) => {
     // Verify authentication before opening modal
     try {
       console.log('🔍 Verifying authentication before opening save modal...');
-      const authCheck = await fetch(API_BASE_URL + 'auth/me', {
+      const authCheck = await fetch('/api/auth/me', {
         headers: {
           'Authorization': `Bearer ${authToken}`,
           'Content-Type': 'application/json',
@@ -78,8 +77,9 @@ const WeeklySchedule = ({ schedule, isLoading, user, authToken }) => {
         return;
       }
 
-      await authCheck.json();
-      console.log('✅ Authentication verified, opening save modal');
+      const authData = await authCheck.json();
+      console.log('✅ Authentication verified for user:', authData.user?.username);
+
       console.log('Opening save modal with schedule:', currentSchedule);
       setShowSaveModal(true);
     } catch (error) {

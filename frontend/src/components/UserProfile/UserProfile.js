@@ -4,13 +4,12 @@ import './UserProfile.css';
 const UserProfile = ({ user, authToken, onLogout, onClose }) => {
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [statistics, setStatistics] = useState(null);
-  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://127.0.0.1:5000/';
 
   useEffect(() => {
     if (user && authToken) {
       const fetchUserStatistics = async () => {
         try {
-          const response = await fetch(API_BASE_URL + 'statistics/user', {
+          const response = await fetch('/api/statistics/user', {
             headers: {
               'Authorization': `Bearer ${authToken}`,
               'Content-Type': 'application/json',
@@ -29,12 +28,12 @@ const UserProfile = ({ user, authToken, onLogout, onClose }) => {
       };
       fetchUserStatistics();
     }
-  }, [user, authToken, API_BASE_URL]);
+  }, [user, authToken]);
 
   const handleLogout = async () => {
     setIsLoggingOut(true);
     try {
-      const response = await fetch(API_BASE_URL + 'auth/logout', {
+      const response = await fetch('/api/auth/logout', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${authToken}`,

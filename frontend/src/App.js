@@ -17,7 +17,6 @@ function AppContent() {
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [authToken, setAuthToken] = useState(localStorage.getItem('auth_token'));
   const navigate = useNavigate();
-  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://127.0.0.1:5000/';
 
   // Enhanced authentication check with token-based auth
   useEffect(() => {
@@ -35,7 +34,7 @@ function AppContent() {
         
         console.log('🔑 Auth token found, validating...');
         
-        const response = await fetch(API_BASE_URL + 'auth/me', {
+        const response = await fetch('/api/auth/me', {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -66,7 +65,7 @@ function AppContent() {
     };
 
     checkAuthStatus();
-  }, [authToken, API_BASE_URL]);
+  }, [authToken]);
 
   const handleAuthSuccess = (userData, token) => {
     console.log('✅ Authentication successful:', userData?.username);
@@ -84,7 +83,7 @@ function AppContent() {
     try {
       const token = localStorage.getItem('auth_token');
       if (token) {
-        const response = await fetch(API_BASE_URL + 'auth/logout', {
+        const response = await fetch('/api/auth/logout', {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,

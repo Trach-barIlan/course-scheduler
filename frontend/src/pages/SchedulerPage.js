@@ -16,7 +16,6 @@ const SchedulerPage = ({ user, authToken }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [parsedConstraints, setParsedConstraints] = useState(null);
   const [constraintsUpdateFunction, setConstraintsUpdateFunction] = useState(null);
-  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://127.0.0.1:5000/';
 
   const handleCourseChange = (index, field, value) => {
     const newCourses = [...courses];
@@ -69,7 +68,7 @@ const generateScheduleWithConstraints = useCallback(async (constraintsToUse) => 
       headers['Authorization'] = `Bearer ${authToken}`;
     }
 
-    const scheduleRes = await fetch(API_BASE_URL + "schedule", {
+    const scheduleRes = await fetch("/api/schedule", {
       method: "POST",
       headers: headers,
       body: JSON.stringify({
@@ -95,7 +94,7 @@ const generateScheduleWithConstraints = useCallback(async (constraintsToUse) => 
   } catch (err) {
     setError(err.message || 'Failed to connect to backend. Please make sure the server is running.');
   }
-}, [courses, preference, validateForm, user, authToken, API_BASE_URL]); // Include user and authToken in the dependency array
+}, [courses, preference, validateForm, user, authToken]); // Include user and authToken in the dependency array
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -117,7 +116,7 @@ const generateScheduleWithConstraints = useCallback(async (constraintsToUse) => 
           headers['Authorization'] = `Bearer ${authToken}`;
         }
 
-        const parseRes = await fetch(API_BASE_URL + "parse", {
+        const parseRes = await fetch("/api/parse", {
           method: "POST",
           headers: headers,
           body: JSON.stringify({ text: constraints }),

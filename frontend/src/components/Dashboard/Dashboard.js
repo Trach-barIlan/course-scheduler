@@ -8,14 +8,13 @@ const Dashboard = ({ user, authToken, onQuickAction }) => {
   const [statistics, setStatistics] = useState(null);
   const [recentActivity, setRecentActivity] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://127.0.0.1:5000/';
 
   // Fetch user statistics when component mounts or user changes
   useEffect(() => {
     if (user && authToken) {
       const fetchUserStatistics = async () => {
         try {
-          const response = await fetch(API_BASE_URL + 'statistics/user', {
+          const response = await fetch('/api/statistics/user', {
             headers: {
               'Authorization': `Bearer ${authToken}`,
               'Content-Type': 'application/json',
@@ -55,7 +54,7 @@ const Dashboard = ({ user, authToken, onQuickAction }) => {
 
       const fetchRecentActivity = async () => {
         try {
-          const response = await fetch(API_BASE_URL + 'statistics/recent-activity', {
+          const response = await fetch('/api/statistics/recent-activity', {
             headers: {
               'Authorization': `Bearer ${authToken}`,
               'Content-Type': 'application/json',
@@ -77,7 +76,7 @@ const Dashboard = ({ user, authToken, onQuickAction }) => {
     } else {
       setIsLoading(false);
     }
-  }, [user, authToken, API_BASE_URL]);
+  }, [user, authToken]);
 
   // Default statistics for non-authenticated users
   const defaultStats = [

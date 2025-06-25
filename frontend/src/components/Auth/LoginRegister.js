@@ -14,7 +14,6 @@ const LoginRegister = ({ onAuthSuccess, onClose }) => {
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://127.0.0.1:5000/';
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -99,7 +98,7 @@ const LoginRegister = ({ onAuthSuccess, onClose }) => {
     setErrors({});
 
     try {
-      const endpoint = API_BASE_URL + (isLogin ? 'auth/login' : 'auth/register');
+      const endpoint = `/api/auth/${isLogin ? 'login' : 'register'}`;
       const payload = isLogin 
         ? {
             username_or_email: formData.username,
@@ -115,7 +114,6 @@ const LoginRegister = ({ onAuthSuccess, onClose }) => {
 
       console.log(`🔄 Attempting ${isLogin ? 'login' : 'registration'}...`);
       console.log('API Endpoint:', endpoint);
-      console.log('Base URL:', API_BASE_URL);
 
       const response = await fetch(endpoint, {
         method: 'POST',

@@ -29,10 +29,10 @@ CORS(app,
      methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"]
 )
 
-# Register blueprints
-app.register_blueprint(auth_bp, url_prefix='/auth')
-app.register_blueprint(schedules_bp, url_prefix='/schedules')
-app.register_blueprint(statistics_bp, url_prefix='/statistics')
+# Register blueprints with /api/ prefix restored
+app.register_blueprint(auth_bp, url_prefix='/api/auth')
+app.register_blueprint(schedules_bp, url_prefix='/api/schedules')
+app.register_blueprint(statistics_bp, url_prefix='/api/statistics')
 
 # Initialize AI parser
 try:
@@ -80,7 +80,7 @@ def normalize_text(text):
     
     return normalized
 
-@app.route("/parse", methods=["POST"])
+@app.route("/api/parse", methods=["POST"])
 @token_required
 def parse_input():
     if not schedule_parser:
@@ -138,7 +138,7 @@ def parse_input():
         "entities": raw_entities
     }), 200
 
-@app.route("/schedule", methods=["POST"])
+@app.route("/api/schedule", methods=["POST"])
 @token_required
 def api_schedule():
     generation_start_time = time.time()
@@ -233,7 +233,7 @@ def api_schedule():
         return jsonify({"error": "Internal server error", "details": str(e)}), 500
 
 # Add a test endpoint to check authentication
-@app.route("/test-session", methods=["GET"])
+@app.route("/api/test-session", methods=["GET"])
 @token_required
 def test_session():
     """Test endpoint to check authentication status"""
