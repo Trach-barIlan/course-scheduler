@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import NotImplementedModal from '../NotImplementedModal/NotImplementedModal';
+import ScheduleGuide from '../ScheduleGuide/ScheduleGuide';
 import './Dashboard.css';
 
 const Dashboard = ({ user, authToken, onQuickAction }) => {
   const [showNotImplemented, setShowNotImplemented] = useState(false);
   const [notImplementedFeature, setNotImplementedFeature] = useState('');
+  const [showGuide, setShowGuide] = useState(false);
   const [statistics, setStatistics] = useState(null);
   const [recentActivity, setRecentActivity] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -190,9 +192,17 @@ const Dashboard = ({ user, authToken, onQuickAction }) => {
   const handleQuickAction = (actionId) => {
     if (actionId === 'new-schedule') {
       onQuickAction && onQuickAction(actionId);
+    } else if (actionId === 'guide') {
+      setShowGuide(true);
     } else {
       handleNotImplementedClick(actionId);
     }
+  };
+
+  const handleStartScheduling = () => {
+    // Close guide and navigate to scheduler
+    setShowGuide(false);
+    onQuickAction && onQuickAction('new-schedule');
   };
 
   const stats = getStatsArray();
@@ -303,7 +313,7 @@ const Dashboard = ({ user, authToken, onQuickAction }) => {
                 <p>Follow our step-by-step guide to create your first schedule</p>
                 <button 
                   className="card-action"
-                  onClick={() => handleQuickAction('new-schedule')}
+                  onClick={() => setShowGuide(true)}
                 >
                   Get Started
                 </button>
@@ -353,6 +363,12 @@ const Dashboard = ({ user, authToken, onQuickAction }) => {
           </div>
         )}
       </div>
+
+      <ScheduleGuide
+        isOpen={showGuide}
+        onClose={() => setShowGuide(false)}
+        onStartScheduling={handleStartScheduling}
+      />
 
       <NotImplementedModal
         isOpen={showNotImplemented}
