@@ -119,12 +119,14 @@ const LoginRegister = ({ onAuthSuccess, onClose }) => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest', // Add this header
         },
         body: JSON.stringify(payload)
       });
 
       console.log('Response status:', response.status);
       const data = await response.json();
+      console.log('Response data:', data);
       console.log('Response data:', data);
 
       if (response.ok) {
