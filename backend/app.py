@@ -80,6 +80,27 @@ def normalize_text(text):
     
     return normalized
 
+def update_user_statistics_after_generation(user_id, courses_count, constraints_count, generation_time_ms, schedule_type, success):
+    """Update user statistics after schedule generation"""
+    try:
+        auth_manager = AuthManager()
+        client = auth_manager.get_client_for_user(user_id)
+        
+        # Call the database function to update statistics
+        client.rpc('update_user_statistics', {
+            'p_user_id': user_id,
+            'p_courses_count': courses_count,
+            'p_constraints_count': constraints_count,
+            'p_generation_time_ms': generation_time_ms,
+            'p_schedule_type': schedule_type,
+            'p_success': success
+        }).execute()
+        
+        print(f"✅ Updated statistics for user {user_id}")
+        
+    except Exception as e:
+        print(f"⚠️ Failed to update user statistics: {e}")
+
 @app.route("/api/parse", methods=["POST"])
 @token_required
 def parse_input():
@@ -198,24 +219,37 @@ def api_schedule():
 
         generation_time_ms = int((time.time() - generation_start_time) * 1000)
         
-        # Log generation attempt if user is authenticated
+        # Log generation attempt and update statistics if user is authenticated
         user = g.user
+        success = schedule is not None
+        
         if user:
             try:
                 auth_manager = AuthManager()
                 client = auth_manager.get_client_for_user(user['id'])
                 
+                # Log the generation attempt
                 log_data = {
                     'user_id': user['id'],
                     'courses_count': len(courses),
                     'constraints_count': len(parsed_constraints.get("constraints", [])) if parsed_constraints else 0,
                     'generation_time_ms': generation_time_ms,
                     'schedule_type': preference,
-                    'success': schedule is not None,
-                    'error_message': None if schedule else 'No valid schedule found'
+                    'success': success,
+                    'error_message': None if success else 'No valid schedule found'
                 }
                 
                 client.table("schedule_generation_logs").insert(log_data).execute()
+                
+                # Update user statistics
+                update_user_statistics_after_generation(
+                    user['id'],
+                    len(courses),
+                    len(parsed_constraints.get("constraints", [])) if parsed_constraints else 0,
+                    generation_time_ms,
+                    preference,
+                    success
+                )
                 
             except Exception as stats_error:
                 print(f"Error logging statistics: {stats_error}")
