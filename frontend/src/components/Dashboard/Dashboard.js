@@ -8,76 +8,76 @@ const Dashboard = ({ user, authToken, onQuickAction }) => {
   const [statistics, setStatistics] = useState(null);
   const [recentActivity, setRecentActivity] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://127.0.0.1:5000/';
 
   // Fetch user statistics when component mounts or user changes
   useEffect(() => {
     if (user && authToken) {
+      const fetchUserStatistics = async () => {
+        try {
+          const response = await fetch(API_BASE_URL + 'statistics/user', {
+            headers: {
+              'Authorization': `Bearer ${authToken}`,
+              'Content-Type': 'application/json',
+            }
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            setStatistics(data.statistics);
+          } else {
+            console.error('Failed to fetch statistics');
+            // Set default statistics if fetch fails
+            setStatistics({
+              schedules_created: 0,
+              schedules_this_week: 0,
+              saved_schedules_count: 0,
+              hours_saved: 0,
+              success_rate: 98,
+              efficiency: 85
+            });
+          }
+        } catch (error) {
+          console.error('Error fetching statistics:', error);
+          // Set default statistics if fetch fails
+          setStatistics({
+            schedules_created: 0,
+            schedules_this_week: 0,
+            saved_schedules_count: 0,
+            hours_saved: 0,
+            success_rate: 98,
+            efficiency: 85
+          });
+        } finally {
+          setIsLoading(false);
+        }
+      };
+
+      const fetchRecentActivity = async () => {
+        try {
+          const response = await fetch(API_BASE_URL + 'statistics/recent-activity', {
+            headers: {
+              'Authorization': `Bearer ${authToken}`,
+              'Content-Type': 'application/json',
+            }
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            setRecentActivity(data.activities || []);
+          } else {
+            console.error('Failed to fetch recent activity');
+          }
+        } catch (error) {
+          console.error('Error fetching recent activity:', error);
+        }
+      };
       fetchUserStatistics();
       fetchRecentActivity();
     } else {
       setIsLoading(false);
     }
-  }, [user, authToken]);
-
-  const fetchUserStatistics = async () => {
-    try {
-      const response = await fetch('/api/statistics/user', {
-        headers: {
-          'Authorization': `Bearer ${authToken}`,
-          'Content-Type': 'application/json',
-        }
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setStatistics(data.statistics);
-      } else {
-        console.error('Failed to fetch statistics');
-        // Set default statistics if fetch fails
-        setStatistics({
-          schedules_created: 0,
-          schedules_this_week: 0,
-          saved_schedules_count: 0,
-          hours_saved: 0,
-          success_rate: 98,
-          efficiency: 85
-        });
-      }
-    } catch (error) {
-      console.error('Error fetching statistics:', error);
-      // Set default statistics if fetch fails
-      setStatistics({
-        schedules_created: 0,
-        schedules_this_week: 0,
-        saved_schedules_count: 0,
-        hours_saved: 0,
-        success_rate: 98,
-        efficiency: 85
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const fetchRecentActivity = async () => {
-    try {
-      const response = await fetch('/api/statistics/recent-activity', {
-        headers: {
-          'Authorization': `Bearer ${authToken}`,
-          'Content-Type': 'application/json',
-        }
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setRecentActivity(data.activities || []);
-      } else {
-        console.error('Failed to fetch recent activity');
-      }
-    } catch (error) {
-      console.error('Error fetching recent activity:', error);
-    }
-  };
+  }, [user, authToken, API_BASE_URL]);
 
   // Default statistics for non-authenticated users
   const defaultStats = [
