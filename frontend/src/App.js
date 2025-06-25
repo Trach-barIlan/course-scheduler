@@ -15,50 +15,49 @@ function AppContent() {
   const [showAuth, setShowAuth] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+  const [authToken, setAuthToken] = useState(localStorage.getItem('auth_token'));
   const navigate = useNavigate();
 
-  // Enhanced authentication check with better session persistence
+  // Enhanced authentication check with token-based auth
   useEffect(() => {
     const checkAuthStatus = async () => {
       try {
         console.log('🔍 Checking authentication status...');
         
-        // First, check if we have any session cookies
-        const cookies = document.cookie;
-        console.log('🍪 Current cookies:', cookies);
+        const token = localStorage.getItem('auth_token');
+        if (!token) {
+          console.log('❌ No auth token found');
+          setUser(null);
+          setIsCheckingAuth(false);
+          return;
+        }
+        
+        console.log('🔑 Auth token found, validating...');
         
         const response = await fetch('/api/auth/me', {
           method: 'GET',
-          credentials: 'include', // This is crucial for sending cookies
           headers: {
+            'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json',
           }
         });
         
         console.log('Auth check response status:', response.status);
-        console.log('Auth check response headers:', Object.fromEntries(response.headers.entries()));
         
         if (response.ok) {
           const data = await response.json();
           console.log('✅ User authenticated:', data.user?.username);
           setUser(data.user);
         } else {
-          console.log('❌ No active session found');
+          console.log('❌ Token invalid, removing from storage');
+          localStorage.removeItem('auth_token');
+          setAuthToken(null);
           setUser(null);
-          
-          // Try to get more debug information
-          try {
-            const debugResponse = await fetch('/api/test-session', {
-              credentials: 'include'
-            });
-            const debugData = await debugResponse.json();
-            console.log('🔍 Session debug info:', debugData);
-          } catch (debugError) {
-            console.error('Debug check failed:', debugError);
-          }
         }
       } catch (error) {
         console.error('❌ Auth check failed:', error);
+        localStorage.removeItem('auth_token');
+        setAuthToken(null);
         setUser(null);
       } finally {
         setIsCheckingAuth(false);
@@ -66,77 +65,45 @@ function AppContent() {
     };
 
     checkAuthStatus();
-  }, []);
+  }, [authToken]);
 
-  const handleAuthSuccess = (userData) => {
+  const handleAuthSuccess = (userData, token) => {
     console.log('✅ Authentication successful:', userData?.username);
+    
+    // Store token in localStorage
+    localStorage.setItem('auth_token', token);
+    setAuthToken(token);
     setUser(userData);
     setShowAuth(false);
     
-    // Verify the session was set correctly with enhanced debugging
-    setTimeout(async () => {
-      try {
-        console.log('🔍 Post-auth verification...');
-        
-        // Check cookies after auth
-        console.log('🍪 Cookies after auth:', document.cookie);
-        
-        // Check debug endpoint
-        const debugResponse = await fetch('/api/auth/debug', {
-          credentials: 'include'
-        });
-        const debugData = await debugResponse.json();
-        console.log('🔍 Post-auth debug:', debugData);
-        
-        // Check test session endpoint
-        const testResponse = await fetch('/api/test-session', {
-          credentials: 'include'
-        });
-        const testData = await testResponse.json();
-        console.log('🔍 Test session data:', testData);
-        
-        // Verify /me endpoint works
-        const meResponse = await fetch('/api/auth/me', {
-          credentials: 'include'
-        });
-        console.log('🔍 /me endpoint status:', meResponse.status);
-        
-        if (meResponse.ok) {
-          const meData = await meResponse.json();
-          console.log('✅ /me endpoint data:', meData);
-          // Update user state if needed
-          if (meData.user && !user) {
-            setUser(meData.user);
-          }
-        } else {
-          console.log('❌ /me endpoint failed after auth');
-        }
-        
-      } catch (error) {
-        console.error('Debug check failed:', error);
-      }
-    }, 1000);
+    console.log('🔑 Token stored successfully');
   };
 
   const handleLogout = async () => {
     try {
-      const response = await fetch('/api/auth/logout', {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
+      const token = localStorage.getItem('auth_token');
+      if (token) {
+        const response = await fetch('/api/auth/logout', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          }
+        });
+        
+        if (response.ok) {
+          console.log('✅ Logout successful');
+        } else {
+          console.error('❌ Logout failed');
         }
-      });
-      
-      if (response.ok) {
-        console.log('✅ Logout successful');
-      } else {
-        console.error('❌ Logout failed');
       }
     } catch (error) {
       console.error('Logout error:', error);
     }
     
+    // Clear local state and storage
+    localStorage.removeItem('auth_token');
+    setAuthToken(null);
     setUser(null);
     setShowProfile(false);
     navigate('/');

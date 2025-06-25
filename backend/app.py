@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, session
+from flask import Flask, request, jsonify
 from flask_cors import CORS
 from schedule.logic import generate_schedule
 from schedule.utils import parse_time_slot
@@ -18,23 +18,14 @@ load_dotenv()
 
 app = Flask(__name__)
 
-# Enhanced session configuration for cross-origin requests
+# Simplified configuration - no session management needed
 app.secret_key = os.environ.get('SECRET_KEY', 'your-secret-key-change-this-in-production')
-app.config['SESSION_COOKIE_SECURE'] = False  # Set to True in production with HTTPS
-app.config['SESSION_COOKIE_HTTPONLY'] = False  # Changed to False to allow JavaScript access for debugging
-app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'  # Allow cross-origin cookies
-app.config['SESSION_PERMANENT'] = True
-app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)
-app.config['SESSION_COOKIE_NAME'] = 'schedgic_session'
-app.config['SESSION_COOKIE_PATH'] = '/'
-app.config['SESSION_COOKIE_DOMAIN'] = None  # Allow cookies across different ports
 
-# Enhanced CORS configuration with explicit cookie support
+# Enhanced CORS configuration
 CORS(app, 
      origins=["http://localhost:3000"],
      supports_credentials=True,
-     allow_headers=["Content-Type", "Authorization", "Cookie"],
-     expose_headers=["Set-Cookie"],
+     allow_headers=["Content-Type", "Authorization"],
      methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"]
 )
 
@@ -52,6 +43,18 @@ except Exception as e:
     print(f"❌ Failed to load AI model: {e}")
     schedule_parser = None
     model_nlp = None
+
+def get_user_from_token():
+    """Get user from Authorization header token"""
+    from auth.auth_manager import AuthManager
+    
+    auth_header = request.headers.get('Authorization')
+    if not auth_header or not auth_header.startswith('Bearer '):
+        return None
+    
+    token = auth_header.split(' ')[1]
+    auth_manager = AuthManager()
+    return auth_manager.validate_session(token)
 
 def extract_hour_from_text(text):
     """Converts time expressions to 24-hour integer values."""
@@ -206,21 +209,16 @@ def api_schedule():
         generation_time_ms = int((time.time() - generation_start_time) * 1000)
         
         # Log generation attempt if user is authenticated
-        try:
-            user_id = session.get('user_id')
-        except Exception as session_error:
-            print(f"⚠️ Session access error during schedule generation: {session_error}")
-            user_id = None
-            
-        if user_id:
+        user = get_user_from_token()
+        if user:
             try:
                 from auth.auth_manager import AuthManager
                 
                 auth_manager = AuthManager()
-                client = auth_manager.get_client_for_user(user_id)
+                client = auth_manager.get_client_for_user(user['id'])
                 
                 log_data = {
-                    'user_id': user_id,
+                    'user_id': user['id'],
                     'courses_count': len(courses),
                     'constraints_count': len(parsed_constraints.get("constraints", [])) if parsed_constraints else 0,
                     'generation_time_ms': generation_time_ms,
@@ -246,24 +244,17 @@ def api_schedule():
         print(f"Error generating schedule: {str(e)}")
         return jsonify({"error": "Internal server error", "details": str(e)}), 500
 
-# Add a test endpoint to check session status
+# Add a test endpoint to check authentication
 @app.route("/api/test-session", methods=["GET"])
 def test_session():
-    """Test endpoint to check session status"""
+    """Test endpoint to check authentication status"""
     try:
-        # Safely access session data
-        session_data = dict(session)
-        user_id = session.get('user_id')
-        authenticated = session.get('authenticated', False)
+        user = get_user_from_token()
         
         return jsonify({
-            "session_data": session_data,
-            "user_id": user_id,
-            "authenticated": authenticated,
-            "cookies": dict(request.cookies),
-            "headers": dict(request.headers),
-            "session_permanent": session.permanent,
-            "session_new": session.new if hasattr(session, 'new') else 'unknown',
+            "user": user,
+            "authenticated": bool(user),
+            "auth_header": request.headers.get('Authorization', 'Not provided'),
             "status": "success"
         }), 200
         
@@ -271,17 +262,12 @@ def test_session():
         print(f"❌ Error in test_session: {e}")
         traceback.print_exc()
         
-        # Return a valid JSON response even if session access fails
         return jsonify({
-            "error": "Session access failed",
+            "error": "Authentication check failed",
             "details": str(e),
-            "session_data": {},
-            "user_id": None,
+            "user": None,
             "authenticated": False,
-            "cookies": dict(request.cookies) if hasattr(request, 'cookies') else {},
-            "headers": dict(request.headers) if hasattr(request, 'headers') else {},
-            "session_permanent": False,
-            "session_new": "unknown",
+            "auth_header": request.headers.get('Authorization', 'Not provided'),
             "status": "error"
         }), 500
 

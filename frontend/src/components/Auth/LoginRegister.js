@@ -113,14 +113,12 @@ const LoginRegister = ({ onAuthSuccess, onClose }) => {
           };
 
       console.log(`🔄 Attempting ${isLogin ? 'login' : 'registration'}...`);
-      console.log('Payload:', payload);
 
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        credentials: 'include',
         body: JSON.stringify(payload)
       });
 
@@ -130,19 +128,7 @@ const LoginRegister = ({ onAuthSuccess, onClose }) => {
 
       if (response.ok) {
         console.log('✅ Authentication successful');
-        
-        // Verify session was set by checking debug endpoint
-        try {
-          const debugResponse = await fetch('/api/auth/debug', {
-            credentials: 'include'
-          });
-          const debugData = await debugResponse.json();
-          console.log('🔍 Session debug after auth:', debugData);
-        } catch (debugError) {
-          console.error('Debug check failed:', debugError);
-        }
-        
-        onAuthSuccess(data.user);
+        onAuthSuccess(data.user, data.token);
       } else {
         console.error('❌ Authentication failed:', data.error);
         setErrors({ general: data.error || 'Authentication failed' });

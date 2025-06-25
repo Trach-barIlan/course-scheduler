@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify, session
+from flask import Blueprint, request, jsonify
 from .auth_manager import AuthManager
 import re
 from datetime import datetime, timedelta
@@ -29,27 +29,18 @@ def validate_password(password):
         return False, "Password must contain at least one number"
     return True, "Password is valid"
 
-def set_user_session(user_data):
-    """Set user session with all required data"""
-    print(f"🔧 Setting session for user: {user_data.get('username')}")
+def get_user_from_token():
+    """Get user from Authorization header token"""
+    auth_header = request.headers.get('Authorization')
+    if not auth_header or not auth_header.startswith('Bearer '):
+        return None
     
-    try:
-        session.permanent = True
-        session['user_id'] = str(user_data['id'])
-        session['username'] = user_data.get('username', '')
-        session['email'] = user_data.get('email', '')
-        session['first_name'] = user_data.get('first_name', '')
-        session['last_name'] = user_data.get('last_name', '')
-        session['authenticated'] = True
-        session['login_time'] = datetime.now().isoformat()
-        session.modified = True
-        
-        print(f"✅ Session set for user: {user_data.get('username')}")
-        print(f"   Session ID: {session.get('user_id')}")
-    except Exception as e:
-        print(f"❌ Error setting session: {e}")
-        traceback.print_exc()
-        raise e
+    token = auth_header.split(' ')[1]
+    auth_manager = get_auth_manager()
+    if not auth_manager:
+        return None
+    
+    return auth_manager.validate_session(token)
 
 @auth_bp.route('/register', methods=['POST'])
 def register():
@@ -98,13 +89,21 @@ def register():
         user = auth_manager.create_user(username, email, password, first_name, last_name)
         
         if user:
-            set_user_session(user)
-            print(f"✅ User registered and logged in: {user['username']}")
+            # Create session
+            user_agent = request.headers.get('User-Agent')
+            ip_address = request.remote_addr
+            token = auth_manager.create_session(user['id'], user_agent, ip_address)
             
-            return jsonify({
-                'message': 'Registration successful',
-                'user': user
-            }), 201
+            if token:
+                print(f"✅ User registered and logged in: {user['username']}")
+                
+                return jsonify({
+                    'message': 'Registration successful',
+                    'user': user,
+                    'token': token
+                }), 201
+            else:
+                return jsonify({'error': 'Registration successful but failed to create session'}), 500
         else:
             return jsonify({'error': 'Registration failed'}), 400
         
@@ -141,13 +140,21 @@ def login():
         user = auth_manager.authenticate_user(username_or_email, password)
         
         if user:
-            set_user_session(user)
-            print(f"✅ User logged in successfully: {user['username']}")
+            # Create session
+            user_agent = request.headers.get('User-Agent')
+            ip_address = request.remote_addr
+            token = auth_manager.create_session(user['id'], user_agent, ip_address)
             
-            return jsonify({
-                'message': 'Login successful',
-                'user': user
-            }), 200
+            if token:
+                print(f"✅ User logged in successfully: {user['username']}")
+                
+                return jsonify({
+                    'message': 'Login successful',
+                    'user': user,
+                    'token': token
+                }), 200
+            else:
+                return jsonify({'error': 'Login successful but failed to create session'}), 500
         else:
             print(f"❌ Login failed for: {username_or_email}")
             return jsonify({'error': 'Invalid username/email or password'}), 401
@@ -160,12 +167,19 @@ def login():
 @auth_bp.route('/logout', methods=['POST'])
 def logout():
     try:
-        print(f"🔓 Logout request - current session: {dict(session)}")
-        session.clear()
-        session.modified = True
-        print("✅ Session cleared after logout")
+        auth_header = request.headers.get('Authorization')
+        if not auth_header or not auth_header.startswith('Bearer '):
+            return jsonify({'error': 'No token provided'}), 400
         
+        token = auth_header.split(' ')[1]
+        auth_manager = get_auth_manager()
+        
+        if auth_manager:
+            auth_manager.delete_session(token)
+        
+        print("✅ User logged out successfully")
         return jsonify({'message': 'Logged out successfully'}), 200
+        
     except Exception as e:
         print(f"❌ Logout error: {e}")
         traceback.print_exc()
@@ -174,47 +188,14 @@ def logout():
 @auth_bp.route('/me', methods=['GET'])
 def get_current_user():
     try:
-        print(f"🔍 Auth check - current session access attempt")
+        user = get_user_from_token()
         
-        # Safely access session data
-        try:
-            session_dict = dict(session)
-            user_id = session.get('user_id')
-            authenticated = session.get('authenticated', False)
-            
-            print(f"🔍 Auth check - session data retrieved successfully")
-            print(f"   user_id: {user_id} (type: {type(user_id)})")
-            print(f"   authenticated: {authenticated} (type: {type(authenticated)})")
-            
-        except Exception as session_error:
-            print(f"❌ Session access error: {session_error}")
-            traceback.print_exc()
-            return jsonify({
-                'error': 'Session access failed',
-                'details': str(session_error),
-                'authenticated': False
-            }), 500
-        
-        if not user_id or not authenticated:
-            print(f"❌ Authentication failed - user_id: {user_id}, authenticated: {authenticated}")
-            return jsonify({'error': 'Not authenticated'}), 401
-        
-        auth_manager = get_auth_manager()
-        if not auth_manager:
-            return jsonify({'error': 'Authentication service unavailable'}), 500
-        
-        user = auth_manager.get_user_by_id(user_id)
         if user:
             print(f"✅ User found: {user.get('username', 'Unknown')}")
             return jsonify({'user': user}), 200
         else:
-            print("❌ User not found in database, clearing session")
-            try:
-                session.clear()
-                session.modified = True
-            except Exception as clear_error:
-                print(f"⚠️ Error clearing session: {clear_error}")
-            return jsonify({'error': 'User not found'}), 404
+            print(f"❌ Authentication failed - invalid or missing token")
+            return jsonify({'error': 'Not authenticated'}), 401
             
     except Exception as e:
         print(f"❌ Unexpected error in get_current_user: {e}")
@@ -229,36 +210,9 @@ def get_current_user():
 def refresh_session():
     """Refresh session to extend expiry and verify authentication"""
     try:
-        print(f"🔄 Session refresh request - attempting session access")
+        user = get_user_from_token()
         
-        # Safely access session data
-        try:
-            user_id = session.get('user_id')
-        except Exception as session_error:
-            print(f"❌ Session access error during refresh: {session_error}")
-            return jsonify({
-                'error': 'Session access failed',
-                'details': str(session_error),
-                'authenticated': False
-            }), 500
-        
-        if not user_id:
-            print(f"❌ Session refresh failed - no user_id")
-            return jsonify({'error': 'Not authenticated'}), 401
-        
-        auth_manager = get_auth_manager()
-        if not auth_manager:
-            return jsonify({'error': 'Authentication service unavailable'}), 500
-        
-        user = auth_manager.get_user_by_id(user_id)
         if user:
-            # Just update the login time, don't reset the entire session
-            try:
-                session['login_time'] = datetime.now().isoformat()
-                session.modified = True
-            except Exception as session_update_error:
-                print(f"⚠️ Error updating session: {session_update_error}")
-            
             print(f"✅ Session refreshed successfully for user: {user.get('username')}")
             
             return jsonify({
@@ -267,13 +221,8 @@ def refresh_session():
                 'authenticated': True
             }), 200
         else:
-            print("❌ User no longer exists, clearing session")
-            try:
-                session.clear()
-                session.modified = True
-            except Exception as clear_error:
-                print(f"⚠️ Error clearing session: {clear_error}")
-            return jsonify({'error': 'User not found'}), 401
+            print("❌ Session refresh failed - invalid token")
+            return jsonify({'error': 'Not authenticated'}), 401
             
     except Exception as e:
         print(f"❌ Unexpected error in refresh_session: {e}")
@@ -288,45 +237,17 @@ def refresh_session():
 def debug_session():
     """Debug endpoint to check session state"""
     try:
-        # Safely access session data
-        try:
-            session_data = dict(session)
-            user_id = session.get('user_id')
-            username = session.get('username')
-            authenticated = session.get('authenticated', False)
-            login_time = session.get('login_time')
-            session_keys = list(session.keys())
-            
-            print(f"🔍 Debug session data retrieved successfully")
-            
-        except Exception as session_error:
-            print(f"❌ Session access error in debug: {session_error}")
-            return jsonify({
-                'error': 'Session access failed',
-                'details': str(session_error),
-                'session_data': {},
-                'user_id': None,
-                'username': None,
-                'authenticated': False,
-                'has_session': False,
-                'session_permanent': False,
-                'login_time': None,
-                'session_keys': [],
-                'request_cookies': dict(request.cookies),
-                'session_modified': 'error'
-            }), 500
+        auth_header = request.headers.get('Authorization')
+        user = get_user_from_token()
         
         return jsonify({
-            'session_data': session_data,
-            'user_id': user_id,
-            'username': username,
-            'authenticated': authenticated,
-            'has_session': bool(session),
-            'session_permanent': session.permanent,
-            'login_time': login_time,
-            'session_keys': session_keys,
-            'request_cookies': dict(request.cookies),
-            'session_modified': getattr(session, 'modified', 'unknown')
+            'has_auth_header': bool(auth_header),
+            'auth_header_format': auth_header.startswith('Bearer ') if auth_header else False,
+            'user': user,
+            'authenticated': bool(user),
+            'request_headers': dict(request.headers),
+            'user_agent': request.headers.get('User-Agent'),
+            'ip_address': request.remote_addr
         }), 200
         
     except Exception as e:
@@ -335,16 +256,8 @@ def debug_session():
         return jsonify({
             'error': 'Debug failed',
             'details': str(e),
-            'session_data': {},
-            'user_id': None,
-            'username': None,
-            'authenticated': False,
-            'has_session': False,
-            'session_permanent': False,
-            'login_time': None,
-            'session_keys': [],
-            'request_cookies': dict(request.cookies) if hasattr(request, 'cookies') else {},
-            'session_modified': 'error'
+            'has_auth_header': False,
+            'authenticated': False
         }), 500
 
 @auth_bp.route('/stats', methods=['GET'])

@@ -17,16 +17,11 @@ class AuthManager:
         # Use service role client for all operations since we're managing auth ourselves
         self.supabase: Client = create_client(url, service_key)
         self.service_supabase: Client = create_client(url, service_key)
-        print("✅ AuthManager initialized successfully with custom auth")
+        print("✅ AuthManager initialized successfully with token-based auth")
 
-    def set_user_context(self, user_id: str):
-        """Set the current user context for RLS policies"""
-        try:
-            # Execute the function to set current user ID in session
-            self.service_supabase.rpc('set_current_user_id', {'user_id': user_id}).execute()
-            print(f"✅ User context set for: {user_id}")
-        except Exception as e:
-            print(f"⚠️ Failed to set user context: {e}")
+    def generate_session_token(self) -> str:
+        """Generate a secure session token"""
+        return secrets.token_urlsafe(32)
 
     def hash_password(self, password: str) -> str:
         """Hash password with salt"""
@@ -80,9 +75,6 @@ class AuthManager:
                 # Remove password hash from response
                 user.pop('password_hash', None)
                 
-                # Set user context for subsequent operations
-                self.set_user_context(user['id'])
-                
                 # Initialize user statistics
                 try:
                     stats_data = {
@@ -116,9 +108,6 @@ class AuthManager:
             
             # Verify password
             if self.verify_password(password, user['password_hash']):
-                # Set user context
-                self.set_user_context(user['id'])
-                
                 # Update last login
                 self.service_supabase.table("user_profiles").update({
                     "last_login": datetime.now().isoformat()
@@ -134,12 +123,67 @@ class AuthManager:
             print(f"❌ Error authenticating user: {e}")
             return None
 
+    def create_session(self, user_id: str, user_agent: str = None, ip_address: str = None) -> Optional[str]:
+        """Create a new session for the user"""
+        try:
+            token = self.generate_session_token()
+            expires_at = datetime.now() + timedelta(days=7)  # 7 day expiry
+            
+            # Call the database function to create session
+            result = self.service_supabase.rpc('create_user_session', {
+                'p_user_id': user_id,
+                'p_token': token,
+                'p_expires_at': expires_at.isoformat(),
+                'p_user_agent': user_agent,
+                'p_ip_address': ip_address
+            }).execute()
+            
+            if result.data:
+                print(f"✅ Session created for user: {user_id}")
+                return token
+            
+            return None
+            
+        except Exception as e:
+            print(f"❌ Error creating session: {e}")
+            return None
+
+    def validate_session(self, token: str) -> Optional[Dict]:
+        """Validate a session token and return user data"""
+        try:
+            result = self.service_supabase.rpc('validate_session', {
+                'p_token': token
+            }).execute()
+            
+            if result.data and len(result.data) > 0:
+                session_data = result.data[0]
+                if session_data.get('is_valid'):
+                    return {
+                        'id': session_data['user_id'],
+                        'username': session_data['username'],
+                        'email': session_data['email'],
+                        'first_name': session_data['first_name'],
+                        'last_name': session_data['last_name']
+                    }
+            
+            return None
+            
+        except Exception as e:
+            print(f"❌ Error validating session: {e}")
+            return None
+
+    def delete_session(self, token: str) -> bool:
+        """Delete a session (logout)"""
+        try:
+            result = self.service_supabase.table("user_sessions").delete().eq("token", token).execute()
+            return True
+        except Exception as e:
+            print(f"❌ Error deleting session: {e}")
+            return False
+
     def get_user_by_id(self, user_id: str) -> Optional[Dict]:
         """Get user by ID"""
         try:
-            # Set user context
-            self.set_user_context(user_id)
-            
             result = self.service_supabase.table("user_profiles").select("*").eq("id", user_id).execute()
             
             if result.data:
@@ -153,7 +197,18 @@ class AuthManager:
             print(f"❌ Error getting user: {e}")
             return None
 
+    def cleanup_expired_sessions(self):
+        """Clean up expired sessions"""
+        try:
+            self.service_supabase.rpc('cleanup_expired_sessions').execute()
+        except Exception as e:
+            print(f"❌ Error cleaning up sessions: {e}")
+
     def get_client_for_user(self, user_id: str) -> Client:
         """Get a Supabase client with user context set"""
-        self.set_user_context(user_id)
+        # Set user context for RLS
+        try:
+            self.service_supabase.rpc('set_current_user_id', {'user_id': user_id}).execute()
+        except Exception as e:
+            print(f"⚠️ Failed to set user context: {e}")
         return self.service_supabase
