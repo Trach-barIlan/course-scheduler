@@ -98,7 +98,7 @@ const LoginRegister = ({ onAuthSuccess, onClose }) => {
     setErrors({});
 
     try {
-      let endpoint = 'http://localhost:5000';
+      let endpoint = 'http://127.0.0.1:5000';
       endpoint += isLogin ? '/api/auth/login' : '/api/auth/register';
       const payload = isLogin 
         ? {
