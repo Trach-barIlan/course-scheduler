@@ -8,12 +8,20 @@ def parse_time_slot(s):
         day, start, end = match.groups()
         # Add day standardization
         day_map = {
+            # Standardize day names
             "monday": "Mon",
             "tuesday": "Tue",
             "wednesday": "Wed",
             "thursday": "Thu",
             "friday": "Fri",
             "sunday": "Sun",
+            # Capitalize full names
+            "Monday": "Mon",
+            "Tuesday": "Tue",
+            "Wednesday": "Wed",
+            "Thursday": "Thu",
+            "Friday": "Fri",
+            "Sunday": "Sun",
             # Add abbreviated versions
             "mon": "Mon",
             "tue": "Tue",

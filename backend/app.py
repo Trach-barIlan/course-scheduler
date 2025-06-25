@@ -80,33 +80,6 @@ def normalize_text(text):
     
     return normalized
 
-@app.before_request
-def before_request():
-    """Handle preflight requests and log session info for debugging"""
-    # Debug logging
-    app.logger.debug(f"Request: {request.method} {request.path}")
-    app.logger.debug(f"Session ID: {session.get('_id', 'No session')}")
-    app.logger.debug(f"User ID in session: {session.get('user_id', 'No user')}")
-    app.logger.debug(f"Cookies: {request.cookies}")
-
-# Add a debug endpoint to check session status
-@app.route("/api/debug/session", methods=["GET"])
-def debug_session():
-    """Debug endpoint to check session status"""
-    return jsonify({
-        "session_data": dict(session),
-        "session_keys": list(session.keys()),
-        "user_id": session.get('user_id'),
-        "username": session.get('username'),
-        "authenticated": session.get('user_id') is not None,
-        "session_permanent": session.permanent,
-        "session_modified": session.modified,
-        "session_new": session.new,
-        "has_session": bool(session),
-        "request_cookies": dict(request.cookies),
-        "login_time": session.get('login_time')
-    })
-
 @app.route("/api/parse", methods=["POST"])
 @token_required
 def parse_input():
