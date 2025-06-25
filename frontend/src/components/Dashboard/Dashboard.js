@@ -21,7 +21,6 @@ const Dashboard = ({ user, onQuickAction }) => {
 
   const fetchUserStatistics = async () => {
     try {
-      // Using relative URL since we have a proxy configured
       const response = await fetch('/api/statistics/user', {
         credentials: 'include'
       });
@@ -59,7 +58,6 @@ const Dashboard = ({ user, onQuickAction }) => {
 
   const fetchRecentActivity = async () => {
     try {
-      // Using relative URL since we have a proxy configured
       const response = await fetch('/api/statistics/recent-activity', {
         credentials: 'include'
       });

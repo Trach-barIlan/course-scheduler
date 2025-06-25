@@ -59,7 +59,6 @@ const generateScheduleWithConstraints = useCallback(async (constraintsToUse) => 
 
     localStorage.setItem('originalCourseOptions', JSON.stringify(formattedCourses));
 
-    // Using relative URL since we have a proxy configured
     const scheduleRes = await fetch("/api/schedule", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -100,7 +99,6 @@ const generateScheduleWithConstraints = useCallback(async (constraintsToUse) => 
       let parsedConstraints = [];
       let constraintsData = null;
       if (constraints.trim()) {
-        // Using relative URL since we have a proxy configured
         const parseRes = await fetch("/api/parse", {
           method: "POST",
           headers: { "Content-Type": "application/json" },

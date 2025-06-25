@@ -132,7 +132,7 @@ def parse_input():
                     "time": hour
                 })
         elif ent.label_ == "AVOID_TA":
-            ta_name = ent.text.replace("ta", "").replace("TA", "").title().strip()
+            ta_name = ent.text.replace("ta", "").replace("TA", "").strip()
             if ta_name:
                 constraints.append({
                     "type": "Avoid TA",

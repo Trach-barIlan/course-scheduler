@@ -13,7 +13,6 @@ const UserProfile = ({ user, onLogout, onClose }) => {
 
   const fetchUserStatistics = async () => {
     try {
-      // Using relative URL since we have a proxy configured
       const response = await fetch('/api/statistics/user', {
         credentials: 'include'
       });
@@ -32,7 +31,6 @@ const UserProfile = ({ user, onLogout, onClose }) => {
   const handleLogout = async () => {
     setIsLoggingOut(true);
     try {
-      // Using relative URL since we have a proxy configured
       const response = await fetch('/api/auth/logout', {
         method: 'POST',
         credentials: 'include'

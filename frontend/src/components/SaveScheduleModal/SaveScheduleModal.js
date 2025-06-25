@@ -31,7 +31,6 @@ const SaveScheduleModal = ({ isOpen, onClose, onSave, schedule, user }) => {
 
       // Step 1: Verify current authentication status
       console.log('📋 Step 1: Verifying authentication...');
-      // Using relative URL since we have a proxy configured
       const authCheck = await fetch('/api/auth/me', {
         credentials: 'include'
       });
@@ -49,7 +48,6 @@ const SaveScheduleModal = ({ isOpen, onClose, onSave, schedule, user }) => {
 
       // Step 2: Save the schedule with enhanced error handling
       console.log('💾 Step 2: Saving schedule...');
-      // Using relative URL since we have a proxy configured
       const response = await fetch('/api/schedules/save', {
         method: 'POST',
         headers: {
