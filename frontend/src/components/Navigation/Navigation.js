@@ -20,7 +20,7 @@ const Navigation = ({ user, onAuthClick, onProfileClick }) => {
         <div className="nav-brand" onClick={() => handleNavClick('/')}>
           <div className="brand-icon">
             <img 
-              src="/ChatGPT Image Jun 15, 2025, 02_51_46 PM.png" 
+              src="/schedgic.png" 
               alt="Schedgic Logo" 
               className="brand-logo"
             />
