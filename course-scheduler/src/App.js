@@ -24,6 +24,7 @@ function App() {
           credentials: 'include', // Include cookies
           headers: {
             'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest', // Add this header
           }
         });
         
@@ -43,7 +44,8 @@ function App() {
       }
     };
 
-    checkAuthStatus();
+    // Add a small delay to ensure the backend is ready
+    setTimeout(checkAuthStatus, 100);
   }, []);
 
   const handleNavigate = (page) => {
@@ -74,6 +76,7 @@ function App() {
         credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest',
         }
       });
       
@@ -88,6 +91,7 @@ function App() {
         credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest',
         }
       });
       
@@ -116,6 +120,7 @@ function App() {
         credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest',
         }
       });
       

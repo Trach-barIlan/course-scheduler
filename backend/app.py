@@ -7,6 +7,7 @@ from ai_model.ml_parser import ScheduleParser
 from auth.routes_supabase import auth_bp  # Updated import
 import os
 from dotenv import load_dotenv
+from datetime import timedelta
 
 # Load environment variables
 load_dotenv()
@@ -17,19 +18,43 @@ app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'your-secret-key-change-this-in-production')
 app.config['SESSION_COOKIE_SECURE'] = False  # Set to True in production with HTTPS
 app.config['SESSION_COOKIE_HTTPONLY'] = True
-app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'  # Changed back to Lax for localhost
+app.config['SESSION_COOKIE_SAMESITE'] = 'None'  # Changed to None for cross-origin
 app.config['SESSION_COOKIE_DOMAIN'] = None  # Let Flask handle this automatically
 app.config['SESSION_PERMANENT'] = True
-app.config['PERMANENT_SESSION_LIFETIME'] = 86400  # 24 hours
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=1)  # 24 hours
+app.config['SESSION_TYPE'] = 'filesystem'
 
-# More explicit CORS configuration
+# More explicit CORS configuration - this is the key fix
 CORS(app, 
      origins=["http://localhost:3000", "http://127.0.0.1:3000"],
      methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-     allow_headers=["Content-Type", "Authorization", "Cookie"],
+     allow_headers=["Content-Type", "Authorization", "Cookie", "X-Requested-With"],
      expose_headers=["Set-Cookie"],
      supports_credentials=True,
-     send_wildcard=False)
+     send_wildcard=False,
+     max_age=86400)  # Cache preflight for 24 hours
+
+# Add explicit OPTIONS handler for all routes
+@app.before_request
+def handle_preflight():
+    if request.method == "OPTIONS":
+        response = jsonify()
+        response.headers.add("Access-Control-Allow-Origin", request.headers.get('Origin', 'http://localhost:3000'))
+        response.headers.add('Access-Control-Allow-Headers', "Content-Type,Authorization,Cookie,X-Requested-With")
+        response.headers.add('Access-Control-Allow-Methods', "GET,PUT,POST,DELETE,OPTIONS")
+        response.headers.add('Access-Control-Allow-Credentials', 'true')
+        return response
+
+# Add CORS headers to all responses
+@app.after_request
+def after_request(response):
+    origin = request.headers.get('Origin')
+    if origin in ["http://localhost:3000", "http://127.0.0.1:3000"]:
+        response.headers.add('Access-Control-Allow-Origin', origin)
+        response.headers.add('Access-Control-Allow-Headers', "Content-Type,Authorization,Cookie,X-Requested-With")
+        response.headers.add('Access-Control-Allow-Methods', "GET,PUT,POST,DELETE,OPTIONS")
+        response.headers.add('Access-Control-Allow-Credentials', 'true')
+    return response
 
 # Register auth blueprint
 app.register_blueprint(auth_bp, url_prefix='/api/auth')
@@ -79,9 +104,6 @@ def normalize_text(text):
 @app.before_request
 def before_request():
     """Handle preflight requests and log session info for debugging"""
-    if request.method == 'OPTIONS':
-        return '', 200
-    
     # Debug logging
     app.logger.debug(f"Request: {request.method} {request.path}")
     app.logger.debug(f"Session ID: {session.get('_id', 'No session')}")

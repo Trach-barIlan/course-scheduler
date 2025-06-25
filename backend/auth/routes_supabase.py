@@ -57,8 +57,16 @@ def validate_password(password):
         return False, "Password must contain at least one number"
     return True, "Password is valid"
 
-@auth_bp.route('/register', methods=['POST'])
+@auth_bp.route('/register', methods=['POST', 'OPTIONS'])
 def register():
+    if request.method == 'OPTIONS':
+        response = jsonify()
+        response.headers.add("Access-Control-Allow-Origin", request.headers.get('Origin', 'http://localhost:3000'))
+        response.headers.add('Access-Control-Allow-Headers', "Content-Type,Authorization,Cookie,X-Requested-With")
+        response.headers.add('Access-Control-Allow-Methods', "POST,OPTIONS")
+        response.headers.add('Access-Control-Allow-Credentials', 'true')
+        return response
+
     supabase = get_supabase_client()
     if not supabase:
         return jsonify({'error': 'Database connection failed'}), 500
@@ -114,6 +122,9 @@ def register():
         user = supabase.create_user(email, password, user_metadata)
         
         if user:
+            # Clear any existing session data first
+            session.clear()
+            
             # Set session with explicit session management
             session.permanent = True
             session['user_id'] = user['id']
@@ -155,8 +166,16 @@ def register():
         else:
             return jsonify({'error': 'Registration failed. Please try again.'}), 500
 
-@auth_bp.route('/login', methods=['POST'])
+@auth_bp.route('/login', methods=['POST', 'OPTIONS'])
 def login():
+    if request.method == 'OPTIONS':
+        response = jsonify()
+        response.headers.add("Access-Control-Allow-Origin", request.headers.get('Origin', 'http://localhost:3000'))
+        response.headers.add('Access-Control-Allow-Headers', "Content-Type,Authorization,Cookie,X-Requested-With")
+        response.headers.add('Access-Control-Allow-Methods', "POST,OPTIONS")
+        response.headers.add('Access-Control-Allow-Credentials', 'true')
+        return response
+
     supabase = get_supabase_client()
     if not supabase:
         return jsonify({'error': 'Database connection failed'}), 500
@@ -223,8 +242,16 @@ def login():
         print(f"Login error: {e}")
         return jsonify({'error': 'Login failed. Please try again.'}), 500
 
-@auth_bp.route('/logout', methods=['POST'])
+@auth_bp.route('/logout', methods=['POST', 'OPTIONS'])
 def logout():
+    if request.method == 'OPTIONS':
+        response = jsonify()
+        response.headers.add("Access-Control-Allow-Origin", request.headers.get('Origin', 'http://localhost:3000'))
+        response.headers.add('Access-Control-Allow-Headers', "Content-Type,Authorization,Cookie,X-Requested-With")
+        response.headers.add('Access-Control-Allow-Methods', "POST,OPTIONS")
+        response.headers.add('Access-Control-Allow-Credentials', 'true')
+        return response
+
     print(f"Logout request - current session: user_id={session.get('user_id')}")
     
     supabase = get_supabase_client()
@@ -246,8 +273,16 @@ def logout():
     
     return response
 
-@auth_bp.route('/me', methods=['GET'])
+@auth_bp.route('/me', methods=['GET', 'OPTIONS'])
 def get_current_user():
+    if request.method == 'OPTIONS':
+        response = jsonify()
+        response.headers.add("Access-Control-Allow-Origin", request.headers.get('Origin', 'http://localhost:3000'))
+        response.headers.add('Access-Control-Allow-Headers', "Content-Type,Authorization,Cookie,X-Requested-With")
+        response.headers.add('Access-Control-Allow-Methods', "GET,OPTIONS")
+        response.headers.add('Access-Control-Allow-Credentials', 'true')
+        return response
+
     user_id = session.get('user_id')
     print(f"Auth check - session user_id: {user_id}")
     print(f"Full session: {dict(session)}")
@@ -276,9 +311,17 @@ def get_current_user():
         session.modified = True
         return jsonify({'error': 'User not found'}), 404
 
-@auth_bp.route('/stats', methods=['GET'])
+@auth_bp.route('/stats', methods=['GET', 'OPTIONS'])
 def get_stats():
     """Get basic stats for the app"""
+    if request.method == 'OPTIONS':
+        response = jsonify()
+        response.headers.add("Access-Control-Allow-Origin", request.headers.get('Origin', 'http://localhost:3000'))
+        response.headers.add('Access-Control-Allow-Headers', "Content-Type,Authorization,Cookie,X-Requested-With")
+        response.headers.add('Access-Control-Allow-Methods', "GET,OPTIONS")
+        response.headers.add('Access-Control-Allow-Credentials', 'true')
+        return response
+
     supabase = get_supabase_client()
     if not supabase:
         return jsonify({'error': 'Database connection failed'}), 500

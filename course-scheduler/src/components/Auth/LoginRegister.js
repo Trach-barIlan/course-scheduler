@@ -98,7 +98,7 @@ const LoginRegister = ({ onAuthSuccess, onClose }) => {
     setErrors({});
 
     try {
-      console.log('🔄 Attempting login...');
+      console.log('🔄 Attempting authentication...');
       
       const endpoint = isLogin ? '/api/auth/login' : '/api/auth/register';
       const payload = isLogin 
@@ -120,6 +120,7 @@ const LoginRegister = ({ onAuthSuccess, onClose }) => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest', // Add this header
         },
         credentials: 'include', // This is crucial for cookies
         body: JSON.stringify(payload)
@@ -140,6 +141,7 @@ const LoginRegister = ({ onAuthSuccess, onClose }) => {
             credentials: 'include',
             headers: {
               'Content-Type': 'application/json',
+              'X-Requested-With': 'XMLHttpRequest',
             }
           });
           
