@@ -11,6 +11,7 @@ import os
 from dotenv import load_dotenv
 from datetime import timedelta, datetime
 import time
+import traceback
 
 # Load environment variables
 load_dotenv()
@@ -205,7 +206,12 @@ def api_schedule():
         generation_time_ms = int((time.time() - generation_start_time) * 1000)
         
         # Log generation attempt if user is authenticated
-        user_id = session.get('user_id')
+        try:
+            user_id = session.get('user_id')
+        except Exception as session_error:
+            print(f"⚠️ Session access error during schedule generation: {session_error}")
+            user_id = None
+            
         if user_id:
             try:
                 from auth.auth_manager import AuthManager
@@ -244,15 +250,40 @@ def api_schedule():
 @app.route("/api/test-session", methods=["GET"])
 def test_session():
     """Test endpoint to check session status"""
-    return jsonify({
-        "session_data": dict(session),
-        "user_id": session.get('user_id'),
-        "authenticated": session.get('authenticated', False),
-        "cookies": dict(request.cookies),
-        "headers": dict(request.headers),
-        "session_permanent": session.permanent,
-        "session_new": session.new if hasattr(session, 'new') else 'unknown'
-    }), 200
+    try:
+        # Safely access session data
+        session_data = dict(session)
+        user_id = session.get('user_id')
+        authenticated = session.get('authenticated', False)
+        
+        return jsonify({
+            "session_data": session_data,
+            "user_id": user_id,
+            "authenticated": authenticated,
+            "cookies": dict(request.cookies),
+            "headers": dict(request.headers),
+            "session_permanent": session.permanent,
+            "session_new": session.new if hasattr(session, 'new') else 'unknown',
+            "status": "success"
+        }), 200
+        
+    except Exception as e:
+        print(f"❌ Error in test_session: {e}")
+        traceback.print_exc()
+        
+        # Return a valid JSON response even if session access fails
+        return jsonify({
+            "error": "Session access failed",
+            "details": str(e),
+            "session_data": {},
+            "user_id": None,
+            "authenticated": False,
+            "cookies": dict(request.cookies) if hasattr(request, 'cookies') else {},
+            "headers": dict(request.headers) if hasattr(request, 'headers') else {},
+            "session_permanent": False,
+            "session_new": "unknown",
+            "status": "error"
+        }), 500
 
 if __name__ == "__main__":
     app.run(debug=True, host='localhost', port=5000)
