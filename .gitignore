@@ -2,3 +2,6 @@ backend/ai_model/__pycache__
 backend/ai_model/schedule_ner
 backend/schedule/__pycache__
 .env
+
+# Local Netlify folder
+.netlify

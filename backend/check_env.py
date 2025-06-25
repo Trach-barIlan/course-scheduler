@@ -13,6 +13,7 @@ def check_environment():
     required_vars = [
         'SUPABASE_URL',
         'SUPABASE_ANON_KEY',
+        'SUPABASE_SERVICE_ROLE_KEY',  # Added this as required
         'SECRET_KEY'
     ]
     
@@ -40,9 +41,11 @@ def check_environment():
         print("2. Add the following variables:")
         print("   SUPABASE_URL=your_supabase_project_url")
         print("   SUPABASE_ANON_KEY=your_supabase_anon_key")
+        print("   SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key")
         print("   SECRET_KEY=your_secret_key_here")
         print("\n🔗 Get your Supabase credentials from:")
         print("   Supabase Dashboard → Settings → API")
+        print("   ⚠️ IMPORTANT: You need the SERVICE ROLE key for user registration!")
         return False
     else:
         print("✅ All environment variables are set!")
@@ -61,6 +64,15 @@ def test_supabase_connection():
         result = client.supabase.table("user_profiles").select("id", count="exact").execute()
         print("✅ Successfully connected to Supabase!")
         print(f"📊 Current user count: {result.count}")
+        
+        # Test service role connection
+        if hasattr(client, 'service_supabase'):
+            service_result = client.service_supabase.table("user_profiles").select("id", count="exact").execute()
+            print("✅ Service role connection working!")
+            print(f"📊 Service role can access {service_result.count} users")
+        else:
+            print("⚠️ Warning: Service role client not available")
+        
         return True
         
     except Exception as e:
@@ -69,6 +81,7 @@ def test_supabase_connection():
         print("1. Check your SUPABASE_URL and SUPABASE_ANON_KEY")
         print("2. Make sure your Supabase project is active")
         print("3. Verify the database migration was run successfully")
+        print("4. Ensure SUPABASE_SERVICE_ROLE_KEY is set correctly")
         return False
 
 if __name__ == "__main__":

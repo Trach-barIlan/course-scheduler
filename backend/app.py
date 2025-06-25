@@ -1,66 +1,48 @@
-from flask import Flask, request, jsonify, session
+from flask import Flask, request, jsonify, g
 from flask_cors import CORS
-from schedule.logic import generate_schedule  # Remove parse_time_slot from here
+from schedule.logic import generate_schedule
 from schedule.utils import parse_time_slot
 from schedule.parserAI import parse_course_text
 from ai_model.ml_parser import ScheduleParser
-from auth.routes_supabase import auth_bp  # Updated import
+from auth.routes import auth_bp, token_required
+from api.schedules import schedules_bp
+from api.statistics import statistics_bp
+from auth.auth_manager import AuthManager
 import os
 from dotenv import load_dotenv
-from datetime import timedelta
+from datetime import timedelta, datetime
+import time
+import traceback
 
 # Load environment variables
 load_dotenv()
 
 app = Flask(__name__)
 
-# Configure session with more explicit settings
+# Simplified configuration - no session management needed
 app.secret_key = os.environ.get('SECRET_KEY', 'your-secret-key-change-this-in-production')
-app.config['SESSION_COOKIE_SECURE'] = False  # Set to True in production with HTTPS
-app.config['SESSION_COOKIE_HTTPONLY'] = True
-app.config['SESSION_COOKIE_SAMESITE'] = 'None'  # Changed to None for cross-origin
-app.config['SESSION_COOKIE_DOMAIN'] = None  # Let Flask handle this automatically
-app.config['SESSION_PERMANENT'] = True
-app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=1)  # 24 hours
-app.config['SESSION_TYPE'] = 'filesystem'
 
-# More explicit CORS configuration - this is the key fix
+# Enhanced CORS configuration
 CORS(app, 
-     origins=["http://localhost:3000", "http://127.0.0.1:3000"],
-     methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-     allow_headers=["Content-Type", "Authorization", "Cookie", "X-Requested-With"],
-     expose_headers=["Set-Cookie"],
-     supports_credentials=True,
-     send_wildcard=False,
-     max_age=86400)  # Cache preflight for 24 hours
+     origins=["http://localhost:3000"],
+     allow_headers=["Content-Type", "Authorization"],
+     methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+)
 
-# Add explicit OPTIONS handler for all routes
-@app.before_request
-def handle_preflight():
-    if request.method == "OPTIONS":
-        response = jsonify()
-        response.headers.add("Access-Control-Allow-Origin", request.headers.get('Origin', 'http://localhost:3000'))
-        response.headers.add('Access-Control-Allow-Headers', "Content-Type,Authorization,Cookie,X-Requested-With")
-        response.headers.add('Access-Control-Allow-Methods', "GET,PUT,POST,DELETE,OPTIONS")
-        response.headers.add('Access-Control-Allow-Credentials', 'true')
-        return response
-
-# Add CORS headers to all responses
-@app.after_request
-def after_request(response):
-    origin = request.headers.get('Origin')
-    if origin in ["http://localhost:3000", "http://127.0.0.1:3000"]:
-        response.headers.add('Access-Control-Allow-Origin', origin)
-        response.headers.add('Access-Control-Allow-Headers', "Content-Type,Authorization,Cookie,X-Requested-With")
-        response.headers.add('Access-Control-Allow-Methods', "GET,PUT,POST,DELETE,OPTIONS")
-        response.headers.add('Access-Control-Allow-Credentials', 'true')
-    return response
-
-# Register auth blueprint
+# Register blueprints with /api/ prefix restored
 app.register_blueprint(auth_bp, url_prefix='/api/auth')
+app.register_blueprint(schedules_bp, url_prefix='/api/schedules')
+app.register_blueprint(statistics_bp, url_prefix='/api/statistics')
 
-schedule_parser = ScheduleParser()
-model_nlp = schedule_parser.nlp
+# Initialize AI parser
+try:
+    schedule_parser = ScheduleParser()
+    model_nlp = schedule_parser.nlp
+    print("✅ AI model loaded successfully")
+except Exception as e:
+    print(f"❌ Failed to load AI model: {e}")
+    schedule_parser = None
+    model_nlp = None
 
 def extract_hour_from_text(text):
     """Converts time expressions to 24-hour integer values."""
@@ -92,11 +74,8 @@ def normalize_text(text):
     day_names = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday']
     normalized = text
     
-    # Convert day names to title case
     for day in day_names:
-        # Replace full lowercase version with title case
         normalized = normalized.replace(day.lower(), day.title())
-        # Replace full uppercase version with title case
         normalized = normalized.replace(day.upper(), day.title())
     
     return normalized
@@ -129,13 +108,16 @@ def debug_session():
     })
 
 @app.route("/api/parse", methods=["POST"])
+@token_required
 def parse_input():
+    if not schedule_parser:
+        return jsonify({"error": "AI model not available"}), 500
+        
     data = request.json
     if not data or "text" not in data:
         return jsonify({"error": "Missing text input"}), 400
 
     text = data["text"].strip()
-    # Normalize text before processing
     normalized_text = normalize_text(text)
     
     doc = model_nlp(normalized_text)
@@ -160,7 +142,7 @@ def parse_input():
         elif ent.label_ == "NO_CLASS_DAY":
             constraints.append({
                 "type": "No Class Day",
-                "day": ent.text.strip().capitalize()[:3]  # e.g., Tuesday -> Tue
+                "day": ent.text.strip().capitalize()[:3]
             })
         elif ent.label_ == "NO_CLASS_AFTER":
             hour = extract_hour_from_text(ent.text)
@@ -170,12 +152,13 @@ def parse_input():
                     "time": hour
                 })
         elif ent.label_ == "AVOID_TA":
-            ta_name = ent.text.replace("ta", "").replace("TA", "").title().strip()
+            ta_name = ent.text.replace("ta", "").replace("TA", "").strip()
             if ta_name:
                 constraints.append({
                     "type": "Avoid TA",
                     "name": ta_name
                 })
+            
 
     return jsonify({
         "constraints": constraints,
@@ -183,10 +166,10 @@ def parse_input():
     }), 200
 
 @app.route("/api/schedule", methods=["POST"])
+@token_required
 def api_schedule():
-    app.logger.debug(f"Received data: {request.json}")
+    generation_start_time = time.time()
 
-    # Validate request data
     data = request.json
     if not data:
         return jsonify({"error": "No data provided"}), 400
@@ -202,20 +185,14 @@ def api_schedule():
         return jsonify({"error": "Invalid preference value"}), 400
 
     constraints = data.get("constraints", [])
-    # Don't parse constraints if they're already a list
     parsed_constraints = {"constraints": constraints} if isinstance(constraints, list) else parse_course_text(constraints)
 
     try:
-
-        # Validate and parse course data
         courses = []
         for i, c in enumerate(data["courses"]):
-            app.logger.debug(f"Processing course {i}: {c}")
-
             if not isinstance(c, dict):
                 return jsonify({"error": f"Invalid course format at index {i}"}), 400
             
-            # Validate required fields
             if not c.get("name"):
                 return jsonify({"error": f"Missing name for course at index {i}"}), 400
             if not c.get("lectures"):
@@ -223,37 +200,52 @@ def api_schedule():
             if not c.get("ta_times"):
                 return jsonify({"error": f"Missing TA times for {c['name']}"}), 400
 
-            # Parse time slots (handle both string and array inputs)
             lectures = [str(l) for l in c["lectures"]] if isinstance(c["lectures"], list) else c["lectures"].split(",")
             ta_times = [str(t) for t in c["ta_times"]] if isinstance(c["ta_times"], list) else c["ta_times"].split(",")
 
-            # Parse each time slot
             lec_slots = [parse_time_slot(s.strip()) for s in lectures if s]
             ta_slots = [parse_time_slot(s.strip()) for s in ta_times if s]
 
-            app.logger.debug(f"Parsed lecture slots: {lec_slots}")
-            app.logger.debug(f"Parsed TA slots: {ta_slots}")
-
-            # Validate parsed slots
             if not any(lec_slots):
                 return jsonify({"error": f"Invalid lecture time format for {c['name']}"}), 400
             if not any(ta_slots):
                 return jsonify({"error": f"Invalid TA time format for {c['name']}"}), 400
 
-            # Filter out None values and add to courses
             courses.append({
                 "name": c["name"],
                 "lectures": [s for s in lec_slots if s],
                 "ta_times": [s for s in ta_slots if s]
             })
 
-        print(f"Parsed constraints: {parsed_constraints.get('constraints') if parsed_constraints else None}")
-        # Generate schedule
         schedule = generate_schedule(
             courses=courses,
             preference=preference,
             constraints=parsed_constraints.get("constraints") if parsed_constraints else None
         )
+
+        generation_time_ms = int((time.time() - generation_start_time) * 1000)
+        
+        # Log generation attempt if user is authenticated
+        user = g.user
+        if user:
+            try:
+                auth_manager = AuthManager()
+                client = auth_manager.get_client_for_user(user['id'])
+                
+                log_data = {
+                    'user_id': user['id'],
+                    'courses_count': len(courses),
+                    'constraints_count': len(parsed_constraints.get("constraints", [])) if parsed_constraints else 0,
+                    'generation_time_ms': generation_time_ms,
+                    'schedule_type': preference,
+                    'success': schedule is not None,
+                    'error_message': None if schedule else 'No valid schedule found'
+                }
+                
+                client.table("schedule_generation_logs").insert(log_data).execute()
+                
+            except Exception as stats_error:
+                print(f"Error logging statistics: {stats_error}")
 
         if schedule is None:
             return jsonify({
@@ -264,8 +256,36 @@ def api_schedule():
         return jsonify({"schedule": schedule}), 200
 
     except Exception as e:
-        app.logger.error(f"Error generating schedule: {str(e)}")
+        print(f"Error generating schedule: {str(e)}")
         return jsonify({"error": "Internal server error", "details": str(e)}), 500
 
+# Add a test endpoint to check authentication
+@app.route("/api/test-session", methods=["GET"])
+@token_required
+def test_session():
+    """Test endpoint to check authentication status"""
+    try:
+        user = g.user
+        
+        return jsonify({
+            "user": user,
+            "authenticated": True,
+            "auth_header": request.headers.get('Authorization', 'Not provided'),
+            "status": "success"
+        }), 200
+        
+    except Exception as e:
+        print(f"❌ Error in test_session: {e}")
+        traceback.print_exc()
+        
+        return jsonify({
+            "error": "Authentication check failed",
+            "details": str(e),
+            "user": None,
+            "authenticated": False,
+            "auth_header": request.headers.get('Authorization', 'Not provided'),
+            "status": "error"
+        }), 500
+
 if __name__ == "__main__":
-    app.run(debug=True, host='127.0.0.1', port=5000)
+    app.run(debug=True, host='localhost', port=5001)
