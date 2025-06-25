@@ -1,4 +1,5 @@
-from flask import Blueprint, request, jsonify, session
+from flask import Blueprint, request, jsonify, g
+from auth.routes import token_required
 from auth.auth_manager import AuthManager
 import json
 from datetime import datetime, timedelta
@@ -14,11 +15,10 @@ def get_auth_manager():
         return None
 
 @statistics_bp.route('/user', methods=['GET'])
+@token_required
 def get_user_statistics():
     """Get user's statistics for dashboard"""
-    user_id = session.get('user_id')
-    if not user_id:
-        return jsonify({'error': 'Authentication required'}), 401
+    user_id = g.user['id']
 
     auth_manager = get_auth_manager()
     if not auth_manager:
@@ -102,11 +102,10 @@ def get_user_statistics():
         return jsonify({'error': 'Failed to fetch statistics'}), 500
 
 @statistics_bp.route('/recent-activity', methods=['GET'])
+@token_required
 def get_recent_activity():
     """Get user's recent activity for dashboard"""
-    user_id = session.get('user_id')
-    if not user_id:
-        return jsonify({'error': 'Authentication required'}), 401
+    user_id = g.user['id']
 
     auth_manager = get_auth_manager()
     if not auth_manager:

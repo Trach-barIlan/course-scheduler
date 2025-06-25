@@ -1,8 +1,9 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, g
 from .auth_manager import AuthManager
 import re
 from datetime import datetime, timedelta
 import traceback
+from functools import wraps
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -13,6 +14,41 @@ def get_auth_manager():
     except ValueError as e:
         print(f"Auth configuration error: {e}")
         return None
+
+def token_required(f):
+    """Decorator to require valid token authentication"""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        auth_header = request.headers.get('Authorization')
+        
+        if not auth_header:
+            return jsonify({'error': 'Authorization header is required'}), 401
+        
+        if not auth_header.startswith('Bearer '):
+            return jsonify({'error': 'Authorization header must be Bearer token'}), 401
+        
+        try:
+            token = auth_header.split(' ')[1]
+            auth_manager = get_auth_manager()
+            
+            if not auth_manager:
+                return jsonify({'error': 'Authentication service unavailable'}), 500
+            
+            user = auth_manager.validate_session(token)
+            
+            if not user:
+                return jsonify({'error': 'Invalid or expired token'}), 401
+            
+            # Store user in Flask's g object for use in the route
+            g.user = user
+            
+        except Exception as e:
+            print(f"Token validation error: {e}")
+            return jsonify({'error': 'Token validation failed'}), 401
+        
+        return f(*args, **kwargs)
+    
+    return decorated_function
 
 def validate_email(email):
     """Validate email format"""
@@ -28,19 +64,6 @@ def validate_password(password):
     if not re.search(r'\d', password):
         return False, "Password must contain at least one number"
     return True, "Password is valid"
-
-def get_user_from_token():
-    """Get user from Authorization header token"""
-    auth_header = request.headers.get('Authorization')
-    if not auth_header or not auth_header.startswith('Bearer '):
-        return None
-    
-    token = auth_header.split(' ')[1]
-    auth_manager = get_auth_manager()
-    if not auth_manager:
-        return None
-    
-    return auth_manager.validate_session(token)
 
 @auth_bp.route('/register', methods=['POST'])
 def register():
@@ -165,19 +188,17 @@ def login():
         return jsonify({'error': 'Login failed. Please try again.'}), 500
 
 @auth_bp.route('/logout', methods=['POST'])
+@token_required
 def logout():
     try:
         auth_header = request.headers.get('Authorization')
-        if not auth_header or not auth_header.startswith('Bearer '):
-            return jsonify({'error': 'No token provided'}), 400
-        
         token = auth_header.split(' ')[1]
         auth_manager = get_auth_manager()
         
         if auth_manager:
             auth_manager.delete_session(token)
         
-        print("✅ User logged out successfully")
+        print(f"✅ User {g.user.get('username')} logged out successfully")
         return jsonify({'message': 'Logged out successfully'}), 200
         
     except Exception as e:
@@ -186,16 +207,11 @@ def logout():
         return jsonify({'error': 'Logout failed', 'details': str(e)}), 500
 
 @auth_bp.route('/me', methods=['GET'])
+@token_required
 def get_current_user():
     try:
-        user = get_user_from_token()
-        
-        if user:
-            print(f"✅ User found: {user.get('username', 'Unknown')}")
-            return jsonify({'user': user}), 200
-        else:
-            print(f"❌ Authentication failed - invalid or missing token")
-            return jsonify({'error': 'Not authenticated'}), 401
+        print(f"✅ User found: {g.user.get('username', 'Unknown')}")
+        return jsonify({'user': g.user}), 200
             
     except Exception as e:
         print(f"❌ Unexpected error in get_current_user: {e}")
@@ -207,22 +223,17 @@ def get_current_user():
         }), 500
 
 @auth_bp.route('/refresh-session', methods=['POST'])
+@token_required
 def refresh_session():
     """Refresh session to extend expiry and verify authentication"""
     try:
-        user = get_user_from_token()
+        print(f"✅ Session refreshed successfully for user: {g.user.get('username')}")
         
-        if user:
-            print(f"✅ Session refreshed successfully for user: {user.get('username')}")
-            
-            return jsonify({
-                'message': 'Session refreshed',
-                'user': user,
-                'authenticated': True
-            }), 200
-        else:
-            print("❌ Session refresh failed - invalid token")
-            return jsonify({'error': 'Not authenticated'}), 401
+        return jsonify({
+            'message': 'Session refreshed',
+            'user': g.user,
+            'authenticated': True
+        }), 200
             
     except Exception as e:
         print(f"❌ Unexpected error in refresh_session: {e}")
@@ -234,17 +245,17 @@ def refresh_session():
         }), 500
 
 @auth_bp.route('/debug', methods=['GET'])
+@token_required
 def debug_session():
     """Debug endpoint to check session state"""
     try:
         auth_header = request.headers.get('Authorization')
-        user = get_user_from_token()
         
         return jsonify({
             'has_auth_header': bool(auth_header),
             'auth_header_format': auth_header.startswith('Bearer ') if auth_header else False,
-            'user': user,
-            'authenticated': bool(user),
+            'user': g.user,
+            'authenticated': True,
             'request_headers': dict(request.headers),
             'user_agent': request.headers.get('User-Agent'),
             'ip_address': request.remote_addr

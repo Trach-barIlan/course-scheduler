@@ -1,12 +1,13 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, g
 from flask_cors import CORS
 from schedule.logic import generate_schedule
 from schedule.utils import parse_time_slot
 from schedule.parserAI import parse_course_text
 from ai_model.ml_parser import ScheduleParser
-from auth.routes import auth_bp
+from auth.routes import auth_bp, token_required
 from api.schedules import schedules_bp
 from api.statistics import statistics_bp
+from auth.auth_manager import AuthManager
 import os
 from dotenv import load_dotenv
 from datetime import timedelta, datetime
@@ -29,9 +30,9 @@ CORS(app,
 )
 
 # Register blueprints
-app.register_blueprint(auth_bp, url_prefix='/api/auth')
-app.register_blueprint(schedules_bp, url_prefix='/api/schedules')
-app.register_blueprint(statistics_bp, url_prefix='/api/statistics')
+app.register_blueprint(auth_bp, url_prefix='/auth')
+app.register_blueprint(schedules_bp, url_prefix='/schedules')
+app.register_blueprint(statistics_bp, url_prefix='/statistics')
 
 # Initialize AI parser
 try:
@@ -42,18 +43,6 @@ except Exception as e:
     print(f"❌ Failed to load AI model: {e}")
     schedule_parser = None
     model_nlp = None
-
-def get_user_from_token():
-    """Get user from Authorization header token"""
-    from auth.auth_manager import AuthManager
-    
-    auth_header = request.headers.get('Authorization')
-    if not auth_header or not auth_header.startswith('Bearer '):
-        return None
-    
-    token = auth_header.split(' ')[1]
-    auth_manager = AuthManager()
-    return auth_manager.validate_session(token)
 
 def extract_hour_from_text(text):
     """Converts time expressions to 24-hour integer values."""
@@ -91,7 +80,8 @@ def normalize_text(text):
     
     return normalized
 
-@app.route("/api/parse", methods=["POST"])
+@app.route("/parse", methods=["POST"])
+@token_required
 def parse_input():
     if not schedule_parser:
         return jsonify({"error": "AI model not available"}), 500
@@ -148,7 +138,8 @@ def parse_input():
         "entities": raw_entities
     }), 200
 
-@app.route("/api/schedule", methods=["POST"])
+@app.route("/schedule", methods=["POST"])
+@token_required
 def api_schedule():
     generation_start_time = time.time()
 
@@ -208,11 +199,9 @@ def api_schedule():
         generation_time_ms = int((time.time() - generation_start_time) * 1000)
         
         # Log generation attempt if user is authenticated
-        user = get_user_from_token()
+        user = g.user
         if user:
             try:
-                from auth.auth_manager import AuthManager
-                
                 auth_manager = AuthManager()
                 client = auth_manager.get_client_for_user(user['id'])
                 
@@ -244,15 +233,16 @@ def api_schedule():
         return jsonify({"error": "Internal server error", "details": str(e)}), 500
 
 # Add a test endpoint to check authentication
-@app.route("/api/test-session", methods=["GET"])
+@app.route("/test-session", methods=["GET"])
+@token_required
 def test_session():
     """Test endpoint to check authentication status"""
     try:
-        user = get_user_from_token()
+        user = g.user
         
         return jsonify({
             "user": user,
-            "authenticated": bool(user),
+            "authenticated": True,
             "auth_header": request.headers.get('Authorization', 'Not provided'),
             "status": "success"
         }), 200

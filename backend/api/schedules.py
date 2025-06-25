@@ -1,4 +1,5 @@
-from flask import Blueprint, request, jsonify, session
+from flask import Blueprint, request, jsonify, g
+from auth.routes import token_required
 from auth.auth_manager import AuthManager
 import json
 from datetime import datetime
@@ -14,20 +15,15 @@ def get_auth_manager():
         return None
 
 @schedules_bp.route('/save', methods=['POST'])
+@token_required
 def save_schedule():
     """Save a schedule to the database"""
     print(f"=== SAVE SCHEDULE REQUEST ===")
-    print(f"Session data: {dict(session)}")
+    print(f"User from g.user: {g.user}")
     
-    user_id = session.get('user_id')
-    authenticated = session.get('authenticated', False)
+    user_id = g.user['id']
     
-    print(f"User ID from session: {user_id}")
-    print(f"Authenticated flag: {authenticated}")
-    
-    if not user_id or not authenticated:
-        print("❌ No user_id or not authenticated")
-        return jsonify({'error': 'Authentication required. Please sign in again.'}), 401
+    print(f"User ID from g.user: {user_id}")
 
     auth_manager = get_auth_manager()
     if not auth_manager:
@@ -95,11 +91,10 @@ def save_schedule():
         return jsonify({'error': f'Failed to save schedule: {str(e)}'}), 500
 
 @schedules_bp.route('/list', methods=['GET'])
+@token_required
 def list_schedules():
     """Get user's saved schedules"""
-    user_id = session.get('user_id')
-    if not user_id:
-        return jsonify({'error': 'Authentication required'}), 401
+    user_id = g.user['id']
 
     auth_manager = get_auth_manager()
     if not auth_manager:
@@ -123,11 +118,10 @@ def list_schedules():
         return jsonify({'error': 'Failed to fetch schedules'}), 500
 
 @schedules_bp.route('/<schedule_id>', methods=['GET'])
+@token_required
 def get_schedule(schedule_id):
     """Get a specific schedule"""
-    user_id = session.get('user_id')
-    if not user_id:
-        return jsonify({'error': 'Authentication required'}), 401
+    user_id = g.user['id']
 
     auth_manager = get_auth_manager()
     if not auth_manager:
@@ -154,11 +148,10 @@ def get_schedule(schedule_id):
         return jsonify({'error': 'Failed to fetch schedule'}), 500
 
 @schedules_bp.route('/<schedule_id>', methods=['DELETE'])
+@token_required
 def delete_schedule(schedule_id):
     """Delete a schedule"""
-    user_id = session.get('user_id')
-    if not user_id:
-        return jsonify({'error': 'Authentication required'}), 401
+    user_id = g.user['id']
 
     auth_manager = get_auth_manager()
     if not auth_manager:
