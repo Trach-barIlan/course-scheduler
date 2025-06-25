@@ -5,7 +5,7 @@ import SaveScheduleModal from './SaveScheduleModal/SaveScheduleModal';
 import NotImplementedModal from './NotImplementedModal/NotImplementedModal';
 import "../styles/WeeklyScheduler.css";
 
-const WeeklySchedule = ({ schedule, isLoading, user }) => {
+const WeeklySchedule = ({ schedule, isLoading, user, authToken }) => {
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
   const [selectedClass, setSelectedClass] = useState(null);
@@ -62,13 +62,17 @@ const WeeklySchedule = ({ schedule, isLoading, user }) => {
     // Verify authentication before opening modal
     try {
       console.log('🔍 Verifying authentication before opening save modal...');
-      const authCheck = await fetch('http://127.0.0.1:5000/api/auth/me', {
-        credentials: 'include'
+      const authCheck = await fetch('/api/auth/me', {
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+          'Content-Type': 'application/json',
+        }
       });
 
+      console.log('Auth check response:', authCheck.status);
+
       if (!authCheck.ok) {
-        console.log('❌ Authentication check failed');
-        console.error('Authentication check failed:', authCheck.statusText);
+        console.log('❌ Auth check failed, user may need to sign in again');
         alert('Your session has expired. Please refresh the page and sign in again.');
         return;
       }
@@ -622,6 +626,7 @@ const WeeklySchedule = ({ schedule, isLoading, user }) => {
         onSave={handleScheduleSaved}
         schedule={currentSchedule}
         user={user}
+        authToken={authToken}
       />
 
       {/* Not Implemented Modal */}

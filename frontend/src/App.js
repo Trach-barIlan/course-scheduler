@@ -150,11 +150,11 @@ function AppContent() {
           <Routes>
             <Route 
               path="/" 
-              element={<HomePage user={user} onQuickAction={handleQuickAction} />} 
+              element={<HomePage user={user} authToken={authToken} onQuickAction={handleQuickAction} />} 
             />
             <Route 
               path="/scheduler" 
-              element={<SchedulerPage user={user} />} 
+              element={<SchedulerPage user={user} authToken={authToken} />} 
             />
             <Route 
               path="/about" 
@@ -174,6 +174,7 @@ function AppContent() {
       {showProfile && user && (
         <UserProfile 
           user={user}
+          authToken={authToken}
           onLogout={handleLogout}
           onClose={() => setShowProfile(false)}
         />

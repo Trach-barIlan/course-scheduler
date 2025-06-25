@@ -1,20 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import './UserProfile.css';
 
-const UserProfile = ({ user, onLogout, onClose }) => {
+const UserProfile = ({ user, authToken, onLogout, onClose }) => {
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [statistics, setStatistics] = useState(null);
 
   useEffect(() => {
-    if (user) {
+    if (user && authToken) {
       fetchUserStatistics();
     }
-  }, [user]);
+  }, [user, authToken]);
 
   const fetchUserStatistics = async () => {
     try {
       const response = await fetch('/api/statistics/user', {
-        credentials: 'include'
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+          'Content-Type': 'application/json',
+        }
       });
 
       if (response.ok) {
@@ -33,7 +36,10 @@ const UserProfile = ({ user, onLogout, onClose }) => {
     try {
       const response = await fetch('/api/auth/logout', {
         method: 'POST',
-        credentials: 'include'
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+          'Content-Type': 'application/json',
+        }
       });
 
       if (response.ok) {

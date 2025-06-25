@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import NotImplementedModal from '../NotImplementedModal/NotImplementedModal';
 import './Dashboard.css';
 
-const Dashboard = ({ user, onQuickAction }) => {
+const Dashboard = ({ user, authToken, onQuickAction }) => {
   const [showNotImplemented, setShowNotImplemented] = useState(false);
   const [notImplementedFeature, setNotImplementedFeature] = useState('');
   const [statistics, setStatistics] = useState(null);
@@ -11,18 +11,21 @@ const Dashboard = ({ user, onQuickAction }) => {
 
   // Fetch user statistics when component mounts or user changes
   useEffect(() => {
-    if (user) {
+    if (user && authToken) {
       fetchUserStatistics();
       fetchRecentActivity();
     } else {
       setIsLoading(false);
     }
-  }, [user]);
+  }, [user, authToken]);
 
   const fetchUserStatistics = async () => {
     try {
       const response = await fetch('/api/statistics/user', {
-        credentials: 'include'
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+          'Content-Type': 'application/json',
+        }
       });
 
       if (response.ok) {
@@ -59,7 +62,10 @@ const Dashboard = ({ user, onQuickAction }) => {
   const fetchRecentActivity = async () => {
     try {
       const response = await fetch('/api/statistics/recent-activity', {
-        credentials: 'include'
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+          'Content-Type': 'application/json',
+        }
       });
 
       if (response.ok) {

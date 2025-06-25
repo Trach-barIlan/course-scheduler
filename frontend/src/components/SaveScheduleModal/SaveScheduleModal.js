@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import './SaveScheduleModal.css';
 
-const SaveScheduleModal = ({ isOpen, onClose, onSave, schedule, user }) => {
+const SaveScheduleModal = ({ isOpen, onClose, onSave, schedule, user, authToken }) => {
   const [scheduleName, setScheduleName] = useState('');
   const [description, setDescription] = useState('');
   const [isPublic, setIsPublic] = useState(false);
@@ -32,7 +32,10 @@ const SaveScheduleModal = ({ isOpen, onClose, onSave, schedule, user }) => {
       // Step 1: Verify current authentication status
       console.log('📋 Step 1: Verifying authentication...');
       const authCheck = await fetch('/api/auth/me', {
-        credentials: 'include'
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+          'Content-Type': 'application/json',
+        }
       });
 
       console.log('Auth check response:', authCheck.status);
@@ -51,9 +54,9 @@ const SaveScheduleModal = ({ isOpen, onClose, onSave, schedule, user }) => {
       const response = await fetch('/api/schedules/save', {
         method: 'POST',
         headers: {
+          'Authorization': `Bearer ${authToken}`,
           'Content-Type': 'application/json',
         },
-        credentials: 'include',
         body: JSON.stringify({
           name: scheduleName.trim(),
           description: description.trim(),
@@ -127,6 +130,7 @@ const SaveScheduleModal = ({ isOpen, onClose, onSave, schedule, user }) => {
               <strong>User:</strong> {user ? `${user.first_name} ${user.last_name} (ID: ${user.id})` : '❌ Not logged in'}<br/>
               <strong>Email:</strong> {user?.email || 'N/A'}<br/>
               <strong>Username:</strong> {user?.username || 'N/A'}<br/>
+              <strong>Auth Token:</strong> {authToken ? '✅ Present' : '❌ Missing'}<br/>
               <strong>Schedule:</strong> {schedule ? `✅ ${schedule.length} courses` : '❌ No schedule'}<br/>
               <strong>Courses:</strong> {schedule ? schedule.map(c => c.name).join(', ') : 'None'}
             </div>

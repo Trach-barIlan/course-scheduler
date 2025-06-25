@@ -4,7 +4,7 @@ import WeeklyScheduler from '../components/WeeklyScheduler';
 import ConstraintsDisplay from '../components/ConstraintsDisplay';
 import '../styles/SchedulerPage.css';
 
-const SchedulerPage = ({ user }) => {
+const SchedulerPage = ({ user, authToken }) => {
   const [preference, setPreference] = useState("crammed");
   const [courses, setCourses] = useState([
     { name: "", lectures: "", ta_times: "" },
@@ -59,10 +59,18 @@ const generateScheduleWithConstraints = useCallback(async (constraintsToUse) => 
 
     localStorage.setItem('originalCourseOptions', JSON.stringify(formattedCourses));
 
+    const headers = {
+      "Content-Type": "application/json"
+    };
+
+    // Add authorization header if user is authenticated
+    if (user && authToken) {
+      headers['Authorization'] = `Bearer ${authToken}`;
+    }
+
     const scheduleRes = await fetch("/api/schedule", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: 'include',
+      headers: headers,
       body: JSON.stringify({
         preference,
         courses: formattedCourses,
@@ -86,7 +94,7 @@ const generateScheduleWithConstraints = useCallback(async (constraintsToUse) => 
   } catch (err) {
     setError(err.message || 'Failed to connect to backend. Please make sure the server is running.');
   }
-}, [courses, preference, validateForm]); // Include validateForm in the dependency array
+}, [courses, preference, validateForm, user, authToken]); // Include user and authToken in the dependency array
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -99,10 +107,18 @@ const generateScheduleWithConstraints = useCallback(async (constraintsToUse) => 
       let parsedConstraints = [];
       let constraintsData = null;
       if (constraints.trim()) {
+        const headers = {
+          "Content-Type": "application/json"
+        };
+
+        // Add authorization header if user is authenticated
+        if (user && authToken) {
+          headers['Authorization'] = `Bearer ${authToken}`;
+        }
+
         const parseRes = await fetch("/api/parse", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: 'include',
+          headers: headers,
           body: JSON.stringify({ text: constraints }),
         });
 
@@ -239,7 +255,7 @@ const generateScheduleWithConstraints = useCallback(async (constraintsToUse) => 
             onConstraintsUpdate={handleConstraintsUpdate}
             isRegenerating={isLoading}
           />
-          <WeeklyScheduler user={user} schedule={schedule} isLoading={isLoading} />
+          <WeeklyScheduler user={user} authToken={authToken} schedule={schedule} isLoading={isLoading} />
         </div>
       </div>
     </div>
