@@ -106,6 +106,22 @@ const AboutPage = () => {
             Get Started Now
           </button>
         </div>
+
+        <div className="bolt-badge-section">
+          <a 
+            href="https://bolt.new" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="bolt-badge-link"
+          >
+            <img 
+              src="https://imagedelivery.net/3RKw_J_fJQ_4KpJP3_YgXA/a24bb2c9-f4d2-4991-9cd9-5a4e5d4a7600/public" 
+              alt="Made with Bolt" 
+              className="bolt-logo"
+            />
+            <p className="bolt-text">Made with Bolt</p>
+          </a>
+        </div>
       </div>
     </div>
   );
