@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import './SaveScheduleModal.css';
 
-const SaveScheduleModal = ({ isOpen, onClose, onSave, schedule, user, authToken, toast }) => {
+const SaveScheduleModal = ({ isOpen, onClose, onSave, schedule, user, authToken }) => {
   const [scheduleName, setScheduleName] = useState('');
   const [description, setDescription] = useState('');
   const [isPublic, setIsPublic] = useState(false);
@@ -13,14 +13,12 @@ const SaveScheduleModal = ({ isOpen, onClose, onSave, schedule, user, authToken,
     
     if (!scheduleName.trim()) {
       setError('Please enter a schedule name');
-      toast?.error('Please enter a schedule name');
       return;
     }
 
     if (!user) {
       const errorMessage = 'You must be logged in to save schedules';
       setError(errorMessage);
-      toast?.error(errorMessage);
       return;
     }
 
@@ -43,7 +41,6 @@ const SaveScheduleModal = ({ isOpen, onClose, onSave, schedule, user, authToken,
         console.log('❌ Auth check failed, user may need to sign in again');
         const errorMessage = 'Your session has expired. Please refresh the page and sign in again.';
         setError(errorMessage);
-        toast?.error(errorMessage);
         return;
       }
 
@@ -73,11 +70,6 @@ const SaveScheduleModal = ({ isOpen, onClose, onSave, schedule, user, authToken,
         const data = await response.json();
         console.log('✅ Save successful:', data);
         
-        // Show success toast
-        toast?.success(`Schedule "${scheduleName}" saved successfully!`, {
-          title: 'Schedule Saved'
-        });
-        
         onSave(data.schedule);
         onClose();
         
@@ -94,13 +86,11 @@ const SaveScheduleModal = ({ isOpen, onClose, onSave, schedule, user, authToken,
           : errorData.error || 'Failed to save schedule';
         
         setError(errorMessage);
-        toast?.error(errorMessage);
       }
     } catch (err) {
       console.error('❌ Error saving schedule:', err);
       const errorMessage = 'Failed to save schedule. Please check your connection and try again.';
       setError(errorMessage);
-      toast?.error(errorMessage);
     } finally {
       setIsSaving(false);
     }

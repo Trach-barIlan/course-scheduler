@@ -6,7 +6,7 @@ import NotImplementedModal from './NotImplementedModal/NotImplementedModal';
 import ScheduleSkeletonLoader from './SkeletonLoader/ScheduleSkeletonLoader';
 import "../styles/WeeklyScheduler.css";
 
-const WeeklySchedule = ({ schedule, isLoading, user, authToken, toast }) => {
+const WeeklySchedule = ({ schedule, isLoading, user, authToken }) => {
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
   const [selectedClass, setSelectedClass] = useState(null);
@@ -99,14 +99,12 @@ const WeeklySchedule = ({ schedule, isLoading, user, authToken, toast }) => {
     console.log('Save schedule clicked, user:', user);
     
     if (!user) {
-      toast?.warning('Please sign in to save schedules', {
-        title: 'Sign In Required'
-      });
+      alert('Please sign in to save schedules. Click the "Sign In" button in the top navigation to create an account or log in.');
       return;
     }
     
     if (!currentSchedule || currentSchedule.length === 0) {
-      toast?.error('No schedule to save. Please generate a schedule first.');
+      alert('No schedule to save. Please generate a schedule first.');
       return;
     }
     
@@ -124,7 +122,7 @@ const WeeklySchedule = ({ schedule, isLoading, user, authToken, toast }) => {
 
       if (!authCheck.ok) {
         console.log('❌ Auth check failed, user may need to sign in again');
-        toast?.error('Your session has expired. Please refresh the page and sign in again.');
+        alert('Your session has expired. Please refresh the page and sign in again.');
         return;
       }
 
@@ -135,7 +133,7 @@ const WeeklySchedule = ({ schedule, isLoading, user, authToken, toast }) => {
       setShowSaveModal(true);
     } catch (error) {
       console.error('❌ Error checking authentication:', error);
-      toast?.error('Unable to verify authentication. Please refresh the page and try again.');
+      alert('Unable to verify authentication. Please refresh the page and try again.');
     }
   };
 
@@ -143,7 +141,8 @@ const WeeklySchedule = ({ schedule, isLoading, user, authToken, toast }) => {
     // Close the modal
     setShowSaveModal(false);
     
-    // Toast notification is handled in the SaveScheduleModal component
+    // Show success message
+    alert(`Schedule "${savedSchedule.schedule_name}" saved successfully!`);
   };
 
   if (isLoading) {
@@ -350,15 +349,11 @@ const WeeklySchedule = ({ schedule, isLoading, user, authToken, toast }) => {
       // Clicking on the same class again - cancel drag mode
       setDraggedClass(null);
       setAvailableSlots([]);
-      toast?.info('Drag mode cancelled');
     } else {
       // Start drag mode
       setDraggedClass(slot);
       const availableSlots = findAvailableSlots(slot);
       setAvailableSlots(availableSlots);
-      toast?.info(`Click on a highlighted slot to move ${slot.text}`, {
-        title: 'Drag Mode Active'
-      });
       console.log('Available slots for', slot.text, ':', availableSlots);
     }
     setSelectedClass(null);
@@ -385,11 +380,6 @@ const WeeklySchedule = ({ schedule, isLoading, user, authToken, toast }) => {
     setCurrentSchedule(newSchedule);
     setDraggedClass(null);
     setAvailableSlots([]);
-    
-    // Show success toast
-    toast?.success(`Moved ${draggedClass.text} to ${targetSlot.day} ${targetSlot.start}:00-${targetSlot.end}:00`, {
-      title: 'Class Moved'
-    });
   };
 
   const isSlotAvailable = (day, hour) => {
@@ -411,12 +401,10 @@ const WeeklySchedule = ({ schedule, isLoading, user, authToken, toast }) => {
   const cancelDragMode = () => {
     setDraggedClass(null);
     setAvailableSlots([]);
-    toast?.info('Drag mode cancelled');
   };
 
   const downloadPDF = async () => {
     setIsGeneratingPDF(true);
-    toast?.info('Generating PDF...', { title: 'Export Started' });
     
     try {
       const tableElement = document.getElementById("schedule-table");
@@ -455,10 +443,8 @@ const WeeklySchedule = ({ schedule, isLoading, user, authToken, toast }) => {
       }
 
       pdf.save("WeeklySchedule.pdf");
-      toast?.success('PDF downloaded successfully!', { title: 'Export Complete' });
     } catch (error) {
       console.error("Error generating PDF:", error);
-      toast?.error('Failed to generate PDF. Please try again.');
     } finally {
       setIsGeneratingPDF(false);
     }
@@ -466,7 +452,6 @@ const WeeklySchedule = ({ schedule, isLoading, user, authToken, toast }) => {
 
   const shareTableAsImage = async () => {
     setIsSharing(true);
-    toast?.info('Preparing to share...', { title: 'Share Started' });
     
     try {
       const tableElement = document.getElementById("schedule-table");
@@ -488,20 +473,16 @@ const WeeklySchedule = ({ schedule, isLoading, user, authToken, toast }) => {
           text: "Check out my weekly course schedule!",
           files: [file]
         });
-        
-        toast?.success('Schedule shared successfully!', { title: 'Share Complete' });
       } else {
         // Fallback to WhatsApp Web
         const whatsappUrl = `https://wa.me/?text=Check%20out%20my%20weekly%20schedule!`;
         window.open(whatsappUrl, "_blank");
-        toast?.info('Opening WhatsApp to share your schedule');
       }
     } catch (error) {
       console.error("Error sharing:", error);
       // Fallback to simple WhatsApp link
       const whatsappUrl = `https://wa.me/?text=Check%20out%20my%20weekly%20schedule!`;
       window.open(whatsappUrl, "_blank");
-      toast?.warning('Opened WhatsApp for sharing. You can manually share your schedule.');
     } finally {
       setIsSharing(false);
     }
@@ -689,7 +670,6 @@ const WeeklySchedule = ({ schedule, isLoading, user, authToken, toast }) => {
         schedule={currentSchedule}
         user={user}
         authToken={authToken}
-        toast={toast}
       />
 
       {/* Not Implemented Modal */}

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import './Auth.css';
 
-const LoginRegister = ({ onAuthSuccess, onClose, toast }) => {
+const LoginRegister = ({ onAuthSuccess, onClose }) => {
   const [isLogin, setIsLogin] = useState(true);
   const [formData, setFormData] = useState({
     username: '',
@@ -91,7 +91,6 @@ const LoginRegister = ({ onAuthSuccess, onClose, toast }) => {
     e.preventDefault();
     
     if (!validateForm()) {
-      toast?.error('Please fix the errors in the form');
       return;
     }
 
@@ -128,24 +127,14 @@ const LoginRegister = ({ onAuthSuccess, onClose, toast }) => {
 
       if (response.ok) {
         console.log('✅ Authentication successful');
-        toast?.success(
-          isLogin 
-            ? `Welcome back, ${data.user.first_name}!`
-            : `Account created successfully! Welcome, ${data.user.first_name}!`,
-          {
-            title: isLogin ? 'Login Successful' : 'Registration Successful'
-          }
-        );
         onAuthSuccess(data.user, data.token);
       } else {
         console.error('❌ Authentication failed:', data.error);
-        toast?.error(data.error || 'Authentication failed');
         setErrors({ general: data.error || 'Authentication failed' });
       }
     } catch (error) {
       console.error('❌ Network error:', error);
       const errorMessage = 'Network error. Please check your connection and try again.';
-      toast?.error(errorMessage);
       setErrors({ general: errorMessage });
     } finally {
       setIsLoading(false);
