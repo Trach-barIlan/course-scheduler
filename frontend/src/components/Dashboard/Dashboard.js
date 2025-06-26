@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import NotImplementedModal from '../NotImplementedModal/NotImplementedModal';
 import ScheduleGuide from '../ScheduleGuide/ScheduleGuide';
 import './Dashboard.css';
@@ -12,29 +12,7 @@ const Dashboard = ({ user, authToken, onQuickAction }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Fetch user statistics when component mounts or user changes
-  useEffect(() => {
-    if (user && authToken) {
-      fetchUserData();
-    } else {
-      setIsLoading(false);
-      // Set default statistics for non-authenticated users
-      setStatistics({
-        schedules_created: 0,
-        schedules_this_week: 0,
-        saved_schedules_count: 0,
-        hours_saved: 0,
-        success_rate: 98,
-        efficiency: 85,
-        total_courses_scheduled: 0,
-        preferred_schedule_type: 'crammed',
-        constraints_used_count: 0,
-        average_generation_time: 0
-      });
-    }
-  }, [user, authToken]);
-
-  const fetchUserData = async () => {
+  const fetchUserData = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     
@@ -108,7 +86,29 @@ const Dashboard = ({ user, authToken, onQuickAction }) => {
     } finally {
       setIsLoading(false);
     }
-  };
+  });
+
+  // Fetch user statistics when component mounts or user changes
+  useEffect(() => {
+    if (user && authToken) {
+      fetchUserData();
+    } else {
+      setIsLoading(false);
+      // Set default statistics for non-authenticated users
+      setStatistics({
+        schedules_created: 0,
+        schedules_this_week: 0,
+        saved_schedules_count: 0,
+        hours_saved: 0,
+        success_rate: 98,
+        efficiency: 85,
+        total_courses_scheduled: 0,
+        preferred_schedule_type: 'crammed',
+        constraints_used_count: 0,
+        average_generation_time: 0
+      });
+    }
+  }, [user, authToken, fetchUserData]);
 
   // Generate stats array based on user authentication and data
   const getStatsArray = () => {

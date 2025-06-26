@@ -29,7 +29,7 @@ const ScheduleSkeletonLoader = ({ progress = 0, estimatedTime = 0, currentStep =
     return blocks;
   };
 
-  const skeletonBlocks = React.useMemo(() => getSkeletonBlocks(), []);
+  const skeletonBlocks = React.useMemo(() => getSkeletonBlocks(), [getSkeletonBlocks]);
 
   const formatTime = (seconds) => {
     if (seconds < 60) return `${Math.round(seconds)}s`;
