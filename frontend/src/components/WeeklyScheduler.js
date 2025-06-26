@@ -5,7 +5,7 @@ import SaveScheduleModal from './SaveScheduleModal/SaveScheduleModal';
 import NotImplementedModal from './NotImplementedModal/NotImplementedModal';
 import "../styles/WeeklyScheduler.css";
 
-const WeeklySchedule = ({ schedule, isLoading, user, authToken }) => {
+const WeeklySchedule = ({ schedule, isLoading, user, authToken, toast }) => {
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
   const [selectedClass, setSelectedClass] = useState(null);
@@ -49,13 +49,14 @@ const WeeklySchedule = ({ schedule, isLoading, user, authToken }) => {
     console.log('Save schedule clicked, user:', user);
     
     if (!user) {
-      // Show a more user-friendly message
-      alert('Please sign in to save schedules. Click the "Sign In" button in the top navigation to create an account or log in.');
+      toast?.warning('Please sign in to save schedules', {
+        title: 'Sign In Required'
+      });
       return;
     }
     
     if (!currentSchedule || currentSchedule.length === 0) {
-      alert('No schedule to save. Please generate a schedule first.');
+      toast?.error('No schedule to save. Please generate a schedule first.');
       return;
     }
     
@@ -73,7 +74,7 @@ const WeeklySchedule = ({ schedule, isLoading, user, authToken }) => {
 
       if (!authCheck.ok) {
         console.log('❌ Auth check failed, user may need to sign in again');
-        alert('Your session has expired. Please refresh the page and sign in again.');
+        toast?.error('Your session has expired. Please refresh the page and sign in again.');
         return;
       }
 
@@ -84,24 +85,15 @@ const WeeklySchedule = ({ schedule, isLoading, user, authToken }) => {
       setShowSaveModal(true);
     } catch (error) {
       console.error('❌ Error checking authentication:', error);
-      alert('Unable to verify authentication. Please refresh the page and try again.');
+      toast?.error('Unable to verify authentication. Please refresh the page and try again.');
     }
   };
 
   const handleScheduleSaved = (savedSchedule) => {
-    // Show success message
-    alert(`Schedule "${savedSchedule.schedule_name}" saved successfully!`);
-    
     // Close the modal
     setShowSaveModal(false);
     
-    // Optional: Navigate back to dashboard after saving
-    // if (window.history.length > 1) {
-    //   window.history.back();
-    // } else {
-    //   // If no history, reload the page to go to dashboard
-    //   window.location.reload();
-    // }
+    // Toast notification is handled in the SaveScheduleModal component
   };
 
   if (isLoading) {
@@ -309,11 +301,15 @@ const WeeklySchedule = ({ schedule, isLoading, user, authToken }) => {
       // Clicking on the same class again - cancel drag mode
       setDraggedClass(null);
       setAvailableSlots([]);
+      toast?.info('Drag mode cancelled');
     } else {
       // Start drag mode
       setDraggedClass(slot);
       const availableSlots = findAvailableSlots(slot);
       setAvailableSlots(availableSlots);
+      toast?.info(`Click on a highlighted slot to move ${slot.text}`, {
+        title: 'Drag Mode Active'
+      });
       console.log('Available slots for', slot.text, ':', availableSlots);
     }
     setSelectedClass(null);
@@ -340,6 +336,11 @@ const WeeklySchedule = ({ schedule, isLoading, user, authToken }) => {
     setCurrentSchedule(newSchedule);
     setDraggedClass(null);
     setAvailableSlots([]);
+    
+    // Show success toast
+    toast?.success(`Moved ${draggedClass.text} to ${targetSlot.day} ${targetSlot.start}:00-${targetSlot.end}:00`, {
+      title: 'Class Moved'
+    });
   };
 
   const isSlotAvailable = (day, hour) => {
@@ -361,10 +362,13 @@ const WeeklySchedule = ({ schedule, isLoading, user, authToken }) => {
   const cancelDragMode = () => {
     setDraggedClass(null);
     setAvailableSlots([]);
+    toast?.info('Drag mode cancelled');
   };
 
   const downloadPDF = async () => {
     setIsGeneratingPDF(true);
+    toast?.info('Generating PDF...', { title: 'Export Started' });
+    
     try {
       const tableElement = document.getElementById("schedule-table");
       const canvas = await html2canvas(tableElement, { 
@@ -402,8 +406,10 @@ const WeeklySchedule = ({ schedule, isLoading, user, authToken }) => {
       }
 
       pdf.save("WeeklySchedule.pdf");
+      toast?.success('PDF downloaded successfully!', { title: 'Export Complete' });
     } catch (error) {
       console.error("Error generating PDF:", error);
+      toast?.error('Failed to generate PDF. Please try again.');
     } finally {
       setIsGeneratingPDF(false);
     }
@@ -411,6 +417,8 @@ const WeeklySchedule = ({ schedule, isLoading, user, authToken }) => {
 
   const shareTableAsImage = async () => {
     setIsSharing(true);
+    toast?.info('Preparing to share...', { title: 'Share Started' });
+    
     try {
       const tableElement = document.getElementById("schedule-table");
       const canvas = await html2canvas(tableElement, { 
@@ -431,16 +439,20 @@ const WeeklySchedule = ({ schedule, isLoading, user, authToken }) => {
           text: "Check out my weekly course schedule!",
           files: [file]
         });
+        
+        toast?.success('Schedule shared successfully!', { title: 'Share Complete' });
       } else {
         // Fallback to WhatsApp Web
         const whatsappUrl = `https://wa.me/?text=Check%20out%20my%20weekly%20schedule!`;
         window.open(whatsappUrl, "_blank");
+        toast?.info('Opening WhatsApp to share your schedule');
       }
     } catch (error) {
       console.error("Error sharing:", error);
       // Fallback to simple WhatsApp link
       const whatsappUrl = `https://wa.me/?text=Check%20out%20my%20weekly%20schedule!`;
       window.open(whatsappUrl, "_blank");
+      toast?.warning('Opened WhatsApp for sharing. You can manually share your schedule.');
     } finally {
       setIsSharing(false);
     }
@@ -628,6 +640,7 @@ const WeeklySchedule = ({ schedule, isLoading, user, authToken }) => {
         schedule={currentSchedule}
         user={user}
         authToken={authToken}
+        toast={toast}
       />
 
       {/* Not Implemented Modal */}

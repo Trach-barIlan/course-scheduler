@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import './UserProfile.css';
 
-const UserProfile = ({ user, authToken, onLogout, onClose }) => {
+const UserProfile = ({ user, authToken, onLogout, onClose, toast }) => {
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [statistics, setStatistics] = useState(null);
 
@@ -42,10 +42,18 @@ const UserProfile = ({ user, authToken, onLogout, onClose }) => {
       });
 
       if (response.ok) {
+        toast?.success('You have been signed out successfully', {
+          title: 'Signed Out'
+        });
+        onLogout();
+      } else {
+        toast?.warning('There was an issue signing out, but you have been logged out locally');
         onLogout();
       }
     } catch (error) {
       console.error('Logout error:', error);
+      toast?.warning('There was an issue signing out, but you have been logged out locally');
+      onLogout();
     } finally {
       setIsLoggingOut(false);
     }

@@ -4,7 +4,7 @@ import WeeklyScheduler from '../components/WeeklyScheduler';
 import ConstraintsDisplay from '../components/ConstraintsDisplay';
 import '../styles/SchedulerPage.css';
 
-const SchedulerPage = ({ user, authToken }) => {
+const SchedulerPage = ({ user, authToken, toast }) => {
   const [preference, setPreference] = useState("crammed");
   const [courses, setCourses] = useState([
     { name: "", lectures: "", ta_times: "" },
@@ -25,11 +25,14 @@ const SchedulerPage = ({ user, authToken }) => {
 
   const addCourse = () => {
     setCourses([...courses, { name: "", lectures: "", ta_times: "" }]);
+    toast?.info('New course added');
   };
 
   const removeCourse = (index) => {
     if (courses.length > 1) {
+      const courseName = courses[index].name || 'Untitled course';
       setCourses(courses.filter((_, i) => i !== index));
+      toast?.info(`Removed ${courseName}`);
     }
   };
 
@@ -88,13 +91,24 @@ const generateScheduleWithConstraints = useCallback(async (constraintsToUse) => 
     if (data.schedule) {
       setSchedule(data.schedule);
       setError(null);
+      toast?.success(`Generated schedule with ${data.schedule.length} courses!`, {
+        title: 'Schedule Generated'
+      });
     } else {
-      setError(data.error || 'No valid schedule found with the given constraints. Try adjusting your requirements.');
+      const errorMessage = data.error || 'No valid schedule found with the given constraints. Try adjusting your requirements.';
+      setError(errorMessage);
+      toast?.error(errorMessage, {
+        title: 'Schedule Generation Failed'
+      });
     }
   } catch (err) {
-    setError(err.message || 'Failed to connect to backend. Please make sure the server is running.');
+    const errorMessage = err.message || 'Failed to connect to backend. Please make sure the server is running.';
+    setError(errorMessage);
+    toast?.error(errorMessage, {
+      title: 'Generation Error'
+    });
   }
-}, [courses, preference, validateForm, user, authToken]); // Include user and authToken in the dependency array
+}, [courses, preference, validateForm, user, authToken, toast]); // Include toast in the dependency array
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -130,12 +144,22 @@ const generateScheduleWithConstraints = useCallback(async (constraintsToUse) => 
         constraintsData = await parseRes.json();
         parsedConstraints = constraintsData.constraints || [];
         setParsedConstraints(constraintsData);
+        
+        if (parsedConstraints.length > 0) {
+          toast?.success(`Parsed ${parsedConstraints.length} constraint${parsedConstraints.length !== 1 ? 's' : ''}`, {
+            title: 'Constraints Understood'
+          });
+        }
       }
 
       await generateScheduleWithConstraints(parsedConstraints);
     } catch (err) {
-      setError(err.message || 'Failed to connect to backend. Please make sure the server is running.');
+      const errorMessage = err.message || 'Failed to connect to backend. Please make sure the server is running.';
+      setError(errorMessage);
       setParsedConstraints(null);
+      toast?.error(errorMessage, {
+        title: 'Generation Failed'
+      });
     } finally {
       setIsSubmitting(false);
       setIsLoading(false);
@@ -145,15 +169,17 @@ const generateScheduleWithConstraints = useCallback(async (constraintsToUse) => 
   const handleConstraintsUpdate = useCallback(async (updatedConstraints) => {
     if (constraintsUpdateFunction) {
       setIsLoading(true);
+      toast?.info('Regenerating schedule with updated constraints...');
       try {
         await constraintsUpdateFunction(updatedConstraints);
       } catch (err) {
         console.error('Error updating constraints:', err);
+        toast?.error('Failed to regenerate schedule with updated constraints');
       } finally {
         setIsLoading(false);
       }
     }
-  }, [constraintsUpdateFunction]);
+  }, [constraintsUpdateFunction, toast]);
 
   React.useEffect(() => {
     setConstraintsUpdateFunction(() => generateScheduleWithConstraints);
@@ -255,7 +281,7 @@ const generateScheduleWithConstraints = useCallback(async (constraintsToUse) => 
             onConstraintsUpdate={handleConstraintsUpdate}
             isRegenerating={isLoading}
           />
-          <WeeklyScheduler user={user} authToken={authToken} schedule={schedule} isLoading={isLoading} />
+          <WeeklyScheduler user={user} authToken={authToken} schedule={schedule} isLoading={isLoading} toast={toast} />
         </div>
       </div>
     </div>

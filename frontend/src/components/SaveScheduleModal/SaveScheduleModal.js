@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import './SaveScheduleModal.css';
 
-const SaveScheduleModal = ({ isOpen, onClose, onSave, schedule, user, authToken }) => {
+const SaveScheduleModal = ({ isOpen, onClose, onSave, schedule, user, authToken, toast }) => {
   const [scheduleName, setScheduleName] = useState('');
   const [description, setDescription] = useState('');
   const [isPublic, setIsPublic] = useState(false);
@@ -13,11 +13,14 @@ const SaveScheduleModal = ({ isOpen, onClose, onSave, schedule, user, authToken 
     
     if (!scheduleName.trim()) {
       setError('Please enter a schedule name');
+      toast?.error('Please enter a schedule name');
       return;
     }
 
     if (!user) {
-      setError('You must be logged in to save schedules');
+      const errorMessage = 'You must be logged in to save schedules';
+      setError(errorMessage);
+      toast?.error(errorMessage);
       return;
     }
 
@@ -26,8 +29,6 @@ const SaveScheduleModal = ({ isOpen, onClose, onSave, schedule, user, authToken 
 
     try {
       console.log('🔄 Starting save process...');
-      console.log('User:', user);
-      console.log('Schedule data:', schedule);
 
       // Step 1: Verify current authentication status
       console.log('📋 Step 1: Verifying authentication...');
@@ -38,18 +39,18 @@ const SaveScheduleModal = ({ isOpen, onClose, onSave, schedule, user, authToken 
         }
       });
 
-      console.log('Auth check response:', authCheck.status);
-
       if (!authCheck.ok) {
         console.log('❌ Auth check failed, user may need to sign in again');
-        setError('Your session has expired. Please refresh the page and sign in again.');
+        const errorMessage = 'Your session has expired. Please refresh the page and sign in again.';
+        setError(errorMessage);
+        toast?.error(errorMessage);
         return;
       }
 
       const authData = await authCheck.json();
       console.log('✅ Authentication verified for user:', authData.user?.username);
 
-      // Step 2: Save the schedule with enhanced error handling
+      // Step 2: Save the schedule
       console.log('💾 Step 2: Saving schedule...');
       const response = await fetch('/api/schedules/save', {
         method: 'POST',
@@ -62,7 +63,7 @@ const SaveScheduleModal = ({ isOpen, onClose, onSave, schedule, user, authToken 
           description: description.trim(),
           schedule: schedule,
           isPublic: isPublic,
-          constraints: [] // TODO: Include constraints if available
+          constraints: []
         })
       });
 
@@ -71,6 +72,12 @@ const SaveScheduleModal = ({ isOpen, onClose, onSave, schedule, user, authToken 
       if (response.ok) {
         const data = await response.json();
         console.log('✅ Save successful:', data);
+        
+        // Show success toast
+        toast?.success(`Schedule "${scheduleName}" saved successfully!`, {
+          title: 'Schedule Saved'
+        });
+        
         onSave(data.schedule);
         onClose();
         
@@ -82,15 +89,18 @@ const SaveScheduleModal = ({ isOpen, onClose, onSave, schedule, user, authToken 
         const errorData = await response.json();
         console.error('❌ Save failed:', errorData);
         
-        if (response.status === 401) {
-          setError('Your session has expired. Please refresh the page and sign in again.');
-        } else {
-          setError(errorData.error || 'Failed to save schedule');
-        }
+        const errorMessage = response.status === 401 
+          ? 'Your session has expired. Please refresh the page and sign in again.'
+          : errorData.error || 'Failed to save schedule';
+        
+        setError(errorMessage);
+        toast?.error(errorMessage);
       }
     } catch (err) {
       console.error('❌ Error saving schedule:', err);
-      setError('Failed to save schedule. Please check your connection and try again.');
+      const errorMessage = 'Failed to save schedule. Please check your connection and try again.';
+      setError(errorMessage);
+      toast?.error(errorMessage);
     } finally {
       setIsSaving(false);
     }
@@ -115,27 +125,6 @@ const SaveScheduleModal = ({ isOpen, onClose, onSave, schedule, user, authToken 
         </div>
 
         <form onSubmit={handleSubmit} className="modal-form">
-          {/* Enhanced debug info for troubleshooting */}
-          {process.env.NODE_ENV === 'development' && (
-            <div className="debug-info" style={{ 
-              background: '#f0f8ff', 
-              border: '1px solid #ccc',
-              padding: '12px', 
-              marginBottom: '16px', 
-              fontSize: '11px',
-              borderRadius: '6px',
-              fontFamily: 'monospace'
-            }}>
-              <strong>🔍 Debug Info:</strong><br/>
-              <strong>User:</strong> {user ? `${user.first_name} ${user.last_name} (ID: ${user.id})` : '❌ Not logged in'}<br/>
-              <strong>Email:</strong> {user?.email || 'N/A'}<br/>
-              <strong>Username:</strong> {user?.username || 'N/A'}<br/>
-              <strong>Auth Token:</strong> {authToken ? '✅ Present' : '❌ Missing'}<br/>
-              <strong>Schedule:</strong> {schedule ? `✅ ${schedule.length} courses` : '❌ No schedule'}<br/>
-              <strong>Courses:</strong> {schedule ? schedule.map(c => c.name).join(', ') : 'None'}
-            </div>
-          )}
-
           <div className="form-group">
             <label htmlFor="scheduleName">Schedule Name *</label>
             <input

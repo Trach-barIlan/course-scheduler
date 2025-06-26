@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import './Auth.css';
 
-const LoginRegister = ({ onAuthSuccess, onClose }) => {
+const LoginRegister = ({ onAuthSuccess, onClose, toast }) => {
   const [isLogin, setIsLogin] = useState(true);
   const [formData, setFormData] = useState({
     username: '',
@@ -91,6 +91,7 @@ const LoginRegister = ({ onAuthSuccess, onClose }) => {
     e.preventDefault();
     
     if (!validateForm()) {
+      toast?.error('Please fix the errors in the form');
       return;
     }
 
@@ -113,32 +114,39 @@ const LoginRegister = ({ onAuthSuccess, onClose }) => {
           };
 
       console.log(`🔄 Attempting ${isLogin ? 'login' : 'registration'}...`);
-      console.log('API Endpoint:', endpoint);
 
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-Requested-With': 'XMLHttpRequest', // Add this header
+          'X-Requested-With': 'XMLHttpRequest',
         },
         body: JSON.stringify(payload)
       });
 
-      console.log('Response status:', response.status);
       const data = await response.json();
-      console.log('Response data:', data);
-      console.log('Response data:', data);
 
       if (response.ok) {
         console.log('✅ Authentication successful');
+        toast?.success(
+          isLogin 
+            ? `Welcome back, ${data.user.first_name}!`
+            : `Account created successfully! Welcome, ${data.user.first_name}!`,
+          {
+            title: isLogin ? 'Login Successful' : 'Registration Successful'
+          }
+        );
         onAuthSuccess(data.user, data.token);
       } else {
         console.error('❌ Authentication failed:', data.error);
+        toast?.error(data.error || 'Authentication failed');
         setErrors({ general: data.error || 'Authentication failed' });
       }
     } catch (error) {
       console.error('❌ Network error:', error);
-      setErrors({ general: 'Network error. Please check your connection and try again.' });
+      const errorMessage = 'Network error. Please check your connection and try again.';
+      toast?.error(errorMessage);
+      setErrors({ general: errorMessage });
     } finally {
       setIsLoading(false);
     }

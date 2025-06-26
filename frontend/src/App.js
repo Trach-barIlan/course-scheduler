@@ -7,6 +7,8 @@ import SchedulerPage from './pages/SchedulerPage';
 import AboutPage from './pages/AboutPage';
 import LoginRegister from './components/Auth/LoginRegister';
 import UserProfile from './components/UserProfile/UserProfile';
+import ToastContainer from './components/ToastContainer/ToastContainer';
+import useToast from './hooks/useToast';
 import './styles/base.css';
 import './styles/App.css';
 
@@ -17,6 +19,7 @@ function AppContent() {
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [authToken, setAuthToken] = useState(localStorage.getItem('auth_token'));
   const navigate = useNavigate();
+  const { toasts, removeToast, success, error, warning, info } = useToast();
 
   // Enhanced authentication check with token-based auth
   useEffect(() => {
@@ -76,6 +79,11 @@ function AppContent() {
     setUser(userData);
     setShowAuth(false);
     
+    // Show success toast
+    success(`Welcome back, ${userData.first_name}!`, {
+      title: 'Login Successful'
+    });
+    
     console.log('🔑 Token stored successfully');
   };
 
@@ -93,12 +101,17 @@ function AppContent() {
         
         if (response.ok) {
           console.log('✅ Logout successful');
+          success('You have been signed out successfully', {
+            title: 'Signed Out'
+          });
         } else {
           console.error('❌ Logout failed');
+          warning('There was an issue signing out, but you have been logged out locally');
         }
       }
     } catch (error) {
       console.error('Logout error:', error);
+      warning('There was an issue signing out, but you have been logged out locally');
     }
     
     // Clear local state and storage
@@ -154,7 +167,7 @@ function AppContent() {
             />
             <Route 
               path="/scheduler" 
-              element={<SchedulerPage user={user} authToken={authToken} />} 
+              element={<SchedulerPage user={user} authToken={authToken} toast={{ success, error, warning, info }} />} 
             />
             <Route 
               path="/about" 
@@ -168,6 +181,7 @@ function AppContent() {
         <LoginRegister 
           onAuthSuccess={handleAuthSuccess}
           onClose={() => setShowAuth(false)}
+          toast={{ success, error, warning, info }}
         />
       )}
 
@@ -177,8 +191,16 @@ function AppContent() {
           authToken={authToken}
           onLogout={handleLogout}
           onClose={() => setShowProfile(false)}
+          toast={{ success, error, warning, info }}
         />
       )}
+
+      {/* Toast Container */}
+      <ToastContainer 
+        toasts={toasts}
+        onRemoveToast={removeToast}
+        position="top-right"
+      />
     </div>
   );
 }
