@@ -22,9 +22,12 @@ app = Flask(__name__)
 # Simplified configuration - no session management needed
 app.secret_key = os.environ.get('SECRET_KEY', 'your-secret-key-change-this-in-production')
 
+origins = os.environ.get('CORS_ORIGINS', 'http://localhost:3000').split(',')
+origins = [origin.strip() for origin in origins] # Remove whitespace
+
 # Enhanced CORS configuration
 CORS(app, 
-     origins=["http://localhost:3000"],
+     origins=origins,
      allow_headers=["Content-Type", "Authorization"],
      methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"]
 )
