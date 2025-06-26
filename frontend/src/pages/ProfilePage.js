@@ -3,12 +3,12 @@ import '../styles/ProfilePage.css';
 
 const ProfilePage = ({ user, onLogout }) => {
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://127.0.0.1:5000/';
+  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
   const handleLogout = async () => {
     setIsLoggingOut(true);
     try {
-      const response = await fetch(API_BASE_URL + 'auth/logout', {
+      const response = await fetch(API_BASE_URL + '/api/auth/logout', {
         method: 'POST',
         credentials: 'include'
       });

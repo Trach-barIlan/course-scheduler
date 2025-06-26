@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import NotImplementedModal from '../NotImplementedModal/NotImplementedModal';
 import './Sidebar.css';
@@ -10,20 +10,14 @@ const Sidebar = ({ user, onQuickAction }) => {
   const [recentActivity, setRecentActivity] = useState([]);
   const navigate = useNavigate();
   const location = useLocation();
+  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || '/api';
 
-  // Fetch recent activity when user is available
-  useEffect(() => {
-    if (user) {
-      fetchRecentActivity();
-    }
-  }, [user]);
-
-  const fetchRecentActivity = async () => {
+  const fetchRecentActivity = useCallback(async () => {
     try {
       const token = localStorage.getItem('auth_token');
       if (!token) return;
 
-      const response = await fetch('/api/statistics/recent-activity', {
+      const response = await fetch(API_BASE_URL + '/api/statistics/recent-activity', {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -37,7 +31,14 @@ const Sidebar = ({ user, onQuickAction }) => {
     } catch (error) {
       console.error('Error fetching recent activity:', error);
     }
-  };
+  }, [API_BASE_URL]);
+
+  // Fetch recent activity when user is available
+  useEffect(() => {
+    if (user) {
+      fetchRecentActivity();
+    }
+  }, [user, fetchRecentActivity]);
 
   const quickActions = [
     {

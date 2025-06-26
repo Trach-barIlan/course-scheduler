@@ -22,6 +22,7 @@ const WeeklySchedule = ({ schedule, isLoading, user, authToken }) => {
   const [progress, setProgress] = useState(0);
   const [estimatedTime, setEstimatedTime] = useState(0);
   const [currentStep, setCurrentStep] = useState('');
+  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL
 
   // Update current schedule when prop changes
   React.useEffect(() => {
@@ -111,7 +112,7 @@ const WeeklySchedule = ({ schedule, isLoading, user, authToken }) => {
     // Verify authentication before opening modal
     try {
       console.log('🔍 Verifying authentication before opening save modal...');
-      const authCheck = await fetch('/api/auth/me', {
+      const authCheck = await fetch(API_BASE_URL + '/api/auth/me', {
         headers: {
           'Authorization': `Bearer ${authToken}`,
           'Content-Type': 'application/json',

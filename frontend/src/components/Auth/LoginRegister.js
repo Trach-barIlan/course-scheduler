@@ -15,6 +15,8 @@ const LoginRegister = ({ onAuthSuccess, onClose }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
+  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({
@@ -114,7 +116,7 @@ const LoginRegister = ({ onAuthSuccess, onClose }) => {
 
       console.log(`🔄 Attempting ${isLogin ? 'login' : 'registration'}...`);
 
-      const response = await fetch(endpoint, {
+      const response = await fetch(API_BASE_URL + endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

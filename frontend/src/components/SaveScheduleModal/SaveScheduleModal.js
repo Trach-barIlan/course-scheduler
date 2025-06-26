@@ -7,6 +7,7 @@ const SaveScheduleModal = ({ isOpen, onClose, onSave, schedule, user, authToken 
   const [isPublic, setIsPublic] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState('');
+  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -30,7 +31,7 @@ const SaveScheduleModal = ({ isOpen, onClose, onSave, schedule, user, authToken 
 
       // Step 1: Verify current authentication status
       console.log('📋 Step 1: Verifying authentication...');
-      const authCheck = await fetch('/api/auth/me', {
+      const authCheck = await fetch(API_BASE_URL + '/api/auth/me', {
         headers: {
           'Authorization': `Bearer ${authToken}`,
           'Content-Type': 'application/json',
@@ -49,7 +50,7 @@ const SaveScheduleModal = ({ isOpen, onClose, onSave, schedule, user, authToken 
 
       // Step 2: Save the schedule
       console.log('💾 Step 2: Saving schedule...');
-      const response = await fetch('/api/schedules/save', {
+      const response = await fetch(API_BASE_URL + '/api/schedules/save', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${authToken}`,

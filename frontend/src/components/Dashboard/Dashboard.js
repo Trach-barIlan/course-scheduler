@@ -11,6 +11,7 @@ const Dashboard = ({ user, authToken, onQuickAction }) => {
   const [recentActivity, setRecentActivity] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
   const fetchUserData = useCallback(async () => {
     setIsLoading(true);
@@ -19,13 +20,13 @@ const Dashboard = ({ user, authToken, onQuickAction }) => {
     try {
       // Fetch statistics and activity in parallel
       const [statsResponse, activityResponse] = await Promise.all([
-        fetch('/api/statistics/user', {
+        fetch(API_BASE_URL + '/api/statistics/user', {
           headers: {
             'Authorization': `Bearer ${authToken}`,
             'Content-Type': 'application/json',
           }
         }),
-        fetch('/api/statistics/recent-activity', {
+        fetch(API_BASE_URL + '/api/statistics/recent-activity', {
           headers: {
             'Authorization': `Bearer ${authToken}`,
             'Content-Type': 'application/json',
@@ -86,7 +87,7 @@ const Dashboard = ({ user, authToken, onQuickAction }) => {
     } finally {
       setIsLoading(false);
     }
-  }, [authToken]);
+  }, [authToken, API_BASE_URL]);
 
   // Fetch user statistics when component mounts or user changes
   useEffect(() => {
