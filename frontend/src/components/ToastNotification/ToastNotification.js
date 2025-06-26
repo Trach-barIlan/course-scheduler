@@ -82,6 +82,7 @@ const ToastNotification = ({
         </div>
         <div className="toast-text">
           {title && <div className="toast-title">{title}</div>}
+          }
           <div className="toast-message">{message}</div>
         </div>
         <button 
