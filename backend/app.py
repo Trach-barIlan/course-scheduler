@@ -24,6 +24,7 @@ app.secret_key = os.environ.get('SECRET_KEY', 'your-secret-key-change-this-in-pr
 
 origins = os.environ.get('CORS_ORIGINS', 'http://localhost:3000').split(',')
 origins = [origin.strip() for origin in origins] # Remove whitespace
+print(f"Configured CORS origins: {origins}")
 
 # Enhanced CORS configuration
 CORS(app, 
