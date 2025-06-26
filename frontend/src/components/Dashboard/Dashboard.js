@@ -86,7 +86,7 @@ const Dashboard = ({ user, authToken, onQuickAction }) => {
     } finally {
       setIsLoading(false);
     }
-  });
+  }, [authToken]);
 
   // Fetch user statistics when component mounts or user changes
   useEffect(() => {

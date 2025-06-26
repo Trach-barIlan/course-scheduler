@@ -6,16 +6,14 @@ const ScheduleSkeletonLoader = ({ progress = 0, estimatedTime = 0, currentStep =
   const hours = Array.from({ length: 12 }, (_, i) => i + 8);
 
   // Generate random skeleton blocks to simulate schedule layout
-  const getSkeletonBlocks = () => {
+  const skeletonBlocks = React.useMemo(() => {
     const blocks = [];
     const blockCount = Math.floor(Math.random() * 8) + 6; // 6-14 blocks
-    
     for (let i = 0; i < blockCount; i++) {
       const day = days[Math.floor(Math.random() * days.length)];
       const startHour = hours[Math.floor(Math.random() * (hours.length - 2))];
       const duration = Math.floor(Math.random() * 3) + 1; // 1-3 hours
       const type = Math.random() > 0.5 ? 'lecture' : 'ta';
-      
       blocks.push({
         id: i,
         day,
@@ -25,11 +23,8 @@ const ScheduleSkeletonLoader = ({ progress = 0, estimatedTime = 0, currentStep =
         delay: i * 0.1 // Staggered animation
       });
     }
-    
     return blocks;
-  };
-
-  const skeletonBlocks = React.useMemo(() => getSkeletonBlocks(), [getSkeletonBlocks]);
+  }, [days, hours]);
 
   const formatTime = (seconds) => {
     if (seconds < 60) return `${Math.round(seconds)}s`;
