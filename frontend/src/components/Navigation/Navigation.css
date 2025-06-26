@@ -230,6 +230,22 @@
   transform: rotate(180deg);
 }
 
+.bolt-link {
+  position: absolute;
+  top: 1.2em;
+  right: 1.2em;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+}
+
+@media (max-width: 768px) {
+  .bolt-link {
+    top: 0.7em;
+    right: 0.7em;
+  }
+}
+
 /* Responsive Design */
 @media (max-width: 1024px) {
   .nav-links {

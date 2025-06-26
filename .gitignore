@@ -1,6 +1,7 @@
 backend/ai_model/__pycache__
 backend/schedule/__pycache__
 .env
+.DS_Store
 
 # Local Netlify folder
 .netlify

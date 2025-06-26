@@ -82,6 +82,26 @@ const Navigation = ({ user, onAuthClick, onProfileClick }) => {
           </div>
         </div>
       </div>
+          <a
+              href="https://bolt.new"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="bolt-link"
+              title="Go to bolt.new"
+              style={{
+                marginLeft: '16px',
+                display: 'flex',
+                alignItems: 'center',
+                textDecoration: 'none',
+                cursor: 'pointer'
+              }}
+            >
+              <img
+                src="/BoltBadge.png"
+                alt="Bolt Logo"
+                style={{ width: 'clamp(1.5em, 2.5vw, 2.2em)', height: 'clamp(1.5em, 2.5vw, 2.2em)', objectFit: 'contain' }}
+              />
+            </a>
     </nav>
   );
 };
