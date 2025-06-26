@@ -85,15 +85,15 @@ const AboutPage = () => {
           
           <div className="stats-row">
             <div className="stat">
-              <div className="stat-number">10,000+</div>
+              <div className="stat-number">Many</div>
               <div className="stat-label">Schedules Generated</div>
             </div>
             <div className="stat">
-              <div className="stat-number">98%</div>
+              <div className="stat-number">100%</div>
               <div className="stat-label">Success Rate</div>
             </div>
             <div className="stat">
-              <div className="stat-number">500+</div>
+              <div className="stat-number">Many</div>
               <div className="stat-label">Happy Students</div>
             </div>
           </div>
