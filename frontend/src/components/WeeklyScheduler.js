@@ -3,6 +3,7 @@ import { jsPDF } from "jspdf";
 import html2canvas from "html2canvas";
 import SaveScheduleModal from './SaveScheduleModal/SaveScheduleModal';
 import NotImplementedModal from './NotImplementedModal/NotImplementedModal';
+import ScheduleSkeletonLoader from './SkeletonLoader/ScheduleSkeletonLoader';
 import "../styles/WeeklyScheduler.css";
 
 const WeeklySchedule = ({ schedule, isLoading, user, authToken, toast }) => {
@@ -16,6 +17,11 @@ const WeeklySchedule = ({ schedule, isLoading, user, authToken, toast }) => {
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [showNotImplemented, setShowNotImplemented] = useState(false);
   const [notImplementedFeature, setNotImplementedFeature] = useState('');
+  
+  // Progress tracking state
+  const [progress, setProgress] = useState(0);
+  const [estimatedTime, setEstimatedTime] = useState(0);
+  const [currentStep, setCurrentStep] = useState('');
 
   // Update current schedule when prop changes
   React.useEffect(() => {
@@ -25,6 +31,50 @@ const WeeklySchedule = ({ schedule, isLoading, user, authToken, toast }) => {
       extractOriginalOptions(schedule);
     }
   }, [schedule, originalCourseOptions]);
+
+  // Simulate progress tracking when loading
+  React.useEffect(() => {
+    if (isLoading) {
+      setProgress(0);
+      setEstimatedTime(8); // 8 seconds estimated
+      setCurrentStep('Analyzing course options...');
+      
+      const steps = [
+        { progress: 15, step: 'Analyzing course options...', duration: 1000 },
+        { progress: 35, step: 'Processing constraints...', duration: 1500 },
+        { progress: 55, step: 'Finding valid combinations...', duration: 2000 },
+        { progress: 75, step: 'Optimizing schedule...', duration: 2000 },
+        { progress: 90, step: 'Finalizing layout...', duration: 1000 },
+        { progress: 100, step: 'Complete!', duration: 500 }
+      ];
+      
+      let currentStepIndex = 0;
+      let totalElapsed = 0;
+      
+      const updateProgress = () => {
+        if (currentStepIndex < steps.length && isLoading) {
+          const step = steps[currentStepIndex];
+          setProgress(step.progress);
+          setCurrentStep(step.step);
+          
+          totalElapsed += step.duration;
+          const remaining = Math.max(0, 8 - (totalElapsed / 1000));
+          setEstimatedTime(remaining);
+          
+          setTimeout(() => {
+            currentStepIndex++;
+            updateProgress();
+          }, step.duration);
+        }
+      };
+      
+      updateProgress();
+    } else {
+      setProgress(0);
+      setEstimatedTime(0);
+      setCurrentStep('');
+    }
+  }, [isLoading]);
 
   // Extract original course options from the backend data
   const extractOriginalOptions = async (scheduleData) => {
@@ -98,12 +148,11 @@ const WeeklySchedule = ({ schedule, isLoading, user, authToken, toast }) => {
 
   if (isLoading) {
     return (
-      <div className="weekly-scheduler-container">
-        <div className="loading-schedule">
-          <div className="loading-spinner"></div>
-          <p className="loading-text">Generating your schedule...</p>
-        </div>
-      </div>
+      <ScheduleSkeletonLoader 
+        progress={progress}
+        estimatedTime={estimatedTime}
+        currentStep={currentStep}
+      />
     );
   }
 
