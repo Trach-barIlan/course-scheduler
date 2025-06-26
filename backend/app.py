@@ -29,7 +29,7 @@ print(f"Configured CORS origins: {origins}")
 # Enhanced CORS configuration
 CORS(app, 
      origins=origins,
-     allow_headers=["Content-Type", "Authorization"],
+     allow_headers=["Content-Type", "Authorization", "X-Requested-With"],
      methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"]
 )
 
