@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import NotImplementedModal from '../NotImplementedModal/NotImplementedModal';
 import './Sidebar.css';
@@ -7,58 +7,65 @@ const Sidebar = ({ user, onQuickAction }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [showNotImplemented, setShowNotImplemented] = useState(false);
   const [notImplementedFeature, setNotImplementedFeature] = useState('');
+  const [recentActivity, setRecentActivity] = useState([]);
   const navigate = useNavigate();
   const location = useLocation();
+
+  // Fetch recent activity when user is available
+  useEffect(() => {
+    if (user) {
+      fetchRecentActivity();
+    }
+  }, [user]);
+
+  const fetchRecentActivity = async () => {
+    try {
+      const token = localStorage.getItem('auth_token');
+      if (!token) return;
+
+      const response = await fetch('/api/statistics/recent-activity', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setRecentActivity(data.activities || []);
+      }
+    } catch (error) {
+      console.error('Error fetching recent activity:', error);
+    }
+  };
 
   const quickActions = [
     {
       id: 'home',
       icon: '🏠',
-      title: 'Home',
-      description: 'Go to dashboard',
+      title: 'Dashboard',
+      description: 'View overview',
       color: 'primary',
       implemented: true,
       path: '/'
     },
     {
       id: 'new-schedule',
-      icon: '📅',
+      icon: '✨',
       title: 'New Schedule',
-      description: 'Create a fresh schedule',
+      description: 'Create schedule',
       color: 'primary',
       implemented: true,
       path: '/scheduler'
     },
     {
-      id: 'saved-schedules',
-      icon: '💾',
-      title: 'Saved Schedules',
-      description: 'View your saved schedules',
-      color: 'success',
-      implemented: false
-    },
-    {
       id: 'templates',
       icon: '📋',
       title: 'Templates',
-      description: 'Use pre-made templates',
+      description: 'Use templates',
       color: 'warning',
       implemented: false
-    },
-    {
-      id: 'analytics',
-      icon: '📊',
-      title: 'Analytics',
-      description: 'View scheduling insights',
-      color: 'info',
-      implemented: false
     }
-  ];
-
-  const recentActivity = [
-    { action: 'Generated schedule for CS101', time: '2 hours ago' },
-    { action: 'Saved "Fall 2024 Schedule"', time: '1 day ago' },
-    { action: 'Updated constraints', time: '3 days ago' }
   ];
 
   const handleQuickAction = (actionId) => {
@@ -77,13 +84,11 @@ const Sidebar = ({ user, onQuickAction }) => {
   };
 
   const handleBackNavigation = () => {
-    // Smart back navigation based on current location
     if (location.pathname === '/scheduler') {
       navigate('/');
     } else if (location.pathname === '/about') {
       navigate('/');
     } else {
-      // If we're on home or unknown route, go to home
       navigate('/');
     }
   };
@@ -93,13 +98,28 @@ const Sidebar = ({ user, onQuickAction }) => {
       case '/':
         return 'Dashboard';
       case '/scheduler':
-        return 'Schedule Builder';
+        return 'Scheduler';
       case '/about':
-        return 'About Schedgic';
+        return 'About';
       default:
         return 'Navigation';
     }
   };
+
+  const tips = [
+    {
+      icon: '💡',
+      text: 'Use natural language for constraints'
+    },
+    {
+      icon: '🎯',
+      text: 'Drag classes to alternative slots'
+    },
+    {
+      icon: '📱',
+      text: 'Export schedules as PDF'
+    }
+  ];
 
   return (
     <>
@@ -164,11 +184,11 @@ const Sidebar = ({ user, onQuickAction }) => {
                 ))}
               </div>
 
-              {user && (
+              {user && recentActivity.length > 0 && (
                 <div className="sidebar-section">
                   <h3 className="section-title">Recent Activity</h3>
                   <div className="activity-list">
-                    {recentActivity.map((activity, index) => (
+                    {recentActivity.slice(0, 3).map((activity, index) => (
                       <div key={index} className="activity-item">
                         <div className="activity-dot"></div>
                         <div className="activity-content">
@@ -182,20 +202,14 @@ const Sidebar = ({ user, onQuickAction }) => {
               )}
 
               <div className="sidebar-section">
-                <h3 className="section-title">Tips & Tricks</h3>
+                <h3 className="section-title">Tips</h3>
                 <div className="tips-list">
-                  <div className="tip-item">
-                    <span className="tip-icon">💡</span>
-                    <p>Use natural language for constraints like "No classes before 9am"</p>
-                  </div>
-                  <div className="tip-item">
-                    <span className="tip-icon">🎯</span>
-                    <p>Drag and drop classes to alternative time slots</p>
-                  </div>
-                  <div className="tip-item">
-                    <span className="tip-icon">📱</span>
-                    <p>Export your schedule as PDF or share it</p>
-                  </div>
+                  {tips.map((tip, index) => (
+                    <div key={index} className="tip-item">
+                      <span className="tip-icon">{tip.icon}</span>
+                      <p>{tip.text}</p>
+                    </div>
+                  ))}
                 </div>
               </div>
             </>

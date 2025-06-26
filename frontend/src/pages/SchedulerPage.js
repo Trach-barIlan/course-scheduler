@@ -89,12 +89,14 @@ const generateScheduleWithConstraints = useCallback(async (constraintsToUse) => 
       setSchedule(data.schedule);
       setError(null);
     } else {
-      setError(data.error || 'No valid schedule found with the given constraints. Try adjusting your requirements.');
+      const errorMessage = data.error || 'No valid schedule found with the given constraints. Try adjusting your requirements.';
+      setError(errorMessage);
     }
   } catch (err) {
-    setError(err.message || 'Failed to connect to backend. Please make sure the server is running.');
+    const errorMessage = err.message || 'Failed to connect to backend. Please make sure the server is running.';
+    setError(errorMessage);
   }
-}, [courses, preference, validateForm, user, authToken]); // Include user and authToken in the dependency array
+}, [courses, preference, validateForm, user, authToken]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -134,7 +136,8 @@ const generateScheduleWithConstraints = useCallback(async (constraintsToUse) => 
 
       await generateScheduleWithConstraints(parsedConstraints);
     } catch (err) {
-      setError(err.message || 'Failed to connect to backend. Please make sure the server is running.');
+      const errorMessage = err.message || 'Failed to connect to backend. Please make sure the server is running.';
+      setError(errorMessage);
       setParsedConstraints(null);
     } finally {
       setIsSubmitting(false);

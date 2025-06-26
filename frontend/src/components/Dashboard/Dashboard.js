@@ -1,147 +1,147 @@
 import React, { useState, useEffect } from 'react';
 import NotImplementedModal from '../NotImplementedModal/NotImplementedModal';
+import ScheduleGuide from '../ScheduleGuide/ScheduleGuide';
 import './Dashboard.css';
 
 const Dashboard = ({ user, authToken, onQuickAction }) => {
   const [showNotImplemented, setShowNotImplemented] = useState(false);
   const [notImplementedFeature, setNotImplementedFeature] = useState('');
+  const [showGuide, setShowGuide] = useState(false);
   const [statistics, setStatistics] = useState(null);
   const [recentActivity, setRecentActivity] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   // Fetch user statistics when component mounts or user changes
   useEffect(() => {
     if (user && authToken) {
-      const fetchUserStatistics = async () => {
-        try {
-          const response = await fetch('/api/statistics/user', {
-            headers: {
-              'Authorization': `Bearer ${authToken}`,
-              'Content-Type': 'application/json',
-            }
-          });
-
-          if (response.ok) {
-            const data = await response.json();
-            setStatistics(data.statistics);
-          } else {
-            console.error('Failed to fetch statistics');
-            // Set default statistics if fetch fails
-            setStatistics({
-              schedules_created: 0,
-              schedules_this_week: 0,
-              saved_schedules_count: 0,
-              hours_saved: 0,
-              success_rate: 98,
-              efficiency: 85
-            });
-          }
-        } catch (error) {
-          console.error('Error fetching statistics:', error);
-          // Set default statistics if fetch fails
-          setStatistics({
-            schedules_created: 0,
-            schedules_this_week: 0,
-            saved_schedules_count: 0,
-            hours_saved: 0,
-            success_rate: 98,
-            efficiency: 85
-          });
-        } finally {
-          setIsLoading(false);
-        }
-      };
-
-      const fetchRecentActivity = async () => {
-        try {
-          const response = await fetch('/api/statistics/recent-activity', {
-            headers: {
-              'Authorization': `Bearer ${authToken}`,
-              'Content-Type': 'application/json',
-            }
-          });
-
-          if (response.ok) {
-            const data = await response.json();
-            setRecentActivity(data.activities || []);
-          } else {
-            console.error('Failed to fetch recent activity');
-          }
-        } catch (error) {
-          console.error('Error fetching recent activity:', error);
-        }
-      };
-      fetchUserStatistics();
-      fetchRecentActivity();
+      fetchUserData();
     } else {
       setIsLoading(false);
+      // Set default statistics for non-authenticated users
+      setStatistics({
+        schedules_created: 0,
+        schedules_this_week: 0,
+        saved_schedules_count: 0,
+        hours_saved: 0,
+        success_rate: 98,
+        efficiency: 85,
+        total_courses_scheduled: 0,
+        preferred_schedule_type: 'crammed',
+        constraints_used_count: 0,
+        average_generation_time: 0
+      });
     }
   }, [user, authToken]);
 
-  // Default statistics for non-authenticated users
-  const defaultStats = [
-    {
-      icon: '📅',
-      label: 'Schedules Created',
-      value: '0',
-      change: 'Sign in to track',
-      color: 'primary'
-    },
-    {
-      icon: '⏰',
-      label: 'Hours Saved',
-      value: '0',
-      change: 'vs manual planning',
-      color: 'success'
-    },
-    {
-      icon: '🎯',
-      label: 'Success Rate',
-      value: '98%',
-      change: 'constraint satisfaction',
-      color: 'warning'
-    },
-    {
-      icon: '📊',
-      label: 'Efficiency',
-      value: '85%',
-      change: 'schedule optimization',
-      color: 'info'
+  const fetchUserData = async () => {
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      // Fetch statistics and activity in parallel
+      const [statsResponse, activityResponse] = await Promise.all([
+        fetch('/api/statistics/user', {
+          headers: {
+            'Authorization': `Bearer ${authToken}`,
+            'Content-Type': 'application/json',
+          }
+        }),
+        fetch('/api/statistics/recent-activity', {
+          headers: {
+            'Authorization': `Bearer ${authToken}`,
+            'Content-Type': 'application/json',
+          }
+        })
+      ]);
+
+      let statsData = null;
+      let activityData = null;
+
+      if (statsResponse.ok) {
+        const data = await statsResponse.json();
+        statsData = data.statistics;
+      } else {
+        console.error('Failed to fetch statistics:', statsResponse.status);
+      }
+
+      if (activityResponse.ok) {
+        const data = await activityResponse.json();
+        activityData = data.activities || [];
+      } else {
+        console.error('Failed to fetch recent activity:', activityResponse.status);
+      }
+
+      // Set statistics with fallback values
+      setStatistics(statsData || {
+        schedules_created: 0,
+        schedules_this_week: 0,
+        saved_schedules_count: 0,
+        hours_saved: 0,
+        success_rate: 98,
+        efficiency: 85,
+        total_courses_scheduled: 0,
+        preferred_schedule_type: 'crammed',
+        constraints_used_count: 0,
+        average_generation_time: 0
+      });
+
+      setRecentActivity(activityData || []);
+
+    } catch (error) {
+      console.error('Error fetching user data:', error);
+      setError('Failed to load dashboard data');
+      
+      // Set fallback statistics
+      setStatistics({
+        schedules_created: 0,
+        schedules_this_week: 0,
+        saved_schedules_count: 0,
+        hours_saved: 0,
+        success_rate: 98,
+        efficiency: 85,
+        total_courses_scheduled: 0,
+        preferred_schedule_type: 'crammed',
+        constraints_used_count: 0,
+        average_generation_time: 0
+      });
+    } finally {
+      setIsLoading(false);
     }
-  ];
+  };
 
   // Generate stats array based on user authentication and data
   const getStatsArray = () => {
-    if (!user || !statistics) {
-      return defaultStats;
+    if (!statistics) {
+      return [];
     }
 
     return [
       {
         icon: '📅',
         label: 'Schedules Created',
-        value: statistics.schedules_created.toString(),
-        change: `+${statistics.schedules_this_week} this week`,
+        value: statistics.schedules_created?.toString() || '0',
+        change: user ? `+${statistics.schedules_this_week || 0} this week` : 'Sign in to track',
         color: 'primary'
       },
       {
         icon: '⏰',
         label: 'Hours Saved',
-        value: statistics.hours_saved.toString(),
+        value: statistics.hours_saved?.toFixed(1) || '0.0',
         change: 'vs manual planning',
         color: 'success'
       },
       {
         icon: '🎯',
         label: 'Success Rate',
-        value: `${statistics.success_rate}%`,
+        value: `${statistics.success_rate || 98}%`,
         change: 'constraint satisfaction',
         color: 'warning'
       },
       {
         icon: '📊',
         label: 'Efficiency',
-        value: `${statistics.efficiency}%`,
+        value: `${statistics.efficiency || 85}%`,
         change: 'schedule optimization',
         color: 'info'
       }
@@ -192,9 +192,17 @@ const Dashboard = ({ user, authToken, onQuickAction }) => {
   const handleQuickAction = (actionId) => {
     if (actionId === 'new-schedule') {
       onQuickAction && onQuickAction(actionId);
+    } else if (actionId === 'guide') {
+      setShowGuide(true);
     } else {
       handleNotImplementedClick(actionId);
     }
+  };
+
+  const handleStartScheduling = () => {
+    // Close guide and navigate to scheduler
+    setShowGuide(false);
+    onQuickAction && onQuickAction('new-schedule');
   };
 
   const stats = getStatsArray();
@@ -225,6 +233,11 @@ const Dashboard = ({ user, authToken, onQuickAction }) => {
                 : "Sign in to track your scheduling progress and save your schedules."
               }
             </p>
+            {error && (
+              <div className="error-notice">
+                <span>⚠️ {error}</span>
+              </div>
+            )}
           </div>
           <div className="header-actions">
             <button 
@@ -300,7 +313,7 @@ const Dashboard = ({ user, authToken, onQuickAction }) => {
                 <p>Follow our step-by-step guide to create your first schedule</p>
                 <button 
                   className="card-action"
-                  onClick={() => handleQuickAction('new-schedule')}
+                  onClick={() => setShowGuide(true)}
                 >
                   Get Started
                 </button>
@@ -350,6 +363,12 @@ const Dashboard = ({ user, authToken, onQuickAction }) => {
           </div>
         )}
       </div>
+
+      <ScheduleGuide
+        isOpen={showGuide}
+        onClose={() => setShowGuide(false)}
+        onStartScheduling={handleStartScheduling}
+      />
 
       <NotImplementedModal
         isOpen={showNotImplemented}

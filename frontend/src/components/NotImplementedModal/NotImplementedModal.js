@@ -5,23 +5,11 @@ const NotImplementedModal = ({ isOpen, onClose, feature, description }) => {
   if (!isOpen) return null;
 
   const features = {
-    'saved-schedules': {
-      icon: '💾',
-      title: 'Saved Schedules',
-      description: 'View and manage your saved schedules',
-      comingSoon: 'Coming in v2.0'
-    },
     'templates': {
       icon: '📋',
       title: 'Schedule Templates',
       description: 'Pre-made templates for common degree programs',
       comingSoon: 'Coming in v2.1'
-    },
-    'analytics': {
-      icon: '📊',
-      title: 'Schedule Analytics',
-      description: 'Insights and statistics about your scheduling patterns',
-      comingSoon: 'Coming in v2.2'
     },
     'import': {
       icon: '📤',
@@ -34,12 +22,6 @@ const NotImplementedModal = ({ isOpen, onClose, feature, description }) => {
       title: 'Export to Calendar',
       description: 'Export your schedule to Google Calendar, Outlook, etc.',
       comingSoon: 'Coming in v1.5'
-    },
-    'notifications': {
-      icon: '🔔',
-      title: 'Smart Notifications',
-      description: 'Get reminders and schedule updates',
-      comingSoon: 'Coming in v2.0'
     },
     'collaboration': {
       icon: '👥',

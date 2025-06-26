@@ -113,21 +113,17 @@ const LoginRegister = ({ onAuthSuccess, onClose }) => {
           };
 
       console.log(`🔄 Attempting ${isLogin ? 'login' : 'registration'}...`);
-      console.log('API Endpoint:', endpoint);
 
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-Requested-With': 'XMLHttpRequest', // Add this header
+          'X-Requested-With': 'XMLHttpRequest',
         },
         body: JSON.stringify(payload)
       });
 
-      console.log('Response status:', response.status);
       const data = await response.json();
-      console.log('Response data:', data);
-      console.log('Response data:', data);
 
       if (response.ok) {
         console.log('✅ Authentication successful');
@@ -138,7 +134,8 @@ const LoginRegister = ({ onAuthSuccess, onClose }) => {
       }
     } catch (error) {
       console.error('❌ Network error:', error);
-      setErrors({ general: 'Network error. Please check your connection and try again.' });
+      const errorMessage = 'Network error. Please check your connection and try again.';
+      setErrors({ general: errorMessage });
     } finally {
       setIsLoading(false);
     }

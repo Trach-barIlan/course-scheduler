@@ -43,9 +43,12 @@ const UserProfile = ({ user, authToken, onLogout, onClose }) => {
 
       if (response.ok) {
         onLogout();
+      } else {
+        onLogout();
       }
     } catch (error) {
       console.error('Logout error:', error);
+      onLogout();
     } finally {
       setIsLoggingOut(false);
     }
