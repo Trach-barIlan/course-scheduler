@@ -288,10 +288,3 @@ def test_session():
             "auth_header": request.headers.get('Authorization', 'Not provided'),
             "status": "error"
         }), 500
-    
-if __name__ == "__main__":
-    app.run(
-        host="localhost",
-        port=5001,  # שנה לפורט 5001
-        debug=True
-    )
