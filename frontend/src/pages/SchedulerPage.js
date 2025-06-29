@@ -90,6 +90,13 @@ const SchedulerPage = ({ user, authToken }) => {
       lectures: [],
       practices: []
     },
+    { 
+      name: "", 
+      hasLecture: false,
+      hasPractice: false,
+      lectures: [],
+      practices: []
+    },
   ]);
   const [constraints, setConstraints] = useState("");
   const [error, setError] = useState(null);
@@ -170,6 +177,7 @@ const SchedulerPage = ({ user, authToken }) => {
     }]);
     setConstraints("");
     setError(null);
+    setParsedConstraints(null);
   };
 
   const validateForm = useCallback(() => {
@@ -388,8 +396,17 @@ const SchedulerPage = ({ user, authToken }) => {
 
         constraintsData = await parseRes.json();
         parsedConstraints = constraintsData[0]?.constraints || [];
-        setParsedConstraints(parsedConstraints);
-        console.log('✅ Constraints parsed:', parsedConstraints);
+        
+        // Enhanced constraints data with original text and entities
+        const enhancedConstraintsData = {
+          constraints: parsedConstraints,
+          entities: constraintsData[0]?.entities || [],
+          originalText: constraints.trim(),
+          parsedAt: new Date().toISOString()
+        };
+        
+        setParsedConstraints(enhancedConstraintsData);
+        console.log('✅ Constraints parsed:', enhancedConstraintsData);
       }
 
       await generateScheduleWithConstraints(parsedConstraints);

@@ -18,7 +18,7 @@ const WeeklySchedule = ({ schedule, isLoading, user, authToken, scheduleName, sc
   const [showNotImplemented, setShowNotImplemented] = useState(false);
   const [notImplementedFeature, setNotImplementedFeature] = useState('');
   
-  // Progress tracking state
+  // Progress tracking state - only for new generation, not loaded schedules
   const [progress, setProgress] = useState(0);
   const [estimatedTime, setEstimatedTime] = useState(0);
   const [currentStep, setCurrentStep] = useState('');
@@ -33,9 +33,10 @@ const WeeklySchedule = ({ schedule, isLoading, user, authToken, scheduleName, sc
     }
   }, [schedule, originalCourseOptions]);
 
-  // Simulate progress tracking when loading
+  // Simulate progress tracking ONLY when loading NEW schedules (not loaded ones)
   React.useEffect(() => {
-    if (isLoading) {
+    // Only show loading animation for NEW schedule generation, not for loaded schedules
+    if (isLoading && !scheduleName) {
       setProgress(0);
       setEstimatedTime(8); // 8 seconds estimated
       setCurrentStep('Analyzing course options...');
@@ -53,7 +54,7 @@ const WeeklySchedule = ({ schedule, isLoading, user, authToken, scheduleName, sc
       let totalElapsed = 0;
       
       const updateProgress = () => {
-        if (currentStepIndex < steps.length && isLoading) {
+        if (currentStepIndex < steps.length && isLoading && !scheduleName) {
           const step = steps[currentStepIndex];
           setProgress(step.progress);
           setCurrentStep(step.step);
@@ -75,7 +76,7 @@ const WeeklySchedule = ({ schedule, isLoading, user, authToken, scheduleName, sc
       setEstimatedTime(0);
       setCurrentStep('');
     }
-  }, [isLoading]);
+  }, [isLoading, scheduleName]);
 
   // Extract original course options from the backend data
   const extractOriginalOptions = async (scheduleData) => {
@@ -146,7 +147,8 @@ const WeeklySchedule = ({ schedule, isLoading, user, authToken, scheduleName, sc
     alert(`Schedule "${savedSchedule.schedule_name}" saved successfully!`);
   };
 
-  if (isLoading) {
+  // Show loading skeleton ONLY for NEW schedule generation, not loaded schedules
+  if (isLoading && !scheduleName) {
     return (
       <ScheduleSkeletonLoader 
         progress={progress}
@@ -171,7 +173,8 @@ const WeeklySchedule = ({ schedule, isLoading, user, authToken, scheduleName, sc
   }
 
   const days = ["Mon", "Tue", "Wed", "Thu", "Fri"];
-  const hours = Array.from({ length: 12 }, (_, i) => i + 8);
+  // Extended time range from 7 AM to 10 PM to accommodate all possible class times
+  const hours = Array.from({ length: 15 }, (_, i) => i + 7); // 7 AM to 9 PM (22:00)
   const slots = {};
   const colors = {};
 
@@ -312,9 +315,9 @@ const WeeklySchedule = ({ schedule, isLoading, user, authToken, scheduleName, sc
           end: slot.end
         }));
       
-      // Check each day and time slot
+      // Check each day and time slot (extended range)
       days.forEach(day => {
-        for (let startHour = 8; startHour <= 19 - duration; startHour++) {
+        for (let startHour = 7; startHour <= 22 - duration; startHour++) { // 7 AM to 10 PM
           const endHour = startHour + duration;
           let canPlace = true;
           
@@ -404,7 +407,6 @@ const WeeklySchedule = ({ schedule, isLoading, user, authToken, scheduleName, sc
     setAvailableSlots([]);
   };
 
-
   const downloadPDF = async () => {
     if (!user) {
       alert('Please sign in to download schedules. Click the "Sign In" button in the top navigation to create an account or log in.');
@@ -469,6 +471,7 @@ const WeeklySchedule = ({ schedule, isLoading, user, authToken, scheduleName, sc
       setIsGeneratingPDF(false);
     }
   };
+  
   const shareTableAsImage = async () => {
     setIsSharing(true);
     
@@ -507,6 +510,14 @@ const WeeklySchedule = ({ schedule, isLoading, user, authToken, scheduleName, sc
     }
   };
 
+  // Format time display for better readability
+  const formatTimeDisplay = (hour) => {
+    if (hour === 0) return "12:00 AM";
+    if (hour < 12) return `${hour}:00 AM`;
+    if (hour === 12) return "12:00 PM";
+    return `${hour - 12}:00 PM`;
+  };
+
   // Debugging output
   console.log('WeeklyScheduler received:');
   console.log('- schedule:', schedule);
@@ -517,15 +528,19 @@ const WeeklySchedule = ({ schedule, isLoading, user, authToken, scheduleName, sc
   return (
     <div className="weekly-scheduler-container">
       <div className="scheduler-header">
-        <h2 className="scheduler-title">
-          {scheduleName ? scheduleName : 'Weekly Schedule'}
-        </h2>
-        {scheduleName && (
-          <div className="schedule-source">
-            <span className="source-label">📂 Loaded from saved schedules</span>
-            <span className="edit-hint">You can modify the course times on the left and regenerate</span>
-          </div>
-        )}
+        <div className="header-content">
+          <h2 className="scheduler-title">
+            {scheduleName ? scheduleName : 'Weekly Schedule'}
+          </h2>
+          {scheduleName && (
+            <div className="schedule-source">
+              <div className="source-info">
+                <span className="source-badge">📂 Loaded Schedule</span>
+                <span className="edit-hint">You can modify course times on the left and regenerate</span>
+              </div>
+            </div>
+          )}
+        </div>
         <div className="scheduler-actions">
           {draggedClass && (
             <button 
@@ -608,7 +623,7 @@ const WeeklySchedule = ({ schedule, isLoading, user, authToken, scheduleName, sc
           <tbody>
             {hours.map((h) => (
               <tr key={h}>
-                <td>{h}:00 - {h + 1}:00</td>
+                <td>{formatTimeDisplay(h)} - {formatTimeDisplay(h + 1)}</td>
                 {days.map((d) => {
                   // Find if there's a class slot that occupies this cell
                   const occupyingSlot = Object.values(slots).find(slot => 

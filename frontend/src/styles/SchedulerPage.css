@@ -88,16 +88,6 @@
   overflow: hidden;
 }
 
-.loaded-schedule-info::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background: linear-gradient(90deg, #4CAF50, #2196F3, #4CAF50);
-  animation: shimmer 2s ease-in-out infinite;
-}
 
 @keyframes shimmer {
   0% { transform: translateX(-100%); }

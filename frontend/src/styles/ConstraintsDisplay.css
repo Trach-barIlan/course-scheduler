@@ -6,6 +6,25 @@
   box-shadow: var(--shadow-md);
   border: 1px solid var(--border-color);
   animation: slideInFromTop 0.5s ease-out;
+  position: relative;
+  overflow: hidden;
+}
+
+.constraints-display::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--primary-500), var(--success-500), var(--warning-500), var(--primary-500));
+  background-size: 200% 100%;
+  animation: gradientShift 3s ease-in-out infinite;
+}
+
+@keyframes gradientShift {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
 }
 
 @keyframes slideInFromTop {
@@ -22,50 +41,90 @@
 .constraints-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  margin-bottom: var(--space-5);
-  padding-bottom: var(--space-3);
+  align-items: flex-start;
+  margin-bottom: var(--space-6);
+  padding-bottom: var(--space-4);
   border-bottom: 2px solid var(--border-color);
 }
 
+.constraints-title-section {
+  flex: 1;
+}
+
 .constraints-title {
-  font-size: 1.25rem;
+  font-size: 1.5rem;
   font-weight: 700;
   color: var(--text-primary);
-  margin: 0;
+  margin: 0 0 var(--space-2) 0;
   display: flex;
   align-items: center;
   gap: var(--space-2);
+  background: linear-gradient(135deg, var(--primary-600), var(--primary-500));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.constraints-subtitle {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  margin: 0;
+  font-style: italic;
+  line-height: 1.4;
 }
 
 .constraints-count {
   background: linear-gradient(135deg, var(--primary-100), var(--primary-50));
   color: var(--primary-700);
-  padding: var(--space-1) var(--space-3);
-  border-radius: var(--radius-lg);
-  font-size: 0.75rem;
-  font-weight: 600;
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-xl);
+  font-size: 0.875rem;
+  font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
+  border: 2px solid var(--primary-200);
+  box-shadow: var(--shadow-sm);
+  white-space: nowrap;
 }
 
 .constraints-list {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: var(--space-4);
 }
 
 .constraint-item {
   display: flex;
   align-items: flex-start;
-  gap: var(--space-3);
-  padding: var(--space-4);
+  gap: var(--space-4);
+  padding: var(--space-5);
   background: linear-gradient(135deg, var(--gray-50), var(--bg-secondary));
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-lg);
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-xl);
   transition: all var(--transition-fast);
   position: relative;
   overflow: hidden;
+}
+
+/* Constraint type specific colors */
+.constraint-item.time-constraint {
+  border-color: var(--primary-200);
+  background: linear-gradient(135deg, var(--primary-50), var(--bg-secondary));
+}
+
+.constraint-item.day-constraint {
+  border-color: var(--warning-200);
+  background: linear-gradient(135deg, var(--warning-50), var(--bg-secondary));
+}
+
+.constraint-item.ta-constraint {
+  border-color: var(--success-200);
+  background: linear-gradient(135deg, var(--success-50), var(--bg-secondary));
+}
+
+.constraint-item.gap-constraint {
+  border-color: #06B6D4;
+  background: linear-gradient(135deg, #F0F9FF, var(--bg-secondary));
 }
 
 .constraint-item::before {
@@ -80,10 +139,26 @@
   transition: opacity var(--transition-fast);
 }
 
+.constraint-item.time-constraint::before {
+  background: linear-gradient(90deg, var(--primary-500), var(--primary-400));
+}
+
+.constraint-item.day-constraint::before {
+  background: linear-gradient(90deg, var(--warning-500), var(--warning-400));
+}
+
+.constraint-item.ta-constraint::before {
+  background: linear-gradient(90deg, var(--success-500), var(--success-400));
+}
+
+.constraint-item.gap-constraint::before {
+  background: linear-gradient(90deg, #06B6D4, #0891B2);
+}
+
 .constraint-item:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
-  border-color: var(--primary-200);
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-lg);
+  border-color: var(--primary-300);
 }
 
 .constraint-item:hover::before {
@@ -91,43 +166,110 @@
 }
 
 .constraint-icon {
-  font-size: 1.5rem;
+  font-size: 2rem;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
+  width: 56px;
+  height: 56px;
   background: linear-gradient(135deg, var(--primary-100), var(--primary-50));
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-xl);
   flex-shrink: 0;
+  border: 2px solid var(--primary-200);
+  box-shadow: var(--shadow-sm);
+}
+
+.constraint-item.time-constraint .constraint-icon {
+  background: linear-gradient(135deg, var(--primary-100), var(--primary-50));
+  border-color: var(--primary-200);
+}
+
+.constraint-item.day-constraint .constraint-icon {
+  background: linear-gradient(135deg, var(--warning-100), var(--warning-50));
+  border-color: var(--warning-200);
+}
+
+.constraint-item.ta-constraint .constraint-icon {
+  background: linear-gradient(135deg, var(--success-100), var(--success-50));
+  border-color: var(--success-200);
+}
+
+.constraint-item.gap-constraint .constraint-icon {
+  background: linear-gradient(135deg, #F0F9FF, #E0F2FE);
+  border-color: #06B6D4;
 }
 
 .constraint-content {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
+  gap: var(--space-2);
+}
+
+.constraint-main {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--space-3);
 }
 
 .constraint-text {
-  font-weight: 600;
+  font-weight: 700;
   color: var(--text-primary);
-  font-size: 0.95rem;
-  line-height: 1.4;
+  font-size: 1.1rem;
+  line-height: 1.3;
 }
 
-.constraint-type {
-  font-size: 0.75rem;
+.constraint-type-badge {
+  background: linear-gradient(135deg, var(--gray-100), var(--gray-50));
   color: var(--text-secondary);
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-lg);
+  font-size: 0.75rem;
+  font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  font-weight: 500;
+  border: 1px solid var(--border-color);
+  white-space: nowrap;
+}
+
+.constraint-item.time-constraint .constraint-type-badge {
+  background: linear-gradient(135deg, var(--primary-100), var(--primary-50));
+  color: var(--primary-700);
+  border-color: var(--primary-200);
+}
+
+.constraint-item.day-constraint .constraint-type-badge {
+  background: linear-gradient(135deg, var(--warning-100), var(--warning-50));
+  color: var(--warning-700);
+  border-color: var(--warning-200);
+}
+
+.constraint-item.ta-constraint .constraint-type-badge {
+  background: linear-gradient(135deg, var(--success-100), var(--success-50));
+  color: var(--success-700);
+  border-color: var(--success-200);
+}
+
+.constraint-item.gap-constraint .constraint-type-badge {
+  background: linear-gradient(135deg, #F0F9FF, #E0F2FE);
+  color: #0891B2;
+  border-color: #06B6D4;
+}
+
+.constraint-description {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+  font-style: italic;
+  margin-top: var(--space-1);
 }
 
 .constraint-actions {
   display: flex;
   gap: var(--space-2);
   flex-shrink: 0;
+  align-items: flex-start;
 }
 
 .edit-btn, .delete-btn {
@@ -135,9 +277,14 @@
   border: none;
   cursor: pointer;
   padding: var(--space-2);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
   transition: all var(--transition-fast);
-  font-size: 1rem;
+  font-size: 1.1rem;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .edit-btn:hover {
@@ -153,72 +300,80 @@
 /* Edit Form Styles */
 .edit-form {
   margin-top: var(--space-4);
-  padding: var(--space-4);
+  padding: var(--space-5);
   background: var(--bg-tertiary);
   border-radius: var(--radius-lg);
   border: 2px solid var(--primary-200);
+  animation: slideInFromTop 0.3s ease-out;
 }
 
 .edit-form-content {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: var(--space-4);
   margin-bottom: var(--space-4);
 }
 
 .form-group {
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
+  gap: var(--space-2);
 }
 
 .form-group label {
   font-weight: 600;
   color: var(--text-secondary);
   font-size: 0.875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .form-group input,
 .form-group select {
-  padding: var(--space-2) var(--space-3);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-md);
-  font-size: 0.875rem;
+  padding: var(--space-3) var(--space-4);
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  font-size: 0.95rem;
   background: var(--bg-secondary);
   color: var(--text-primary);
   transition: all var(--transition-fast);
+  font-family: inherit;
 }
 
 .form-group input:focus,
 .form-group select:focus {
   border-color: var(--primary-500);
-  box-shadow: 0 0 0 2px var(--primary-100);
+  box-shadow: 0 0 0 3px var(--primary-100);
 }
 
 .edit-form-actions {
   display: flex;
-  gap: var(--space-2);
+  gap: var(--space-3);
   justify-content: flex-end;
 }
 
 .save-btn, .cancel-btn {
-  padding: var(--space-2) var(--space-4);
+  padding: var(--space-3) var(--space-5);
   border: none;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
   font-weight: 600;
   font-size: 0.875rem;
   cursor: pointer;
   transition: all var(--transition-fast);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
 }
 
 .save-btn {
-  background: var(--success-500);
+  background: linear-gradient(135deg, var(--success-500), var(--success-600));
   color: white;
 }
 
 .save-btn:hover {
-  background: var(--success-600);
+  background: linear-gradient(135deg, var(--success-600), var(--success-500));
   transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
 }
 
 .cancel-btn {
@@ -233,26 +388,34 @@
 
 /* Add Form Styles */
 .add-form {
-  margin-top: var(--space-4);
-  padding: var(--space-5);
+  margin-top: var(--space-5);
+  padding: var(--space-6);
   background: linear-gradient(135deg, var(--success-50), var(--bg-secondary));
   border: 2px solid var(--success-200);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-xl);
   animation: slideInFromTop 0.3s ease-out;
 }
 
 .add-form-header h4 {
   margin: 0 0 var(--space-4) 0;
   color: var(--text-primary);
-  font-size: 1.1rem;
+  font-size: 1.25rem;
   font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.add-form-header h4::before {
+  content: '➕';
+  font-size: 1.5rem;
 }
 
 .add-form-content {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
-  margin-bottom: var(--space-4);
+  gap: var(--space-4);
+  margin-bottom: var(--space-5);
 }
 
 .add-form-actions {
@@ -264,12 +427,15 @@
 .add-constraint-btn {
   background: linear-gradient(135deg, var(--success-500), var(--success-600));
   color: white;
-  padding: var(--space-3) var(--space-5);
+  padding: var(--space-3) var(--space-6);
   border: none;
   border-radius: var(--radius-lg);
   font-weight: 600;
   cursor: pointer;
   transition: all var(--transition-fast);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
 }
 
 .add-constraint-btn:hover:not(:disabled) {
@@ -287,7 +453,7 @@
 .cancel-add-btn {
   background: var(--gray-200);
   color: var(--text-secondary);
-  padding: var(--space-3) var(--space-5);
+  padding: var(--space-3) var(--space-6);
   border: none;
   border-radius: var(--radius-lg);
   font-weight: 600;
@@ -303,10 +469,10 @@
 /* Controls Section */
 .constraints-controls {
   display: flex;
-  gap: var(--space-3);
-  margin-top: var(--space-5);
-  padding-top: var(--space-4);
-  border-top: 1px solid var(--border-color);
+  gap: var(--space-4);
+  margin-top: var(--space-6);
+  padding-top: var(--space-5);
+  border-top: 2px solid var(--border-color);
   justify-content: space-between;
   align-items: center;
 }
@@ -314,7 +480,7 @@
 .add-new-btn {
   background: linear-gradient(135deg, var(--primary-500), var(--primary-600));
   color: white;
-  padding: var(--space-3) var(--space-5);
+  padding: var(--space-3) var(--space-6);
   border: none;
   border-radius: var(--radius-lg);
   font-weight: 600;
@@ -323,6 +489,7 @@
   display: flex;
   align-items: center;
   gap: var(--space-2);
+  box-shadow: var(--shadow-sm);
 }
 
 .add-new-btn:hover {
@@ -334,7 +501,7 @@
 .regenerate-btn {
   background: linear-gradient(135deg, var(--warning-500), var(--warning-600));
   color: white;
-  padding: var(--space-3) var(--space-5);
+  padding: var(--space-3) var(--space-6);
   border: none;
   border-radius: var(--radius-lg);
   font-weight: 600;
@@ -343,6 +510,7 @@
   display: flex;
   align-items: center;
   gap: var(--space-2);
+  box-shadow: var(--shadow-sm);
 }
 
 .regenerate-btn:hover:not(:disabled) {
@@ -373,7 +541,7 @@
 
 /* Raw Entities Section */
 .raw-entities {
-  margin-top: var(--space-5);
+  margin-top: var(--space-6);
   border-top: 1px solid var(--border-color);
   padding-top: var(--space-4);
 }
@@ -383,49 +551,101 @@
   font-weight: 600;
   color: var(--text-secondary);
   font-size: 0.875rem;
-  padding: var(--space-2);
-  border-radius: var(--radius-md);
+  padding: var(--space-3);
+  border-radius: var(--radius-lg);
   transition: all var(--transition-fast);
   user-select: none;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
 }
 
 .entities-summary:hover {
-  background: var(--gray-100);
-  color: var(--text-primary);
+  background: var(--primary-50);
+  color: var(--primary-700);
+  border-color: var(--primary-200);
 }
 
 .entities-list {
-  margin-top: var(--space-3);
+  margin-top: var(--space-4);
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+  gap: var(--space-3);
 }
 
 .entity-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: var(--space-2) var(--space-3);
+  padding: var(--space-3) var(--space-4);
   background: var(--gray-50);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
   font-size: 0.875rem;
+  border: 1px solid var(--border-color);
 }
 
 .entity-text {
   font-weight: 500;
   color: var(--text-primary);
   font-family: var(--font-mono);
+  background: var(--bg-secondary);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
 }
 
 .entity-label {
   background: var(--primary-100);
   color: var(--primary-700);
-  padding: var(--space-1) var(--space-2);
-  border-radius: var(--radius-sm);
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-lg);
   font-size: 0.75rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
+}
+
+/* Original Text Section */
+.original-text-section {
+  margin-top: var(--space-4);
+  border-top: 1px solid var(--border-color);
+  padding-top: var(--space-4);
+}
+
+.original-text-summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  padding: var(--space-3);
+  border-radius: var(--radius-lg);
+  transition: all var(--transition-fast);
+  user-select: none;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+}
+
+.original-text-summary:hover {
+  background: var(--success-50);
+  color: var(--success-700);
+  border-color: var(--success-200);
+}
+
+.original-text-content {
+  margin-top: var(--space-4);
+  padding: var(--space-4);
+  background: var(--gray-50);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-color);
+}
+
+.original-text {
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+  color: var(--text-primary);
+  line-height: 1.6;
+  background: var(--bg-secondary);
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  border-left: 4px solid var(--primary-500);
 }
 
 /* Responsive Design */
@@ -438,26 +658,32 @@
   .constraints-header {
     flex-direction: column;
     align-items: flex-start;
-    gap: var(--space-2);
+    gap: var(--space-3);
   }
   
   .constraints-title {
-    font-size: 1.1rem;
-  }
-  
-  .constraint-item {
-    padding: var(--space-3);
-    gap: var(--space-2);
-  }
-  
-  .constraint-icon {
-    width: 32px;
-    height: 32px;
     font-size: 1.25rem;
   }
   
+  .constraint-item {
+    padding: var(--space-4);
+    gap: var(--space-3);
+  }
+  
+  .constraint-icon {
+    width: 48px;
+    height: 48px;
+    font-size: 1.5rem;
+  }
+  
+  .constraint-main {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-2);
+  }
+  
   .constraint-text {
-    font-size: 0.9rem;
+    font-size: 1rem;
   }
 
   .constraints-controls {
@@ -470,6 +696,19 @@
     width: 100%;
     justify-content: center;
   }
+
+  .edit-form-actions,
+  .add-form-actions {
+    flex-direction: column;
+  }
+
+  .save-btn,
+  .cancel-btn,
+  .add-constraint-btn,
+  .cancel-add-btn {
+    width: 100%;
+    justify-content: center;
+  }
 }
 
 /* Success state animation */
@@ -479,11 +718,38 @@
   100% { transform: scale(1); }
 }
 
-.constraint-item {
+.constraint-item.success {
   animation: constraintSuccess 0.3s ease-out;
 }
 
 /* Empty state (when no constraints) */
 .constraints-display:empty {
   display: none;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .constraint-item {
+    border-width: 3px;
+  }
+  
+  .constraint-icon {
+    border-width: 3px;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .constraints-display,
+  .constraint-item,
+  .edit-form,
+  .add-form {
+    animation: none;
+  }
+  
+  .constraint-item:hover,
+  .add-new-btn:hover,
+  .regenerate-btn:hover {
+    transform: none;
+  }
 }
