@@ -1,10 +1,13 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
+import { useLocation } from 'react-router-dom';
 import CourseInput from '../components/CourseInput';
 import WeeklyScheduler from '../components/WeeklyScheduler';
 import ConstraintsDisplay from '../components/ConstraintsDisplay';
 import '../styles/SchedulerPage.css';
 
 const SchedulerPage = ({ user, authToken }) => {
+  const location = useLocation();
+  
   const [preference, setPreference] = useState("crammed");
   const [courses, setCourses] = useState([
     { 
@@ -23,8 +26,28 @@ const SchedulerPage = ({ user, authToken }) => {
   const [parsedConstraints, setParsedConstraints] = useState(null);
   const [constraintsUpdateFunction, setConstraintsUpdateFunction] = useState(null);
   
+  const [loadedScheduleName, setLoadedScheduleName] = useState(null);
+  const [loadedScheduleId, setLoadedScheduleId] = useState(null);
+  
   // Use the proxy configuration from package.json instead of environment variable
   const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || '';
+
+  useEffect(() => {
+    if (location.state?.loadedSchedule) {
+      console.log('🔍 Loading schedule from Dashboard:', location.state);
+      console.log('📋 Schedule data:', location.state.loadedSchedule);
+      console.log('📝 Schedule name:', location.state.scheduleName);
+      console.log('🆔 Schedule ID:', location.state.scheduleId);
+      
+      setSchedule(location.state.loadedSchedule);
+      setLoadedScheduleName(location.state.scheduleName);
+      setLoadedScheduleId(location.state.scheduleId);
+      setError(null);
+      
+      // Clear the location state to prevent re-loading
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state]);
 
   const handleCourseChange = (index, field, value) => {
     const newCourses = [...courses];
@@ -319,6 +342,12 @@ const SchedulerPage = ({ user, authToken }) => {
           <div className="course-scheduler">
             <div className="scheduler-header-section">
               <h2>Course Scheduler</h2>
+              {loadedScheduleName && (
+                <div className="loaded-schedule-info">
+                  <span className="loaded-schedule-label">📂 Loaded Schedule:</span>
+                  <strong>{loadedScheduleName}</strong>
+                </div>
+              )}
               {user && (
                 <div className="user-welcome">
                   Welcome back, <strong>{user.first_name}</strong>!
@@ -408,7 +437,14 @@ const SchedulerPage = ({ user, authToken }) => {
             onConstraintsUpdate={handleConstraintsUpdate}
             isRegenerating={isLoading}
           />
-          <WeeklyScheduler user={user} authToken={authToken} schedule={schedule} isLoading={isLoading} />
+          <WeeklyScheduler 
+            user={user} 
+            authToken={authToken} 
+            schedule={schedule} 
+            isLoading={isLoading}
+            scheduleName={loadedScheduleName}
+            scheduleId={loadedScheduleId}
+          />
         </div>
       </div>
     </div>

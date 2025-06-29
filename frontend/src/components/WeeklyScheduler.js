@@ -6,7 +6,7 @@ import NotImplementedModal from './NotImplementedModal/NotImplementedModal';
 import ScheduleSkeletonLoader from './SkeletonLoader/ScheduleSkeletonLoader';
 import "../styles/WeeklyScheduler.css";
 
-const WeeklySchedule = ({ schedule, isLoading, user, authToken }) => {
+const WeeklySchedule = ({ schedule, isLoading, user, authToken, scheduleName, scheduleId }) => {
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
   const [selectedClass, setSelectedClass] = useState(null);
@@ -507,10 +507,24 @@ const WeeklySchedule = ({ schedule, isLoading, user, authToken }) => {
     }
   };
 
+  // Debugging output
+  console.log('WeeklyScheduler received:');
+  console.log('- schedule:', schedule);
+  console.log('- scheduleName:', scheduleName);
+  console.log('- scheduleId:', scheduleId);
+  console.log('- isLoading:', isLoading);
+
   return (
     <div className="weekly-scheduler-container">
       <div className="scheduler-header">
-        <h2 className="scheduler-title">Weekly Schedule</h2>
+        <h2 className="scheduler-title">
+          {scheduleName ? scheduleName : 'Weekly Schedule'}
+        </h2>
+        {scheduleName && (
+          <div className="schedule-source">
+            <span className="source-label">📂 Loaded from saved schedules</span>
+          </div>
+        )}
         <div className="scheduler-actions">
           {draggedClass && (
             <button 

@@ -22,6 +22,21 @@
   gap: var(--space-4);
 }
 
+.schedule-source {
+  margin-top: 4px;
+  font-size: 12px;
+  color: #666;
+  font-style: italic;
+}
+
+.source-label {
+  background: #f0f8ff;
+  padding: 4px 8px;
+  border-radius: 4px;
+  border: 1px solid #ddd;
+  font-size: 11px;
+}
+
 .back-button {
   background: var(--gray-100);
   border: 2px solid var(--border-color);
