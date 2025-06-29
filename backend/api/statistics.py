@@ -3,6 +3,7 @@ from auth.routes import token_required
 from auth.auth_manager import AuthManager
 import json
 from datetime import datetime, timedelta
+import re
 
 statistics_bp = Blueprint('statistics', __name__)
 
@@ -13,6 +14,27 @@ def get_auth_manager():
     except ValueError as e:
         print(f"Auth configuration error: {e}")
         return None
+
+def parse_timestamp(timestamp_str):
+    """Parse timestamp from Supabase with microsecond handling"""
+    try:
+        # Handle the microseconds issue
+        # Pattern: YYYY-MM-DDTHH:MM:SS.microseconds+timezone
+        if '.' in timestamp_str and '+' in timestamp_str:
+            # Split by the timezone part
+            dt_part, tz_part = timestamp_str.split('+')
+            # Split the datetime part by the decimal
+            date_part, microseconds_part = dt_part.split('.')
+            # Truncate microseconds to 6 digits maximum
+            microseconds_part = microseconds_part[:6].ljust(6, '0')
+            # Reconstruct the timestamp
+            timestamp_str = f"{date_part}.{microseconds_part}+{tz_part}"
+        
+        return datetime.fromisoformat(timestamp_str.replace('Z', '+00:00'))
+    except Exception as e:
+        print(f"Error parsing timestamp '{timestamp_str}': {e}")
+        # Return current time as fallback
+        return datetime.now()
 
 @statistics_bp.route('/user', methods=['GET'])
 @token_required
@@ -141,7 +163,7 @@ def get_recent_activity():
 
         # Get recent saved schedules
         schedules_result = client.table("saved_schedules")\
-            .select("schedule_name, created_at")\
+            .select("*")\
             .eq("user_id", user_id)\
             .order("created_at", desc=True)\
             .limit(5)\
@@ -153,7 +175,7 @@ def get_recent_activity():
         # Add schedule generations
         for log in logs_result.data or []:
             try:
-                created_at = datetime.fromisoformat(log['created_at'].replace('Z', '+00:00'))
+                created_at = parse_timestamp(log['created_at'])
                 time_ago = format_time_ago(created_at)
                 
                 if log.get('success', True):
@@ -167,7 +189,8 @@ def get_recent_activity():
                     'time': time_ago,
                     'type': 'generation',
                     'success': log.get('success', True),
-                    'timestamp': created_at
+                    'timestamp': created_at,
+                    'schedule_id': log.get('schedule_id')  # Add schedule_id if available
                 })
             except Exception as e:
                 print(f"Error processing log entry: {e}")
@@ -176,7 +199,7 @@ def get_recent_activity():
         # Add saved schedules
         for schedule in schedules_result.data or []:
             try:
-                created_at = datetime.fromisoformat(schedule['created_at'].replace('Z', '+00:00'))
+                created_at = parse_timestamp(schedule['created_at'])
                 time_ago = format_time_ago(created_at)
                 
                 activities.append({
@@ -184,7 +207,8 @@ def get_recent_activity():
                     'time': time_ago,
                     'type': 'save',
                     'success': True,
-                    'timestamp': created_at
+                    'timestamp': created_at,
+                    'schedule_id': schedule.get('id')  # Add the actual schedule ID
                 })
             except Exception as e:
                 print(f"Error processing schedule entry: {e}")
@@ -211,6 +235,11 @@ def get_recent_activity():
 def format_time_ago(timestamp):
     """Format timestamp as 'X time ago'"""
     try:
+        # Ensure timestamp has timezone info
+        if timestamp.tzinfo is None:
+            # Assume UTC if no timezone info
+            timestamp = timestamp.replace(tzinfo=datetime.now().astimezone().tzinfo)
+        
         now = datetime.now(timestamp.tzinfo)
         diff = now - timestamp
         
