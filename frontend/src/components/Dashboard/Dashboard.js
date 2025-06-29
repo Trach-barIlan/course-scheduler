@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import NotImplementedModal from '../NotImplementedModal/NotImplementedModal';
 import ScheduleGuide from '../ScheduleGuide/ScheduleGuide';
 import './Dashboard.css';
 
 const Dashboard = ({ user, authToken, onQuickAction }) => {
+  const navigate = useNavigate();
   const [showNotImplemented, setShowNotImplemented] = useState(false);
   const [notImplementedFeature, setNotImplementedFeature] = useState('');
   const [showGuide, setShowGuide] = useState(false);
@@ -153,35 +155,43 @@ const Dashboard = ({ user, authToken, onQuickAction }) => {
     if (!user || !recentActivity.length) {
       return [
         {
+          id: 'sample-1',
           name: 'Fall 2024 - Computer Science',
           courses: 5,
           created: '2 days ago',
-          status: 'active'
+          status: 'active',
+          isSample: true
         },
         {
+          id: 'sample-2', 
           name: 'Spring 2024 - Mathematics',
           courses: 4,
           created: '1 week ago',
-          status: 'completed'
+          status: 'completed',
+          isSample: true
         },
         {
+          id: 'sample-3',
           name: 'Summer 2024 - Physics',
           courses: 3,
           created: '2 weeks ago',
-          status: 'draft'
+          status: 'draft',
+          isSample: true
         }
       ];
     }
 
-    // Convert activity data to schedule format
+    // Convert activity data to schedule format with real IDs
     return recentActivity
-      .filter(activity => activity.type === 'save')
+      .filter(activity => activity.type === 'save' && activity.schedule_id)
       .slice(0, 3)
       .map(activity => ({
+        id: activity.schedule_id,
         name: activity.action.replace("Saved '", "").replace("'", ""),
-        courses: Math.floor(Math.random() * 5) + 3, // Placeholder
+        courses: Math.floor(Math.random() * 5) + 3, // This should ideally come from the actual data
         created: activity.time,
-        status: 'active'
+        status: 'active',
+        isSample: false
       }));
   };
 
@@ -204,6 +214,50 @@ const Dashboard = ({ user, authToken, onQuickAction }) => {
     // Close guide and navigate to scheduler
     setShowGuide(false);
     onQuickAction && onQuickAction('new-schedule');
+  };
+
+  const handleOpenSchedule = async (schedule) => {
+    if (schedule.isSample) {
+      navigate('/scheduler');
+      return;
+    }
+
+    try {
+      console.log('🔍 Schedule object:', schedule);
+      console.log('🔍 Schedule ID:', schedule.id);
+      console.log('🔍 Schedule ID type:', typeof schedule.id);
+      
+      const response = await fetch(`${API_BASE_URL}/api/schedules/${schedule.id}`, {
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+          'Content-Type': 'application/json',
+        }
+      });
+
+      console.log('📡 Response status:', response.status);
+      console.log('📡 Response URL:', response.url);
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log('✅ Loaded schedule data:', data);
+        
+        navigate('/scheduler', { 
+          state: { 
+            loadedSchedule: data.schedule.schedule_data || data.schedule,
+            scheduleName: data.schedule.schedule_name || schedule.name,
+            scheduleId: schedule.id
+          } 
+        });
+      } else {
+        const errorText = await response.text();
+        console.error('❌ Failed to fetch schedule. Status:', response.status);
+        console.error('❌ Error response:', errorText);
+        alert('Failed to load schedule. Please try again.');
+      }
+    } catch (error) {
+      console.error('❌ Error fetching schedule:', error);
+      alert('Failed to load schedule. Please check your connection.');
+    }
   };
 
   const stats = getStatsArray();
@@ -272,7 +326,7 @@ const Dashboard = ({ user, authToken, onQuickAction }) => {
               </h2>
               <button 
                 className="section-action"
-                onClick={() => handleNotImplementedClick('saved-schedules')}
+                onClick={() => navigate('/schedules')}
               >
                 View All
               </button>
@@ -293,7 +347,7 @@ const Dashboard = ({ user, authToken, onQuickAction }) => {
                     </span>
                     <button 
                       className="schedule-action"
-                      onClick={() => handleNotImplementedClick('saved-schedules')}
+                      onClick={() => handleOpenSchedule(schedule)}
                     >
                       Open
                     </button>

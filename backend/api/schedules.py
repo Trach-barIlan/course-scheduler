@@ -116,17 +116,19 @@ def list_schedules():
     except Exception as e:
         print(f"Error fetching schedules: {e}")
         return jsonify({'error': 'Failed to fetch schedules'}), 500
-
+    
 @schedules_bp.route('/<schedule_id>', methods=['GET'])
 @token_required
 def get_schedule(schedule_id):
-    """Get a specific schedule"""
+    """Get a specific saved schedule"""
     user_id = g.user['id']
-
+    
+    print(f"🔍 Fetching schedule {schedule_id} for user {user_id}")
+    
     auth_manager = get_auth_manager()
     if not auth_manager:
         return jsonify({'error': 'Authentication service unavailable'}), 500
-
+    
     try:
         client = auth_manager.get_client_for_user(user_id)
         
@@ -134,17 +136,31 @@ def get_schedule(schedule_id):
             .select("*")\
             .eq("id", schedule_id)\
             .eq("user_id", user_id)\
+            .single()\
             .execute()
-
-        if result.data:
-            return jsonify({
-                'schedule': result.data[0]
-            }), 200
-        else:
+        
+        print(f"📊 Database result: {result}")
+        
+        if not result.data:
+            print(f"❌ Schedule {schedule_id} not found for user {user_id}")
             return jsonify({'error': 'Schedule not found'}), 404
-
+        
+        schedule_data = result.data
+        print(f"✅ Found schedule: {schedule_data['schedule_name']}")
+        
+        return jsonify({
+            'schedule': {
+                'id': schedule_data['id'],
+                'schedule_name': schedule_data['schedule_name'],
+                'created_at': schedule_data['created_at'],
+                'schedule_data': schedule_data['schedule_data']
+            }
+        }), 200
+        
     except Exception as e:
-        print(f"Error fetching schedule: {e}")
+        print(f"❌ Error fetching schedule: {e}")
+        import traceback
+        traceback.print_exc()
         return jsonify({'error': 'Failed to fetch schedule'}), 500
 
 @schedules_bp.route('/<schedule_id>', methods=['DELETE'])

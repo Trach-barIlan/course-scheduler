@@ -1,38 +1,69 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
+import WeeklyScheduler from '../components/WeeklyScheduler';
 import '../styles/SchedulesPage.css';
 
-const SchedulesPage = ({ user }) => {
+const SchedulesPage = ({ user, authToken }) => {
+  const location = useLocation();
   const [savedSchedules, setSavedSchedules] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedSchedule, setSelectedSchedule] = useState(null);
+  const [showScheduleView, setShowScheduleView] = useState(false);
+  
+  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
+  // בדוק אם יש מערכת שנשלחה מ-Dashboard
   useEffect(() => {
-    // Simulate loading saved schedules
-    // In a real app, this would fetch from your backend
-    setTimeout(() => {
-      setSavedSchedules([
-        {
-          id: 1,
-          name: "Fall 2024 Schedule",
-          created_at: "2024-01-15T10:30:00Z",
-          courses: [
-            { name: "CS101", lecture: "Mon 9-11", ta: "Wed 14-16" },
-            { name: "MATH201", lecture: "Tue 10-12", ta: "Thu 15-17" }
-          ]
-        },
-        {
-          id: 2,
-          name: "Spring 2024 Schedule",
-          created_at: "2024-01-10T14:20:00Z",
-          courses: [
-            { name: "PHYS101", lecture: "Mon 14-16", ta: "Fri 10-12" },
-            { name: "CHEM101", lecture: "Wed 9-11", ta: "Tue 13-15" }
-          ]
+    if (location.state?.selectedSchedule) {
+      setSelectedSchedule(location.state.selectedSchedule);
+      setShowScheduleView(true);
+    }
+  }, [location.state]);
+
+  // טען מערכות שמורות מה-backend
+  useEffect(() => {
+    const fetchSavedSchedules = async () => {
+      if (!user || !authToken) {
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/schedules/list`, {
+          headers: {
+            'Authorization': `Bearer ${authToken}`,
+            'Content-Type': 'application/json',
+          }
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          setSavedSchedules(data.schedules || []);
+        } else {
+          console.error('Failed to fetch schedules:', response.status);
+          // Fallback to sample data
+          setSavedSchedules([
+            {
+              id: 1,
+              schedule_name: "Fall 2024 Schedule",
+              created_at: "2024-01-15T10:30:00Z",
+              schedule_data: [
+                { name: "CS101", lecture: "Mon 9-11", ta: "Wed 14-16" },
+                { name: "MATH201", lecture: "Tue 10-12", ta: "Thu 15-17" }
+              ]
+            }
+          ]);
         }
-      ]);
-      setIsLoading(false);
-    }, 1000);
-  }, []);
+      } catch (error) {
+        console.error('Error fetching schedules:', error);
+        setSavedSchedules([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchSavedSchedules();
+  }, [user, authToken, API_BASE_URL]);
 
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -44,12 +75,64 @@ const SchedulesPage = ({ user }) => {
     });
   };
 
-  const handleDeleteSchedule = (scheduleId) => {
-    setSavedSchedules(prev => prev.filter(s => s.id !== scheduleId));
+  const handleDeleteSchedule = async (scheduleId) => {
+    if (!confirm('Are you sure you want to delete this schedule?')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/schedules/${scheduleId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+          'Content-Type': 'application/json',
+        }
+      });
+
+      if (response.ok) {
+        setSavedSchedules(prev => prev.filter(s => s.id !== scheduleId));
+      } else {
+        alert('Failed to delete schedule. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error deleting schedule:', error);
+      alert('Failed to delete schedule. Please check your connection.');
+    }
   };
 
-  const handleViewSchedule = (schedule) => {
-    setSelectedSchedule(schedule);
+  const handleViewSchedule = async (schedule) => {
+    // אם יש כבר נתוני מערכת, הצג אותם
+    if (schedule.schedule_data) {
+      setSelectedSchedule(schedule);
+      setShowScheduleView(true);
+      return;
+    }
+
+    // אחרת, טען מה-backend
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/schedules/${schedule.id}`, {
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+          'Content-Type': 'application/json',
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setSelectedSchedule(data.schedule);
+        setShowScheduleView(true);
+      } else {
+        alert('Failed to load schedule. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error fetching schedule:', error);
+      alert('Failed to load schedule. Please check your connection.');
+    }
+  };
+
+  const handleCloseScheduleView = () => {
+    setShowScheduleView(false);
+    setSelectedSchedule(null);
   };
 
   if (!user) {
@@ -75,6 +158,33 @@ const SchedulesPage = ({ user }) => {
     );
   }
 
+  // הצג את המערכת הנבחרת
+  if (showScheduleView && selectedSchedule) {
+    return (
+      <div className="schedules-page">
+        <div className="schedule-view-header">
+          <button 
+            className="back-button"
+            onClick={handleCloseScheduleView}
+          >
+            ← Back to Schedules
+          </button>
+          <h1>{selectedSchedule.schedule_name || 'Schedule View'}</h1>
+          <div className="schedule-meta">
+            Created: {formatDate(selectedSchedule.created_at)}
+          </div>
+        </div>
+        
+        <WeeklyScheduler 
+          user={user} 
+          authToken={authToken} 
+          schedule={selectedSchedule.schedule_data} 
+          isLoading={false}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="schedules-page">
       <div className="schedules-header">
@@ -93,7 +203,7 @@ const SchedulesPage = ({ user }) => {
           {savedSchedules.map(schedule => (
             <div key={schedule.id} className="schedule-card">
               <div className="schedule-card-header">
-                <h3 className="schedule-name">{schedule.name}</h3>
+                <h3 className="schedule-name">{schedule.schedule_name}</h3>
                 <div className="schedule-actions">
                   <button 
                     className="action-btn view-btn"
@@ -117,51 +227,25 @@ const SchedulesPage = ({ user }) => {
                   Created: {formatDate(schedule.created_at)}
                 </div>
                 <div className="schedule-courses">
-                  <strong>{schedule.courses.length} courses:</strong>
-                  <ul>
-                    {schedule.courses.map((course, index) => (
-                      <li key={index}>{course.name}</li>
-                    ))}
-                  </ul>
+                  <strong>
+                    {Array.isArray(schedule.schedule_data) 
+                      ? schedule.schedule_data.length 
+                      : 'Unknown'} courses
+                  </strong>
+                  {Array.isArray(schedule.schedule_data) && (
+                    <ul>
+                      {schedule.schedule_data.slice(0, 3).map((course, index) => (
+                        <li key={index}>{course.name}</li>
+                      ))}
+                      {schedule.schedule_data.length > 3 && (
+                        <li>+{schedule.schedule_data.length - 3} more...</li>
+                      )}
+                    </ul>
+                  )}
                 </div>
               </div>
             </div>
           ))}
-        </div>
-      )}
-
-      {selectedSchedule && (
-        <div className="schedule-modal-overlay" onClick={() => setSelectedSchedule(null)}>
-          <div className="schedule-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2>{selectedSchedule.name}</h2>
-              <button 
-                className="close-btn"
-                onClick={() => setSelectedSchedule(null)}
-              >
-                ×
-              </button>
-            </div>
-            <div className="modal-content">
-              <div className="schedule-details">
-                {selectedSchedule.courses.map((course, index) => (
-                  <div key={index} className="course-detail">
-                    <h4>{course.name}</h4>
-                    <div className="course-times">
-                      <div className="time-slot">
-                        <span className="time-label">Lecture:</span>
-                        <span className="time-value">{course.lecture}</span>
-                      </div>
-                      <div className="time-slot">
-                        <span className="time-label">TA Session:</span>
-                        <span className="time-value">{course.ta}</span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
         </div>
       )}
     </div>

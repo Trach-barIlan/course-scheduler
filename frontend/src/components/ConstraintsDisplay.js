@@ -35,8 +35,32 @@ const ConstraintsDisplay = ({ parsedConstraints, onConstraintsUpdate, isRegenera
         return '📅';
       case 'Avoid TA':
         return '👤';
+      case 'Prefer TA':
+        return '⭐';
+      case 'No Gap':
+        return '🔗';
+      case 'Max Gap':
+        return '⏱️';
       default:
         return '📋';
+    }
+  };
+
+  const getConstraintColor = (type) => {
+    switch (type) {
+      case 'No Class Before':
+      case 'No Class After':
+        return 'time-constraint';
+      case 'No Class Day':
+        return 'day-constraint';
+      case 'Avoid TA':
+      case 'Prefer TA':
+        return 'ta-constraint';
+      case 'No Gap':
+      case 'Max Gap':
+        return 'gap-constraint';
+      default:
+        return 'default-constraint';
     }
   };
 
@@ -50,8 +74,35 @@ const ConstraintsDisplay = ({ parsedConstraints, onConstraintsUpdate, isRegenera
         return `No classes on ${constraint.day}`;
       case 'Avoid TA':
         return `Avoid TA ${constraint.name}`;
+      case 'Prefer TA':
+        return `Prefer TA ${constraint.name}`;
+      case 'No Gap':
+        return `No gaps between classes`;
+      case 'Max Gap':
+        return `Maximum ${constraint.hours} hour gap between classes`;
       default:
         return JSON.stringify(constraint);
+    }
+  };
+
+  const getConstraintDescription = (constraint) => {
+    switch (constraint.type) {
+      case 'No Class Before':
+        return 'Schedule will avoid any classes starting before this time';
+      case 'No Class After':
+        return 'Schedule will avoid any classes ending after this time';
+      case 'No Class Day':
+        return 'No classes will be scheduled on this day';
+      case 'Avoid TA':
+        return 'Will try to avoid this specific TA when possible';
+      case 'Prefer TA':
+        return 'Will prioritize this TA when multiple options are available';
+      case 'No Gap':
+        return 'Classes will be scheduled back-to-back without breaks';
+      case 'Max Gap':
+        return 'Limits the maximum time between consecutive classes';
+      default:
+        return 'Custom scheduling constraint';
     }
   };
 
@@ -92,7 +143,7 @@ const ConstraintsDisplay = ({ parsedConstraints, onConstraintsUpdate, isRegenera
       } else if (newConstraint.type === 'No Class Day') {
         delete newConstraint.time;
         delete newConstraint.name;
-      } else if (newConstraint.type === 'Avoid TA') {
+      } else if (newConstraint.type === 'Avoid TA' || newConstraint.type === 'Prefer TA') {
         delete newConstraint.time;
         delete newConstraint.day;
       }
@@ -113,7 +164,7 @@ const ConstraintsDisplay = ({ parsedConstraints, onConstraintsUpdate, isRegenera
       return addForm.time && !isNaN(addForm.time) && addForm.time >= 0 && addForm.time <= 23;
     } else if (addForm.type === 'No Class Day') {
       return addForm.day && addForm.day.trim() !== '';
-    } else if (addForm.type === 'Avoid TA') {
+    } else if (addForm.type === 'Avoid TA' || addForm.type === 'Prefer TA') {
       return addForm.name && addForm.name.trim() !== '';
     }
     return false;
@@ -139,6 +190,7 @@ const ConstraintsDisplay = ({ parsedConstraints, onConstraintsUpdate, isRegenera
               <option value="No Class After">No Class After</option>
               <option value="No Class Day">No Class Day</option>
               <option value="Avoid TA">Avoid TA</option>
+              <option value="Prefer TA">Prefer TA</option>
             </select>
           </div>
 
@@ -173,7 +225,7 @@ const ConstraintsDisplay = ({ parsedConstraints, onConstraintsUpdate, isRegenera
             </div>
           )}
 
-          {editForm.type === 'Avoid TA' && (
+          {(editForm.type === 'Avoid TA' || editForm.type === 'Prefer TA') && (
             <div className="form-group">
               <label>TA Name:</label>
               <input
@@ -218,6 +270,7 @@ const ConstraintsDisplay = ({ parsedConstraints, onConstraintsUpdate, isRegenera
               <option value="No Class After">No Class After</option>
               <option value="No Class Day">No Class Day</option>
               <option value="Avoid TA">Avoid TA</option>
+              <option value="Prefer TA">Prefer TA</option>
             </select>
           </div>
 
@@ -252,7 +305,7 @@ const ConstraintsDisplay = ({ parsedConstraints, onConstraintsUpdate, isRegenera
             </div>
           )}
 
-          {addForm.type === 'Avoid TA' && (
+          {(addForm.type === 'Avoid TA' || addForm.type === 'Prefer TA') && (
             <div className="form-group">
               <label>TA Name:</label>
               <input
@@ -284,9 +337,14 @@ const ConstraintsDisplay = ({ parsedConstraints, onConstraintsUpdate, isRegenera
   return (
     <div className="constraints-display">
       <div className="constraints-header">
-        <h3 className="constraints-title">
-          🤖 AI Interpreted Constraints
-        </h3>
+        <div className="constraints-title-section">
+          <h3 className="constraints-title">
+            🤖 AI Interpreted Constraints
+          </h3>
+          <p className="constraints-subtitle">
+            Your natural language preferences have been automatically parsed and applied
+          </p>
+        </div>
         <div className="constraints-count">
           {constraints.length} constraint{constraints.length !== 1 ? 's' : ''} found
         </div>
@@ -294,16 +352,21 @@ const ConstraintsDisplay = ({ parsedConstraints, onConstraintsUpdate, isRegenera
       
       <div className="constraints-list">
         {constraints.map((constraint, index) => (
-          <div key={index} className="constraint-item">
+          <div key={index} className={`constraint-item ${getConstraintColor(constraint.type)}`}>
             <div className="constraint-icon">
               {getConstraintIcon(constraint.type)}
             </div>
             <div className="constraint-content">
-              <div className="constraint-text">
-                {formatConstraintText(constraint)}
+              <div className="constraint-main">
+                <div className="constraint-text">
+                  {formatConstraintText(constraint)}
+                </div>
+                <div className="constraint-type-badge">
+                  {constraint.type}
+                </div>
               </div>
-              <div className="constraint-type">
-                {constraint.type}
+              <div className="constraint-description">
+                {getConstraintDescription(constraint)}
               </div>
               {renderEditForm(constraint, index)}
             </div>
@@ -359,21 +422,7 @@ const ConstraintsDisplay = ({ parsedConstraints, onConstraintsUpdate, isRegenera
         </button>
       </div>
 
-      {parsedConstraints.entities && parsedConstraints.entities.length > 0 && (
-        <details className="raw-entities">
-          <summary className="entities-summary">
-            View Raw Entities ({parsedConstraints.entities.length})
-          </summary>
-          <div className="entities-list">
-            {parsedConstraints.entities.map((entity, index) => (
-              <div key={index} className="entity-item">
-                <span className="entity-text">"{entity.specifics}"</span>
-                <span className="entity-label">{entity.label}</span>
-              </div>
-            ))}
-          </div>
-        </details>
-      )}
+      
     </div>
   );
 };

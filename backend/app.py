@@ -161,10 +161,9 @@ def parse_input():
     return jsonify({
         "constraints": constraints,
         "entities": raw_entities
-    }), 200
+    }, 200)
 
 @app.route("/api/schedule", methods=["POST"])
-@token_required
 def api_schedule():
     generation_start_time = time.time()
 
@@ -193,10 +192,6 @@ def api_schedule():
             
             if not c.get("name"):
                 return jsonify({"error": f"Missing name for course at index {i}"}), 400
-            if not c.get("lectures"):
-                return jsonify({"error": f"Missing lectures for {c['name']}"}), 400
-            if not c.get("ta_times"):
-                return jsonify({"error": f"Missing TA times for {c['name']}"}), 400
 
             lectures = [str(l) for l in c["lectures"]] if isinstance(c["lectures"], list) else c["lectures"].split(",")
             ta_times = [str(t) for t in c["ta_times"]] if isinstance(c["ta_times"], list) else c["ta_times"].split(",")
@@ -204,10 +199,6 @@ def api_schedule():
             lec_slots = [parse_time_slot(s.strip()) for s in lectures if s]
             ta_slots = [parse_time_slot(s.strip()) for s in ta_times if s]
 
-            if not any(lec_slots):
-                return jsonify({"error": f"Invalid lecture time format for {c['name']}"}), 400
-            if not any(ta_slots):
-                return jsonify({"error": f"Invalid TA time format for {c['name']}"}), 400
 
             courses.append({
                 "name": c["name"],
@@ -224,7 +215,7 @@ def api_schedule():
         generation_time_ms = int((time.time() - generation_start_time) * 1000)
         
         # Log generation attempt and update statistics if user is authenticated
-        user = g.user
+        user = getattr(g, 'user', None)
         success = schedule is not None
         
         if user:
@@ -297,3 +288,10 @@ def test_session():
             "auth_header": request.headers.get('Authorization', 'Not provided'),
             "status": "error"
         }), 500
+    
+if __name__ == "__main__":
+    app.run(
+        host="localhost",
+        port=5001,  # שנה לפורט 5001
+        debug=True
+    )
