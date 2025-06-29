@@ -77,19 +77,59 @@
 }
 
 .loaded-schedule-info {
-  background: linear-gradient(135deg, #e3f2fd 0%, #f0f8ff 100%);
-  border: 1px solid #2196f3;
+  background: #f8f9fa;
+  border: 1px solid #4CAF50;
   border-radius: 8px;
-  padding: 12px 16px;
+  padding: 16px;
   margin-bottom: 20px;
   font-size: 14px;
-  box-shadow: 0 2px 4px rgba(33, 150, 243, 0.1);
+  box-shadow: 0 3px 10px rgba(76, 175, 80, 0.15);
+  position: relative;
+  overflow: hidden;
+}
+
+.loaded-schedule-info::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #4CAF50, #2196F3, #4CAF50);
+  animation: shimmer 2s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
 }
 
 .loaded-schedule-label {
-  color: #1976d2;
-  margin-right: 8px;
-  font-weight: 500;
+  color: #2E7D32;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+
+.loaded-schedule-label::before {
+  content: '📋';
+  font-size: 18px;
+}
+
+.loaded-schedule-info strong {
+  color: #1565C0;
+  font-size: 16px;
+  display: block;
+  margin-bottom: 12px;
+}
+
+.loaded-schedule-actions {
+  margin-top: 12px;
+  display: flex;
+  justify-content: flex-end;
 }
 
 .schedule-preference select {
@@ -203,25 +243,56 @@
 }
 
 .submit-button {
-  background: linear-gradient(135deg, var(--primary-500), var(--primary-600));
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
-  box-shadow: var(--shadow-md);
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
-.submit-button:hover {
+.submit-button:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: var(--shadow-lg);
-  background: linear-gradient(135deg, var(--primary-600), var(--primary-500));
-}
-
-.submit-button:active {
-  transform: translateY(0);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
 }
 
 .submit-button:disabled {
   opacity: 0.6;
   cursor: not-allowed;
   transform: none;
+}
+
+.clear-loaded-button {
+  background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 2px 4px rgba(238, 90, 82, 0.3);
+}
+
+.clear-loaded-button:hover {
+  background: linear-gradient(135deg, #ff5252, #d32f2f);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(238, 90, 82, 0.4);
+}
+
+.clear-loaded-button:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(238, 90, 82, 0.3);
 }
 
 .error-message {

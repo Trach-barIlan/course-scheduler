@@ -5,6 +5,79 @@ import WeeklyScheduler from '../components/WeeklyScheduler';
 import ConstraintsDisplay from '../components/ConstraintsDisplay';
 import '../styles/SchedulerPage.css';
 
+// פונקציה להמרה פשוטה - מחוץ לקומפוננטה
+const convertScheduleToCourses = (scheduleData) => {
+  console.log('🔍 Raw schedule data:', scheduleData);
+  
+  if (!Array.isArray(scheduleData)) {
+    console.warn('Invalid schedule data format:', scheduleData);
+    return [{ 
+      name: "", 
+      hasLecture: false,
+      hasPractice: false,
+      lectures: [],
+      practices: []
+    }];
+  }
+
+  const converted = scheduleData.map((courseData, index) => {
+    console.log(`🔄 Converting course ${index}:`, courseData);
+    
+    const course = {
+      name: courseData.name || "",
+      hasLecture: false,
+      hasPractice: false,
+      lectures: [],
+      practices: []
+    };
+
+    // המר הרצאה
+    if (courseData.lecture) {
+      console.log('  📚 Processing lecture:', courseData.lecture);
+      // פשוט נבדוק אם זה בפורמט "Mon 9-11"
+      const parts = courseData.lecture.split(' ');
+      if (parts.length === 2) {
+        const day = parts[0]; // Mon
+        const timeRange = parts[1]; // 9-11
+        const [start, end] = timeRange.split('-');
+        
+        course.hasLecture = true;
+        course.lectures = [{
+          day: day,
+          startTime: start,
+          endTime: end
+        }];
+        console.log('  ✅ Converted lecture to:', course.lectures[0]);
+      }
+    }
+
+    // המר תרגול
+    if (courseData.ta) {
+      console.log('  👨‍🏫 Processing TA:', courseData.ta);
+      const parts = courseData.ta.split(' ');
+      if (parts.length === 2) {
+        const day = parts[0]; // Tue
+        const timeRange = parts[1]; // 14-16
+        const [start, end] = timeRange.split('-');
+        
+        course.hasPractice = true;
+        course.practices = [{
+          day: day,
+          startTime: start,
+          endTime: end
+        }];
+        console.log('  ✅ Converted practice to:', course.practices[0]);
+      }
+    }
+
+    console.log(`✅ Final converted course ${index}:`, course);
+    return course;
+  });
+
+  console.log('🎯 All converted courses:', converted);
+  return converted;
+};
+
 const SchedulerPage = ({ user, authToken }) => {
   const location = useLocation();
   
@@ -29,8 +102,7 @@ const SchedulerPage = ({ user, authToken }) => {
   const [loadedScheduleName, setLoadedScheduleName] = useState(null);
   const [loadedScheduleId, setLoadedScheduleId] = useState(null);
   
-  // Use the proxy configuration from package.json instead of environment variable
-  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || '';
+  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
   useEffect(() => {
     if (location.state?.loadedSchedule) {
@@ -44,7 +116,11 @@ const SchedulerPage = ({ user, authToken }) => {
       setLoadedScheduleId(location.state.scheduleId);
       setError(null);
       
-      // Clear the location state to prevent re-loading
+      console.log('🔄 Converting schedule to courses format...');
+      const loadedCourses = convertScheduleToCourses(location.state.loadedSchedule);
+      console.log('✅ Converted courses:', loadedCourses);
+      setCourses(loadedCourses);
+      
       window.history.replaceState({}, document.title);
     }
   }, [location.state]);
@@ -78,6 +154,22 @@ const SchedulerPage = ({ user, authToken }) => {
     if (courses.length > 1) {
       setCourses(courses.filter((_, i) => i !== index));
     }
+  };
+
+  // הוסף פונקציה לניקוי המערכת הנטענת
+  const clearLoadedSchedule = () => {
+    setLoadedScheduleName(null);
+    setLoadedScheduleId(null);
+    setSchedule(null);
+    setCourses([{ 
+      name: "", 
+      hasLecture: false,
+      hasPractice: false,
+      lectures: [],
+      practices: []
+    }]);
+    setConstraints("");
+    setError(null);
   };
 
   const validateForm = useCallback(() => {
@@ -295,8 +387,8 @@ const SchedulerPage = ({ user, authToken }) => {
         }
 
         constraintsData = await parseRes.json();
-        parsedConstraints = constraintsData.constraints || [];
-        setParsedConstraints(constraintsData);
+        parsedConstraints = constraintsData[0]?.constraints || [];
+        setParsedConstraints(parsedConstraints);
         console.log('✅ Constraints parsed:', parsedConstraints);
       }
 
@@ -346,6 +438,15 @@ const SchedulerPage = ({ user, authToken }) => {
                 <div className="loaded-schedule-info">
                   <span className="loaded-schedule-label">📂 Loaded Schedule:</span>
                   <strong>{loadedScheduleName}</strong>
+                  <div className="loaded-schedule-actions">
+                    <button 
+                      type="button" 
+                      className="clear-loaded-button"
+                      onClick={clearLoadedSchedule}
+                    >
+                      ✖ Clear & Start New
+                    </button>
+                  </div>
                 </div>
               )}
               {user && (
@@ -414,10 +515,10 @@ const SchedulerPage = ({ user, authToken }) => {
                   {isSubmitting ? (
                     <>
                       <div className="loading-spinner"></div>
-                      Generating Schedule...
+                      {loadedScheduleName ? 'Updating Schedule...' : 'Generating Schedule...'}
                     </>
                   ) : (
-                    'Generate Schedule'
+                    loadedScheduleName ? 'Update Schedule' : 'Generate Schedule'
                   )}
                 </button>
               </div>

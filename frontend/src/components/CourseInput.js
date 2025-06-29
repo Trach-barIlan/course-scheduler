@@ -204,6 +204,34 @@ const CourseInput = ({ course, onChange, index, onRemove, canRemove }) => {
             (course.lectures && course.lectures.length > 1) : 
             (course.practices && course.practices.length > 1);
 
+        // המר ערכי יום לפורמט שה-select מבין
+        const getDayValue = (day) => {
+            const dayMap = {
+                'Monday': 'Mon',
+                'Tuesday': 'Tue', 
+                'Wednesday': 'Wed',
+                'Thursday': 'Thu',
+                'Friday': 'Fri',
+                'Mon': 'Mon',
+                'Tue': 'Tue',
+                'Wed': 'Wed',
+                'Thu': 'Thu',
+                'Fri': 'Fri'
+            };
+            return dayMap[day] || day;
+        };
+
+        // המר ערכי זמן לפורמט שה-select מבין
+        const getTimeValue = (time) => {
+            if (!time) return '';
+            // אם זה מחרוזת עם ":", קח רק את החלק הראשון
+            if (typeof time === 'string' && time.includes(':')) {
+                return parseInt(time.split(':')[0]);
+            }
+            // אם זה מספר, החזר אותו
+            return parseInt(time);
+        };
+
         return (
             <div key={slotIndex} className="time-slot-item">
                 <div className="time-slot-header">
@@ -226,7 +254,7 @@ const CourseInput = ({ course, onChange, index, onRemove, canRemove }) => {
                     <div className="selector-group">
                         <label>Day</label>
                         <select
-                            value={slot.day || ''}
+                            value={getDayValue(slot.day) || ''}
                             onChange={(e) => onSlotChange(slotIndex, 'day', e.target.value)}
                             className="day-selector"
                         >
@@ -242,7 +270,7 @@ const CourseInput = ({ course, onChange, index, onRemove, canRemove }) => {
                     <div className="selector-group">
                         <label>Start Time</label>
                         <select
-                            value={slot.startTime || ''}
+                            value={getTimeValue(slot.startTime) || ''}
                             onChange={(e) => onSlotChange(slotIndex, 'startTime', e.target.value)}
                             className="time-selector"
                         >
@@ -258,13 +286,13 @@ const CourseInput = ({ course, onChange, index, onRemove, canRemove }) => {
                     <div className="selector-group">
                         <label>End Time</label>
                         <select
-                            value={slot.endTime || ''}
+                            value={getTimeValue(slot.endTime) || ''}
                             onChange={(e) => onSlotChange(slotIndex, 'endTime', e.target.value)}
                             className="time-selector"
                             disabled={!slot.startTime}
                         >
                             <option value="">End</option>
-                            {getAvailableEndTimes(slot.startTime).map(hour => (
+                            {getAvailableEndTimes(getTimeValue(slot.startTime)).map(hour => (
                                 <option key={hour.value} value={hour.value}>
                                     {hour.label}
                                 </option>
@@ -281,7 +309,7 @@ const CourseInput = ({ course, onChange, index, onRemove, canRemove }) => {
 
                 {slot.day && slot.startTime && slot.endTime && !errors[errorKey] && (
                     <div className="time-preview">
-                        {type === 'lecture' ? '📚' : '👨‍🏫'} {slot.day} {slot.startTime}:00 - {slot.endTime}:00
+                        {type === 'lecture' ? '📚' : '👨‍🏫'} {getDayValue(slot.day)} {getTimeValue(slot.startTime)}:00 - {getTimeValue(slot.endTime)}:00
                     </div>
                 )}
             </div>

@@ -523,6 +523,7 @@ const WeeklySchedule = ({ schedule, isLoading, user, authToken, scheduleName, sc
         {scheduleName && (
           <div className="schedule-source">
             <span className="source-label">📂 Loaded from saved schedules</span>
+            <span className="edit-hint">You can modify the course times on the left and regenerate</span>
           </div>
         )}
         <div className="scheduler-actions">
