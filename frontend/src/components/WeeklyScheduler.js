@@ -719,6 +719,7 @@ const WeeklySchedule = ({ schedule, isLoading, user, authToken, scheduleName, sc
         schedule={currentSchedule}
         user={user}
         authToken={authToken}
+        courses={originalCourseOptions}
       />
 
       {/* Not Implemented Modal */}

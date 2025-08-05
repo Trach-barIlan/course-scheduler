@@ -5,7 +5,7 @@ import WeeklyScheduler from '../components/WeeklyScheduler';
 import ConstraintsDisplay from '../components/ConstraintsDisplay';
 import '../styles/SchedulerPage.css';
 
-// פונקציה להמרה פשוטה - מחוץ לקומפוננטה
+// Convert the loaded schedule data to the format used by the courses state
 const convertScheduleToCourses = (scheduleData) => {
   console.log('🔍 Raw schedule data:', scheduleData);
   
@@ -31,10 +31,9 @@ const convertScheduleToCourses = (scheduleData) => {
       practices: []
     };
 
-    // המר הרצאה
     if (courseData.lecture) {
       console.log('  📚 Processing lecture:', courseData.lecture);
-      // פשוט נבדוק אם זה בפורמט "Mon 9-11"
+
       const parts = courseData.lecture.split(' ');
       if (parts.length === 2) {
         const day = parts[0]; // Mon
@@ -51,7 +50,6 @@ const convertScheduleToCourses = (scheduleData) => {
       }
     }
 
-    // המר תרגול
     if (courseData.ta) {
       console.log('  👨‍🏫 Processing TA:', courseData.ta);
       const parts = courseData.ta.split(' ');
@@ -113,21 +111,21 @@ const SchedulerPage = ({ user, authToken }) => {
 
   useEffect(() => {
     if (location.state?.loadedSchedule) {
-      console.log('🔍 Loading schedule from Dashboard:', location.state);
-      console.log('📋 Schedule data:', location.state.loadedSchedule);
-      console.log('📝 Schedule name:', location.state.scheduleName);
-      console.log('🆔 Schedule ID:', location.state.scheduleId);
-      
       setSchedule(location.state.loadedSchedule);
       setLoadedScheduleName(location.state.scheduleName);
       setLoadedScheduleId(location.state.scheduleId);
       setError(null);
-      
-      console.log('🔄 Converting schedule to courses format...');
-      const loadedCourses = convertScheduleToCourses(location.state.loadedSchedule);
-      console.log('✅ Converted courses:', loadedCourses);
-      setCourses(loadedCourses);
-      
+
+      // Check for original course options
+      const originalOptions = location.state.loadedSchedule.original_course_options;
+      if (originalOptions && Array.isArray(originalOptions)) {
+        setCourses(originalOptions);
+      } else {
+        // Fallback: convert from schedule data
+        const loadedCourses = convertScheduleToCourses(location.state.loadedSchedule);
+        setCourses(loadedCourses);
+      }
+
       window.history.replaceState({}, document.title);
     }
   }, [location.state]);

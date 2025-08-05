@@ -123,6 +123,13 @@ class AuthManager:
             print(f"❌ Error authenticating user: {e}")
             return None
 
+    def login(self, username_or_email, password):
+        user = self.authenticate_user(username_or_email, password)
+        if user:
+            return {"success": True, "user": user}
+        else:
+            return {"success": False, "error": "Invalid credentials"}
+
     def create_session(self, user_id: str, user_agent: str = None, ip_address: str = None) -> Optional[str]:
         """Create a new session for the user"""
         try:
@@ -212,3 +219,10 @@ class AuthManager:
         except Exception as e:
             print(f"⚠️ Failed to set user context: {e}")
         return self.service_supabase
+
+    def validate_token(self, token):
+        user = self.get_user_by_id(token)
+        if user:
+            return {"success": True, "user": user}
+        else:
+            return {"success": False, "error": "Invalid token"}
