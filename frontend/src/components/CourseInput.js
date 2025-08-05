@@ -5,6 +5,7 @@ const CourseInput = ({ course, onChange, index, onRemove, canRemove }) => {
     const [errors, setErrors] = useState({});
 
     const days = [
+        { value: 'Sun', label: 'Sunday' },
         { value: 'Mon', label: 'Monday' },
         { value: 'Tue', label: 'Tuesday' },
         { value: 'Wed', label: 'Wednesday' },
@@ -221,14 +222,14 @@ const CourseInput = ({ course, onChange, index, onRemove, canRemove }) => {
             return dayMap[day] || day;
         };
 
-        // המר ערכי זמן לפורמט שה-select מבין
+        // Convert time values to a format understood by the select
         const getTimeValue = (time) => {
             if (!time) return '';
-            // אם זה מחרוזת עם ":", קח רק את החלק הראשון
+            // If it's a string, split it to get the hour part
             if (typeof time === 'string' && time.includes(':')) {
                 return parseInt(time.split(':')[0]);
             }
-            // אם זה מספר, החזר אותו
+            // If it's a number, return it
             return parseInt(time);
         };
 
