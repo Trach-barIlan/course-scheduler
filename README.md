@@ -265,7 +265,13 @@ npm run build
 
 ### Recent Improvements & Bug Fixes
 
-#### ✅ Enhanced Schedule Persistence (Latest)
+#### ✅ Advanced AI Constraint Parser (Latest)
+- **Hybrid Parsing Model**: Combines rule-based patterns with ML for higher accuracy
+- **Enhanced Natural Language Understanding**: Better recognition of complex scheduling constraints
+- **Production-Ready Integration**: Seamless integration with fallback mechanisms
+- **Improved Reliability**: Robust error handling and graceful degradation
+
+#### ✅ Enhanced Schedule Persistence
 - **Complete Course Data Saving**: Schedules now save with all alternative time slots
 - **Full Modification Support**: Load saved schedules with complete editing capabilities
 - **Database Schema Enhancement**: Added `original_course_options` field for better data preservation
