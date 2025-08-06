@@ -64,8 +64,8 @@ class HybridScheduleParser:
         
     def _add_day_patterns(self):
         """Add day constraint patterns"""
-        days = ["monday", "tuesday", "wednesday", "thursday", "friday", 
-                "mon", "tue", "wed", "thu", "fri"]
+        days = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday",
+                "mon", "tue", "wed", "thu", "fri", "sat", "sun"]
         
         day_patterns = [
             [{"LOWER": {"IN": ["no", "not", "avoid", "don't", "dont"]}}, 
@@ -161,9 +161,9 @@ class HybridScheduleParser:
             elif label == "DAY_CONSTRAINT":
                 day_map = {
                     'monday': 'Mon', 'tuesday': 'Tue', 'wednesday': 'Wed',
-                    'thursday': 'Thu', 'friday': 'Fri',
+                    'thursday': 'Thu', 'friday': 'Fri', 'saturday': 'Sat', 'sunday': 'Sun',
                     'mon': 'Mon', 'tue': 'Tue', 'wed': 'Wed',
-                    'thu': 'Thu', 'fri': 'Fri'
+                    'thu': 'Thu', 'fri': 'Fri', 'sat': 'Sat', 'sun': 'Sun'
                 }
                 
                 for day_name, abbrev in day_map.items():
