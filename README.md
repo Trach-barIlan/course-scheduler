@@ -13,7 +13,10 @@ An intelligent AI-powered course scheduling application that automatically gener
 - **Instant Schedule Creation**: Generate conflict-free schedules in seconds
 - **Multiple Preferences**: Choose between "crammed" (fewer days) or "spaced out" (distributed) scheduling styles
 - **Interactive Editing**: Drag and drop classes to alternative time slots with real-time validation
+- **Advanced Schedule Persistence**: Save schedules with full modification capabilities - all alternative time slots preserved
+- **Schedule Loading & Editing**: Load saved schedules with complete course options for further customization
 - **Progress Tracking**: Visual progress indicators with estimated completion times during generation
+- **Alternative Time Slot Management**: Access all available course time options even after saving
 
 ### 📊 User Dashboard & Analytics
 - **Personal Statistics**: Track schedules created, hours saved, success rates, and efficiency metrics
@@ -37,7 +40,9 @@ An intelligent AI-powered course scheduling application that automatically gener
 ### 📄 Export & Sharing
 - **PDF Export**: Download beautifully formatted schedule PDFs
 - **Social Sharing**: Share schedules via WhatsApp and other platforms
-- **Schedule Saving**: Save multiple schedules with custom names and descriptions
+- **Advanced Schedule Saving**: Save schedules with complete course data for future modifications
+- **Schedule Management**: Access, edit, and delete saved schedules from your personal dashboard
+- **Cross-Session Persistence**: Continue editing schedules across different browser sessions
 - **Visual Calendar**: Clean, professional schedule layout
 
 ## 🚀 Quick Start
@@ -115,9 +120,11 @@ An intelligent AI-powered course scheduling application that automatically gener
 
 ### Database (Supabase PostgreSQL)
 - **User Management**: Secure authentication with custom user profiles
-- **Schedule Storage**: Efficient storage of schedules and constraints
+- **Advanced Schedule Storage**: Efficient storage of schedules with complete course option preservation
+- **Original Course Data Persistence**: Maintains all alternative time slots for future schedule modifications
 - **Statistics Tracking**: Detailed analytics and usage patterns
 - **Session Management**: Secure token-based authentication
+- **Migration System**: Structured database schema evolution with version control
 - **Real-time Features**: Live updates and collaborative features ready
 
 ## 📖 How to Use
@@ -147,12 +154,15 @@ Use natural language to specify preferences:
 - Click "Generate Schedule" and watch the AI work
 - View your optimized schedule in a visual calendar
 - Drag and drop classes to alternative time slots if needed
-- Save your schedule with a custom name
+- Save your schedule with a custom name and description
+- **Enhanced Saving**: Schedules are saved with all original course options for future editing
 
 ### 6. Export & Share
 - Download as a professional PDF
 - Share via WhatsApp or other social platforms
 - Access your saved schedules anytime from your dashboard
+- **Load & Modify**: Open saved schedules with full editing capabilities
+- **Persistent Editing**: Make changes to saved schedules and regenerate as needed
 
 ## 🤖 AI Constraint Examples
 
@@ -210,14 +220,20 @@ schedgic/
 │   ├── auth/               # Authentication system
 │   ├── api/                # API endpoints
 │   ├── schedule/           # Scheduling algorithms
+│   ├── tests/              # Backend test suite
 │   └── app.py              # Main application
 ├── frontend/               # React frontend
 │   ├── src/
 │   │   ├── components/     # React components
 │   │   ├── pages/          # Page components
-│   │   └── styles/         # CSS styling
+│   │   ├── styles/         # CSS styling
+│   │   └── __tests__/      # Frontend test suite
 │   └── public/             # Static assets
-└── supabase/               # Database migrations
+├── scripts/                # Test automation and utilities
+│   ├── run_all_tests.sh    # Comprehensive test runner
+│   └── run_frontend_tests.sh # Frontend-specific test runner
+└── supabase/               # Database migrations and config
+    └── migrations/         # Database schema evolution files
 ```
 
 ### Adding New Features
@@ -229,17 +245,43 @@ schedgic/
 
 ### Testing
 ```bash
-# Backend tests
+# Backend tests (comprehensive test suite)
 cd backend
 python -m pytest
 
-# Frontend tests
+# Frontend tests (React Testing Library + Jest)
 cd frontend
 npm test
 
+# Run all tests with coverage
+npm run test:coverage
+
 # Build for production
 npm run build
+
+# Run comprehensive test suite (both backend and frontend)
+./scripts/run_all_tests.sh
 ```
+
+### Recent Improvements & Bug Fixes
+
+#### ✅ Enhanced Schedule Persistence (Latest)
+- **Complete Course Data Saving**: Schedules now save with all alternative time slots
+- **Full Modification Support**: Load saved schedules with complete editing capabilities
+- **Database Schema Enhancement**: Added `original_course_options` field for better data preservation
+- **Improved User Experience**: Seamless schedule modification across sessions
+
+#### ✅ Testing Infrastructure Overhaul
+- **Comprehensive Test Suite**: Full backend and frontend test coverage
+- **Automated Test Scripts**: Easy-to-run test automation with `scripts/run_all_tests.sh`
+- **Clean Test Output**: Suppressed console warnings for cleaner test results
+- **Mock Integration**: Proper mocking of Supabase and authentication services
+
+#### ✅ Performance & Reliability
+- **Error Handling**: Improved error handling across all components
+- **Authentication Robustness**: Enhanced session management and token validation
+- **Code Cleanup**: Removed deprecated test files and debugging artifacts
+- **Build Optimization**: Streamlined build process and dependency management
 
 ## 🔧 Configuration
 
@@ -280,8 +322,20 @@ cd backend
 
 ### Database (Supabase)
 - Production database is automatically managed
-- Run migrations through Supabase dashboard
+- Run migrations through Supabase dashboard or CLI
 - Configure Row Level Security policies
+- **Migration Management**: Use files in `supabase/migrations/` for schema changes
+
+### Database Migrations
+```bash
+# Apply migrations via Supabase Dashboard:
+# 1. Go to your project dashboard
+# 2. Navigate to SQL Editor
+# 3. Run the SQL from supabase/migrations/ files
+
+# Or apply the latest migration (add original_course_options column):
+# Copy and run the SQL from: supabase/migrations/20250805000000_add_original_course_options.sql
+```
 
 ## 🤝 Contributing
 
@@ -300,7 +354,32 @@ We welcome contributions! Here's how to get started:
 - Update documentation as needed
 - Ensure responsive design for UI changes
 
-## 📄 License
+## �️ Troubleshooting
+
+### Common Issues
+
+#### Schedule Saving Problems
+- **Issue**: "Schedules lose alternative time slots after saving"
+- **Solution**: Ensure database migration `20250805000000_add_original_course_options.sql` has been applied
+
+#### Test Failures
+- **Issue**: Frontend tests failing with React warnings
+- **Solution**: Tests are configured to suppress warnings. Use `npm run test:ci` for clean output
+
+#### Authentication Issues
+- **Issue**: Session expired errors
+- **Solution**: Check Supabase credentials in `.env` file and verify token expiration settings
+
+#### Build Errors
+- **Issue**: ESLint errors about undefined variables
+- **Solution**: Check all component props are properly destructured and passed
+
+### Performance Tips
+- Use the test scripts in `scripts/` folder for reliable test execution
+- Run `scripts/run_all_tests.sh` before deploying changes
+- Monitor console for any authentication or API errors
+
+## �📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
@@ -316,7 +395,15 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - **Documentation**: Check this README and inline code comments
 - **Issues**: Report bugs via [GitHub Issues](https://github.com/yourusername/schedgic/issues)
 - **Discussions**: Join conversations in [GitHub Discussions](https://github.com/yourusername/schedgic/discussions)
+- **Testing**: Use `scripts/run_all_tests.sh` to verify your setup
+- **Migrations**: Check `supabase/migrations/` for database schema updates
 - **Email**: Contact the development team for enterprise inquiries
+
+### Development Support
+- **Test Suite**: Comprehensive testing with backend (pytest) and frontend (Jest/RTL)
+- **Code Quality**: ESLint and automated testing ensure code reliability
+- **Database Evolution**: Structured migration system for schema changes
+- **Clean Architecture**: Separation of concerns with clear API boundaries
 
 ---
 
