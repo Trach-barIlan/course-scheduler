@@ -245,7 +245,8 @@ const Dashboard = ({ user, authToken, onQuickAction }) => {
           state: { 
             loadedSchedule: data.schedule.schedule_data || data.schedule,
             scheduleName: data.schedule.schedule_name || schedule.name,
-            scheduleId: schedule.id
+            scheduleId: schedule.id,
+            originalCourseOptions: data.schedule.original_course_options || []
           } 
         });
       } else {

@@ -117,16 +117,51 @@ const SchedulerPage = ({ user, authToken }) => {
       console.log('📋 Schedule data:', location.state.loadedSchedule);
       console.log('📝 Schedule name:', location.state.scheduleName);
       console.log('🆔 Schedule ID:', location.state.scheduleId);
+      console.log('🎯 Original course options:', location.state.originalCourseOptions);
       
       setSchedule(location.state.loadedSchedule);
       setLoadedScheduleName(location.state.scheduleName);
       setLoadedScheduleId(location.state.scheduleId);
       setError(null);
-      
-      console.log('🔄 Converting schedule to courses format...');
-      const loadedCourses = convertScheduleToCourses(location.state.loadedSchedule);
-      console.log('✅ Converted courses:', loadedCourses);
-      setCourses(loadedCourses);
+
+      // Check if we have original course options (preferred) or need to convert from schedule data
+      if (location.state.originalCourseOptions && location.state.originalCourseOptions.length > 0) {
+        console.log('✅ Using original course options from saved schedule');
+        // Convert backend format to frontend format
+        const convertedCourses = location.state.originalCourseOptions.map(courseData => {
+          return {
+            name: courseData.name || "",
+            hasLecture: (courseData.lectures && courseData.lectures.length > 0),
+            hasPractice: (courseData.ta_times && courseData.ta_times.length > 0),
+            lectures: (courseData.lectures || []).map(lectureStr => {
+              const parts = lectureStr.split(' ');
+              if (parts.length === 2) {
+                const day = parts[0];
+                const timeRange = parts[1];
+                const [start, end] = timeRange.split('-');
+                return { day, startTime: start, endTime: end };
+              }
+              return { day: "", startTime: "", endTime: "" };
+            }),
+            practices: (courseData.ta_times || []).map(practiceStr => {
+              const parts = practiceStr.split(' ');
+              if (parts.length === 2) {
+                const day = parts[0];
+                const timeRange = parts[1];
+                const [start, end] = timeRange.split('-');
+                return { day, startTime: start, endTime: end };
+              }
+              return { day: "", startTime: "", endTime: "" };
+            })
+          };
+        });
+        setCourses(convertedCourses);
+      } else {
+        console.log('⚠️ No original course options found, converting from schedule data (limited functionality)');
+        const loadedCourses = convertScheduleToCourses(location.state.loadedSchedule);
+        console.log('✅ Converted courses:', loadedCourses);
+        setCourses(loadedCourses);
+      }
       
       window.history.replaceState({}, document.title);
     }

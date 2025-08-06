@@ -46,7 +46,8 @@ def save_schedule():
             'user_id': user_id,
             'schedule_name': data['name'].strip(),
             'schedule_data': data['schedule'],
-            'constraints_data': data.get('constraints', [])
+            'constraints_data': data.get('constraints', []),
+            'original_course_options': data.get('originalCourseOptions', [])
         }
 
         print(f"✅ Attempting to save schedule data: {schedule_data}")
@@ -153,7 +154,8 @@ def get_schedule(schedule_id):
                 'id': schedule_data['id'],
                 'schedule_name': schedule_data['schedule_name'],
                 'created_at': schedule_data['created_at'],
-                'schedule_data': schedule_data['schedule_data']
+                'schedule_data': schedule_data['schedule_data'],
+                'original_course_options': schedule_data.get('original_course_options', [])
             }
         }), 200
         

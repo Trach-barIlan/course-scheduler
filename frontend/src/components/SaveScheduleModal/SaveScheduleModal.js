@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import './SaveScheduleModal.css';
 
-const SaveScheduleModal = ({ isOpen, onClose, onSave, schedule, user, authToken }) => {
+const SaveScheduleModal = ({ isOpen, onClose, onSave, schedule, user, authToken, courses }) => {
   const [scheduleName, setScheduleName] = useState('');
   const [description, setDescription] = useState('');
   const [isPublic, setIsPublic] = useState(false);
@@ -61,7 +61,8 @@ const SaveScheduleModal = ({ isOpen, onClose, onSave, schedule, user, authToken 
           description: description.trim(),
           schedule: schedule,
           isPublic: isPublic,
-          constraints: []
+          constraints: [],
+          originalCourseOptions: courses || []
         })
       });
 
