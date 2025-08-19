@@ -137,7 +137,7 @@ const CourseCatalog = ({ university, semester, year, onCoursesSelected, onBack }
     };
 
     fetchCourses();
-  }, [university, semester, year, API_BASE_URL]);
+  }, [university, semester, year, API_BASE_URL, mockCourses]);
 
   const filteredCourses = availableCourses.filter(course => {
     const matchesSearch = course.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
