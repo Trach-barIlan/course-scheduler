@@ -3,6 +3,9 @@ backend/schedule/__pycache__
 .env
 .DS_Store
 
+# VS Code settings
+.vscode/
+
 # Local Netlify folder
 .netlify
 
