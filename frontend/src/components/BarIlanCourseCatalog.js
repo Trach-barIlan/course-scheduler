@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import '../styles/BarIlanCourseCatalog.css';
 
 const BarIlanCourseCatalog = ({ university, semester, year, onCoursesSelected, onBack }) => {
@@ -22,11 +22,7 @@ const BarIlanCourseCatalog = ({ university, semester, year, onCoursesSelected, o
     { id: 'education', name: 'חינוך', name_en: 'Education' }
   ];
 
-  useEffect(() => {
-    fetchCourses();
-  }, [selectedDepartment, semester, year]);
-
-  const fetchCourses = async () => {
+  const fetchCourses = useCallback(async () => {
     setIsLoading(true);
     try {
       let url;
@@ -61,7 +57,11 @@ const BarIlanCourseCatalog = ({ university, semester, year, onCoursesSelected, o
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [API_BASE_URL, searchQuery, selectedDepartment, semester, year]);
+
+  useEffect(() => {
+    fetchCourses();
+  }, [fetchCourses]);
 
   const handleSearch = () => {
     if (searchQuery.trim()) {
@@ -76,25 +76,6 @@ const BarIlanCourseCatalog = ({ university, semester, year, onCoursesSelected, o
     if (e.key === 'Enter') {
       handleSearch();
     }
-  };
-
-  const fetchCourseDetails = async (courseCode) => {
-    try {
-      const url = `${API_BASE_URL}/api/university/bar-ilan/course/${courseCode}`;
-      const response = await fetch(url, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
-        }
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        return data.course;
-      }
-    } catch (error) {
-      console.error('Error fetching course details:', error);
-    }
-    return null;
   };
 
   const handleCourseSelect = (course, section) => {

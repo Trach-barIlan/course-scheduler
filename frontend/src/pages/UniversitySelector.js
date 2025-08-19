@@ -245,7 +245,7 @@ const UniversitySelector = ({ user, authToken, onUniversitySelected }) => {
     };
 
     fetchUniversities();
-  }, [searchQuery, selectedCountry, API_BASE_URL]);
+  }, [searchQuery, selectedCountry, API_BASE_URL, mockUniversities]);
 
   const handleUniversitySelect = (university) => {
     console.log('University selected:', university);
