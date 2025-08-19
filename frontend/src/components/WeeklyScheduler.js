@@ -172,9 +172,11 @@ const WeeklySchedule = ({ schedule, isLoading, user, authToken, scheduleName, sc
     );
   }
 
-  const days = ["Mon", "Tue", "Wed", "Thu", "Fri"];
+  const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  
   // Extended time range from 7 AM to 10 PM to accommodate all possible class times
   const hours = Array.from({ length: 15 }, (_, i) => i + 7); // 7 AM to 9 PM (22:00)
+  
   const slots = {};
   const colors = {};
 

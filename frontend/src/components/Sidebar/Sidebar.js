@@ -59,6 +59,16 @@ const Sidebar = ({ user, onQuickAction }) => {
       implemented: true,
       path: '/scheduler'
     },
+    // Temporarily hidden - Import Courses functionality removed
+    // {
+    //   id: 'import-courses',
+    //   icon: '🏫',
+    //   title: 'Import Courses',
+    //   description: 'From university',
+    //   color: 'success',
+    //   implemented: true,
+    //   path: '/university-selector'
+    // },
     {
       id: 'templates',
       icon: '📋',

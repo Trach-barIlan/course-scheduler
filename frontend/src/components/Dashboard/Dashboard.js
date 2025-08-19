@@ -43,18 +43,18 @@ const Dashboard = ({ user, authToken, onQuickAction }) => {
         const data = await statsResponse.json();
         statsData = data.statistics;
       } else {
-        console.error('Failed to fetch statistics:', statsResponse.status);
+        console.error('❌ Dashboard: Failed to fetch statistics:', statsResponse.status);
       }
 
       if (activityResponse.ok) {
         const data = await activityResponse.json();
         activityData = data.activities || [];
       } else {
-        console.error('Failed to fetch recent activity:', activityResponse.status);
+        console.error('❌ Dashboard: Failed to fetch recent activity:', activityResponse.status);
       }
 
       // Set statistics with fallback values
-      setStatistics(statsData || {
+      const finalStats = statsData || {
         schedules_created: 0,
         schedules_this_week: 0,
         saved_schedules_count: 0,
@@ -65,16 +65,17 @@ const Dashboard = ({ user, authToken, onQuickAction }) => {
         preferred_schedule_type: 'crammed',
         constraints_used_count: 0,
         average_generation_time: 0
-      });
+      };
 
+      setStatistics(finalStats);
       setRecentActivity(activityData || []);
 
     } catch (error) {
-      console.error('Error fetching user data:', error);
+      console.error('❌ Dashboard: Error fetching user data:', error);
       setError('Failed to load dashboard data');
       
       // Set fallback statistics
-      setStatistics({
+      const fallbackStats = {
         schedules_created: 0,
         schedules_this_week: 0,
         saved_schedules_count: 0,
@@ -85,7 +86,8 @@ const Dashboard = ({ user, authToken, onQuickAction }) => {
         preferred_schedule_type: 'crammed',
         constraints_used_count: 0,
         average_generation_time: 0
-      });
+      };
+      setStatistics(fallbackStats);
     } finally {
       setIsLoading(false);
     }
@@ -245,7 +247,8 @@ const Dashboard = ({ user, authToken, onQuickAction }) => {
           state: { 
             loadedSchedule: data.schedule.schedule_data || data.schedule,
             scheduleName: data.schedule.schedule_name || schedule.name,
-            scheduleId: schedule.id
+            scheduleId: schedule.id,
+            originalCourseOptions: data.schedule.original_course_options || []
           } 
         });
       } else {

@@ -215,8 +215,15 @@
   line-height: 1.6;
 }
 
+.table-container {
+  overflow-x: auto;
+  width: 100%;
+  border-radius: var(--radius-lg);
+}
+
 #schedule-table {
   width: 100%;
+  min-width: 800px;  /* Ensure table is wide enough for 7 columns */
   border-collapse: separate;
   border-spacing: 0;
   font-family: var(--font-sans);

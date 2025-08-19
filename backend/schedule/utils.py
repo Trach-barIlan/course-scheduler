@@ -1,6 +1,6 @@
 import re
 
-DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri"]
+DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
 
 def parse_time_slot(s):
     match = re.match(r'([A-Za-z]+)\s+(\d+)-(\d+)', s.strip())
@@ -14,6 +14,7 @@ def parse_time_slot(s):
             "wednesday": "Wed",
             "thursday": "Thu",
             "friday": "Fri",
+            "saturday": "Sat",
             "sunday": "Sun",
             # Capitalize full names
             "Monday": "Mon",
@@ -21,6 +22,7 @@ def parse_time_slot(s):
             "Wednesday": "Wed",
             "Thursday": "Thu",
             "Friday": "Fri",
+            "Saturday": "Sat",
             "Sunday": "Sun",
             # Add abbreviated versions
             "mon": "Mon",
@@ -28,6 +30,7 @@ def parse_time_slot(s):
             "wed": "Wed",
             "thu": "Thu",
             "fri": "Fri",
+            "sat": "Sat",
             "sun": "Sun"
         }
         

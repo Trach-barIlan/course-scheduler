@@ -2,7 +2,7 @@ import React from 'react';
 import './ScheduleSkeletonLoader.css';
 
 const ScheduleSkeletonLoader = ({ progress = 0, estimatedTime = 0, currentStep = '' }) => {
-  const days = React.useMemo(() => ["Mon", "Tue", "Wed", "Thu", "Fri"], []);
+  const days = React.useMemo(() => ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"], []);
   const hours = React.useMemo(() => Array.from({ length: 12 }, (_, i) => i + 8), []);
 
   // Generate random skeleton blocks to simulate schedule layout

@@ -5,6 +5,9 @@ import Sidebar from './components/Sidebar/Sidebar';
 import HomePage from './pages/HomePage';
 import SchedulerPage from './pages/SchedulerPage';
 import AboutPage from './pages/AboutPage';
+import UniversitySelector from './pages/UniversitySelector';
+import CourseCatalog from './components/CourseCatalog';
+import BarIlanCourseCatalog from './components/BarIlanCourseCatalog';
 import LoginRegister from './components/Auth/LoginRegister';
 import UserProfile from './components/UserProfile/UserProfile';
 import './styles/base.css';
@@ -16,6 +19,7 @@ function AppContent() {
   const [showProfile, setShowProfile] = useState(false);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [authToken, setAuthToken] = useState(localStorage.getItem('auth_token'));
+  const [universityConfig, setUniversityConfig] = useState(null);
   const navigate = useNavigate();
   const API_BASE_URL = process.env.REACT_APP_API_BASE_URL
 
@@ -115,6 +119,9 @@ function AppContent() {
       case 'new-schedule':
         navigate('/scheduler');
         break;
+      case 'import-courses':
+        navigate('/university-selector');
+        break;
       case 'home':
         navigate('/');
         break;
@@ -123,6 +130,36 @@ function AppContent() {
         break;
     }
   }, [navigate]);
+
+  const handleUniversitySelected = (config) => {
+    console.log('University selected:', config);
+    console.log('Import method:', config.importMethod);
+    console.log('Has API:', config.university.hasApi);
+    setUniversityConfig(config);
+    
+    // Special handling for Bar-Ilan - always go to course catalog if it has API
+    if (config.university.id === 'bar-ilan' && config.university.hasApi) {
+      console.log('Bar-Ilan detected with API, navigating to course-catalog');
+      navigate('/course-catalog');
+    } else if (config.importMethod === 'catalog' && config.university.hasApi) {
+      console.log('Navigating to course-catalog');
+      navigate('/course-catalog');
+    } else {
+      console.log('Navigating to scheduler');
+      // For manual entry, go directly to scheduler with university context
+      navigate('/scheduler', { state: { universityConfig: config } });
+    }
+  };
+
+  const handleCoursesSelected = (selectedCourses) => {
+    console.log('Courses selected:', selectedCourses);
+    navigate('/scheduler', { 
+      state: { 
+        universityConfig,
+        importedCourses: selectedCourses 
+      } 
+    });
+  };
 
   if (isCheckingAuth) {
     return (
@@ -156,6 +193,42 @@ function AppContent() {
             <Route 
               path="/scheduler" 
               element={<SchedulerPage user={user} authToken={authToken} />} 
+            />
+            <Route
+              path="/university-selector"
+              element={
+                <UniversitySelector 
+                  user={user}
+                  authToken={authToken}
+                  onUniversitySelected={handleUniversitySelected}
+                />
+              }
+            />
+            <Route
+              path="/course-catalog"
+              element={
+                universityConfig ? (
+                  universityConfig.university.id === 'bar-ilan' ? (
+                    <BarIlanCourseCatalog
+                      university={universityConfig.university}
+                      semester={universityConfig.semester}
+                      year={universityConfig.year}
+                      onCoursesSelected={handleCoursesSelected}
+                      onBack={() => navigate('/university-selector')}
+                    />
+                  ) : (
+                    <CourseCatalog
+                      university={universityConfig.university}
+                      semester={universityConfig.semester}
+                      year={universityConfig.year}
+                      onCoursesSelected={handleCoursesSelected}
+                      onBack={() => navigate('/university-selector')}
+                    />
+                  )
+                ) : (
+                  <div>Loading...</div>
+                )
+              }
             />
             <Route 
               path="/about" 

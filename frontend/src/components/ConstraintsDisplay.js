@@ -216,11 +216,13 @@ const ConstraintsDisplay = ({ parsedConstraints, onConstraintsUpdate, isRegenera
                 onChange={(e) => setEditForm({ ...editForm, day: e.target.value })}
               >
                 <option value="">Select Day</option>
+                <option value="Sun">Sunday</option>
                 <option value="Mon">Monday</option>
                 <option value="Tue">Tuesday</option>
                 <option value="Wed">Wednesday</option>
                 <option value="Thu">Thursday</option>
                 <option value="Fri">Friday</option>
+                <option value="Sat">Saturday</option>
               </select>
             </div>
           )}
@@ -296,11 +298,13 @@ const ConstraintsDisplay = ({ parsedConstraints, onConstraintsUpdate, isRegenera
                 onChange={(e) => setAddForm({ ...addForm, day: e.target.value })}
               >
                 <option value="">Select Day</option>
+                <option value="Sun">Sunday</option>
                 <option value="Mon">Monday</option>
                 <option value="Tue">Tuesday</option>
                 <option value="Wed">Wednesday</option>
                 <option value="Thu">Thursday</option>
                 <option value="Fri">Friday</option>
+                <option value="Sat">Saturday</option>
               </select>
             </div>
           )}

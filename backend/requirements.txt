@@ -12,3 +12,6 @@ pytest-cov
 pytest-mock
 requests-mock
 factory-boy
+requests
+beautifulsoup4
+lxml

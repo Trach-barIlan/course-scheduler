@@ -5,6 +5,50 @@ import WeeklyScheduler from '../components/WeeklyScheduler';
 import ConstraintsDisplay from '../components/ConstraintsDisplay';
 import '../styles/SchedulerPage.css';
 
+// Function to convert imported courses to the scheduler format
+const convertImportedCoursesToSchedulerFormat = (importedCourses) => {
+  console.log('🔄 Converting imported courses:', importedCourses);
+  
+  return importedCourses.map(courseData => {
+    const course = {
+      name: courseData.name || courseData.courseName || "",
+      hasLecture: false,
+      hasPractice: false,
+      lectures: [],
+      practices: []
+    };
+
+    // If there are sections, we will convert them
+    if (courseData.sections && courseData.sections.length > 0) {
+      // Take the first section by default
+      const section = courseData.sections[0];
+      
+      if (section.times) {
+        section.times.forEach(timeSlot => {
+          if (timeSlot.type === 'lecture') {
+            course.hasLecture = true;
+            course.lectures.push({
+              day: timeSlot.day,
+              startTime: timeSlot.startTime.toString(),
+              endTime: timeSlot.endTime.toString()
+            });
+          } else if (timeSlot.type === 'lab' || timeSlot.type === 'practice') {
+            course.hasPractice = true;
+            course.practices.push({
+              day: timeSlot.day,
+              startTime: timeSlot.startTime.toString(),
+              endTime: timeSlot.endTime.toString()
+            });
+          }
+        });
+      }
+    }
+
+    console.log(`✅ Converted course: ${course.name}`, course);
+    return course;
+  });
+};
+
 // Convert the loaded schedule data to the format used by the courses state
 const convertScheduleToCourses = (scheduleData) => {
   console.log('🔍 Raw schedule data:', scheduleData);
@@ -78,24 +122,10 @@ const convertScheduleToCourses = (scheduleData) => {
 
 const SchedulerPage = ({ user, authToken }) => {
   const location = useLocation();
+  const { universityConfig, importedCourses } = location.state || {};
   
   const [preference, setPreference] = useState("crammed");
-  const [courses, setCourses] = useState([
-    { 
-      name: "", 
-      hasLecture: false,
-      hasPractice: false,
-      lectures: [],
-      practices: []
-    },
-    { 
-      name: "", 
-      hasLecture: false,
-      hasPractice: false,
-      lectures: [],
-      practices: []
-    },
-  ]);
+  const [courses, setCourses] = useState([]);
   const [constraints, setConstraints] = useState("");
   const [error, setError] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -111,24 +141,68 @@ const SchedulerPage = ({ user, authToken }) => {
 
   useEffect(() => {
     if (location.state?.loadedSchedule) {
+      console.log('🔍 Loading schedule from Dashboard:', location.state);
+      console.log('📋 Schedule data:', location.state.loadedSchedule);
+      console.log('📝 Schedule name:', location.state.scheduleName);
+      console.log('🆔 Schedule ID:', location.state.scheduleId);
+      console.log('🎯 Original course options:', location.state.originalCourseOptions);
+      
       setSchedule(location.state.loadedSchedule);
       setLoadedScheduleName(location.state.scheduleName);
       setLoadedScheduleId(location.state.scheduleId);
       setError(null);
 
-      // Check for original course options
-      const originalOptions = location.state.loadedSchedule.original_course_options;
-      if (originalOptions && Array.isArray(originalOptions)) {
-        setCourses(originalOptions);
+      // Check if we have original course options (preferred) or need to convert from schedule data
+      if (location.state.originalCourseOptions && location.state.originalCourseOptions.length > 0) {
+        console.log('✅ Using original course options from saved schedule');
+        // Convert backend format to frontend format
+        const convertedCourses = location.state.originalCourseOptions.map(courseData => {
+          return {
+            name: courseData.name || "",
+            hasLecture: (courseData.lectures && courseData.lectures.length > 0),
+            hasPractice: (courseData.ta_times && courseData.ta_times.length > 0),
+            lectures: (courseData.lectures || []).map(lectureStr => {
+              const parts = lectureStr.split(' ');
+              if (parts.length === 2) {
+                const day = parts[0];
+                const timeRange = parts[1];
+                const [start, end] = timeRange.split('-');
+                return { day, startTime: start, endTime: end };
+              }
+              return { day: "", startTime: "", endTime: "" };
+            }),
+            practices: (courseData.ta_times || []).map(practiceStr => {
+              const parts = practiceStr.split(' ');
+              if (parts.length === 2) {
+                const day = parts[0];
+                const timeRange = parts[1];
+                const [start, end] = timeRange.split('-');
+                return { day, startTime: start, endTime: end };
+              }
+              return { day: "", startTime: "", endTime: "" };
+            })
+          };
+        });
+        setCourses(convertedCourses);
       } else {
-        // Fallback: convert from schedule data
+        console.log('⚠️ No original course options found, converting from schedule data (limited functionality)');
         const loadedCourses = convertScheduleToCourses(location.state.loadedSchedule);
+        console.log('✅ Converted courses:', loadedCourses);
         setCourses(loadedCourses);
       }
-
+      
       window.history.replaceState({}, document.title);
     }
   }, [location.state]);
+
+  // Initialize courses from imported university data
+  useEffect(() => {
+    if (importedCourses && importedCourses.length > 0) {
+      console.log('🏫 Initializing with imported courses:', importedCourses);
+      const convertedCourses = convertImportedCoursesToSchedulerFormat(importedCourses);
+      setCourses(convertedCourses);
+    }
+  }, [importedCourses]);
 
   const handleCourseChange = (index, field, value) => {
     const newCourses = [...courses];
@@ -462,6 +536,22 @@ const SchedulerPage = ({ user, authToken }) => {
                       ✖ Clear & Start New
                     </button>
                   </div>
+                </div>
+              )}
+              {universityConfig && (
+                <div className="imported-courses-info">
+                  <span className="imported-courses-label">🏫 Imported from:</span>
+                  <strong>{universityConfig.university.name}</strong>
+                  {universityConfig.semester && universityConfig.year && (
+                    <span className="semester-info">
+                      ({universityConfig.semester} {universityConfig.year})
+                    </span>
+                  )}
+                  {importedCourses && (
+                    <div className="import-stats">
+                      {importedCourses.length} course{importedCourses.length !== 1 ? 's' : ''} imported
+                    </div>
+                  )}
                 </div>
               )}
               {user && (

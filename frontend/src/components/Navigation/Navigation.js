@@ -96,11 +96,6 @@ const Navigation = ({ user, onAuthClick, onProfileClick }) => {
                 cursor: 'pointer'
               }}
             >
-              <img
-                src="/BoltBadge.png"
-                alt="Bolt Logo"
-                style={{ width: 'clamp(1.5em, 2.5vw, 2.2em)', height: 'clamp(1.5em, 2.5vw, 2.2em)', objectFit: 'contain' }}
-              />
             </a>
     </nav>
   );

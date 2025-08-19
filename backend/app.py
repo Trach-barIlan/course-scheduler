@@ -7,6 +7,7 @@ from ai_model.ml_parser import ScheduleParser
 from auth.routes import auth_bp, token_required
 from api.schedules import schedules_bp
 from api.statistics import statistics_bp
+from api.university import university_bp
 from auth.auth_manager import AuthManager
 import os
 from dotenv import load_dotenv
@@ -37,16 +38,35 @@ CORS(app,
 app.register_blueprint(auth_bp, url_prefix='/api/auth')
 app.register_blueprint(schedules_bp, url_prefix='/api/schedules')
 app.register_blueprint(statistics_bp, url_prefix='/api/statistics')
+app.register_blueprint(university_bp, url_prefix='/api/university')
+print("✅ University API registered successfully")
 
-# Initialize AI parser
-try:
-    schedule_parser = ScheduleParser()
-    model_nlp = schedule_parser.nlp
-    print("✅ AI model loaded successfully")
-except Exception as e:
-    print(f"❌ Failed to load AI model: {e}")
-    schedule_parser = None
-    model_nlp = None
+# Initialize AI parser with timeout handling
+schedule_parser = None
+model_nlp = None
+
+def initialize_ai_model():
+    """Initialize AI model in a separate thread to avoid blocking startup"""
+    global schedule_parser, model_nlp
+    if not os.environ.get('SKIP_AI_MODEL'):
+        try:
+            print("🔄 Loading AI model...")
+            from ai_model.ml_parser import ScheduleParser
+            schedule_parser = ScheduleParser()
+            model_nlp = schedule_parser.nlp
+            print("✅ AI model loaded successfully")
+        except Exception as e:
+            print(f"❌ Failed to load AI model: {e}")
+            schedule_parser = None
+            model_nlp = None
+    else:
+        print("⏭️ Skipping AI model initialization")
+
+# Initialize AI model in background
+import threading
+ai_thread = threading.Thread(target=initialize_ai_model)
+ai_thread.daemon = True
+ai_thread.start()
 
 def extract_hour_from_text(text):
     """Converts time expressions to 24-hour integer values."""
@@ -108,7 +128,7 @@ def update_user_statistics_after_generation(user_id, courses_count, constraints_
 @app.route("/api/parse", methods=["POST"])
 @token_required
 def parse_input():
-    if not schedule_parser:
+    if not schedule_parser or not model_nlp:
         return jsonify({"error": "AI model not available"}), 500
         
     data = request.json

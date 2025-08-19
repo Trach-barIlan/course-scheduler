@@ -10,7 +10,8 @@ const CourseInput = ({ course, onChange, index, onRemove, canRemove }) => {
         { value: 'Tue', label: 'Tuesday' },
         { value: 'Wed', label: 'Wednesday' },
         { value: 'Thu', label: 'Thursday' },
-        { value: 'Fri', label: 'Friday' }
+        { value: 'Fri', label: 'Friday' },
+        { value: 'Sat', label: 'Saturday' }
     ];
 
     const hours = Array.from({ length: 14 }, (_, i) => {
@@ -205,27 +206,31 @@ const CourseInput = ({ course, onChange, index, onRemove, canRemove }) => {
             (course.lectures && course.lectures.length > 1) : 
             (course.practices && course.practices.length > 1);
 
-        // המר ערכי יום לפורמט שה-select מבין
+        // Convert day to a value that the select can understand
         const getDayValue = (day) => {
             const dayMap = {
+                'Sunday': 'Sun',
                 'Monday': 'Mon',
                 'Tuesday': 'Tue', 
                 'Wednesday': 'Wed',
                 'Thursday': 'Thu',
                 'Friday': 'Fri',
+                'Saturday': 'Sat',
+                'Sun': 'Sun',
                 'Mon': 'Mon',
                 'Tue': 'Tue',
                 'Wed': 'Wed',
                 'Thu': 'Thu',
-                'Fri': 'Fri'
+                'Fri': 'Fri',
+                'Sat': 'Sat'
             };
             return dayMap[day] || day;
         };
 
-        // Convert time values to a format understood by the select
+        // Convert time to a value that the select can understand
         const getTimeValue = (time) => {
             if (!time) return '';
-            // If it's a string, split it to get the hour part
+            // If it's a string with ":", take only the first part
             if (typeof time === 'string' && time.includes(':')) {
                 return parseInt(time.split(':')[0]);
             }

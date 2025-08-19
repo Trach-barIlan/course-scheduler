@@ -154,7 +154,8 @@ def get_schedule(schedule_id):
                 'id': schedule_data['id'],
                 'schedule_name': schedule_data['schedule_name'],
                 'created_at': schedule_data['created_at'],
-                'schedule_data': schedule_data['schedule_data']
+                'schedule_data': schedule_data['schedule_data'],
+                'original_course_options': schedule_data.get('original_course_options', [])
             }
         }), 200
         
