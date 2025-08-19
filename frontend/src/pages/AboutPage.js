@@ -101,7 +101,7 @@ const AboutPage = () => {
 
         <div className="cta-section">
           <h2>Ready to Transform Your Scheduling?</h2>
-          <p>Join thousands of students who have already discovered the power of AI-driven scheduling.</p>
+          <p>Join all the students who have already discovered the power of AI-driven scheduling.</p>
           <button className="cta-button" onClick={() => window.location.href = '/scheduler'}>
             Get Started Now
           </button>

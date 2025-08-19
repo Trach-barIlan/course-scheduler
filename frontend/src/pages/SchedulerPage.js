@@ -5,6 +5,50 @@ import WeeklyScheduler from '../components/WeeklyScheduler';
 import ConstraintsDisplay from '../components/ConstraintsDisplay';
 import '../styles/SchedulerPage.css';
 
+// פונקציה להמרת קורסים שיובאו לפורמט של הקלט
+const convertImportedCoursesToSchedulerFormat = (importedCourses) => {
+  console.log('🔄 Converting imported courses:', importedCourses);
+  
+  return importedCourses.map(courseData => {
+    const course = {
+      name: courseData.name || courseData.courseName || "",
+      hasLecture: false,
+      hasPractice: false,
+      lectures: [],
+      practices: []
+    };
+
+    // אם יש לנו sections, נמיר אותם
+    if (courseData.sections && courseData.sections.length > 0) {
+      // ניקח את הקטע הראשון כברירת מחדל
+      const section = courseData.sections[0];
+      
+      if (section.times) {
+        section.times.forEach(timeSlot => {
+          if (timeSlot.type === 'lecture') {
+            course.hasLecture = true;
+            course.lectures.push({
+              day: timeSlot.day,
+              startTime: timeSlot.startTime.toString(),
+              endTime: timeSlot.endTime.toString()
+            });
+          } else if (timeSlot.type === 'lab' || timeSlot.type === 'practice') {
+            course.hasPractice = true;
+            course.practices.push({
+              day: timeSlot.day,
+              startTime: timeSlot.startTime.toString(),
+              endTime: timeSlot.endTime.toString()
+            });
+          }
+        });
+      }
+    }
+
+    console.log(`✅ Converted course: ${course.name}`, course);
+    return course;
+  });
+};
+
 // פונקציה להמרה פשוטה - מחוץ לקומפוננטה
 const convertScheduleToCourses = (scheduleData) => {
   console.log('🔍 Raw schedule data:', scheduleData);
@@ -80,24 +124,10 @@ const convertScheduleToCourses = (scheduleData) => {
 
 const SchedulerPage = ({ user, authToken }) => {
   const location = useLocation();
+  const { universityConfig, importedCourses } = location.state || {};
   
   const [preference, setPreference] = useState("crammed");
-  const [courses, setCourses] = useState([
-    { 
-      name: "", 
-      hasLecture: false,
-      hasPractice: false,
-      lectures: [],
-      practices: []
-    },
-    { 
-      name: "", 
-      hasLecture: false,
-      hasPractice: false,
-      lectures: [],
-      practices: []
-    },
-  ]);
+  const [courses, setCourses] = useState([]);
   const [constraints, setConstraints] = useState("");
   const [error, setError] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -166,6 +196,15 @@ const SchedulerPage = ({ user, authToken }) => {
       window.history.replaceState({}, document.title);
     }
   }, [location.state]);
+
+  // Initialize courses from imported university data
+  useEffect(() => {
+    if (importedCourses && importedCourses.length > 0) {
+      console.log('🏫 Initializing with imported courses:', importedCourses);
+      const convertedCourses = convertImportedCoursesToSchedulerFormat(importedCourses);
+      setCourses(convertedCourses);
+    }
+  }, [importedCourses]);
 
   const handleCourseChange = (index, field, value) => {
     const newCourses = [...courses];
@@ -499,6 +538,22 @@ const SchedulerPage = ({ user, authToken }) => {
                       ✖ Clear & Start New
                     </button>
                   </div>
+                </div>
+              )}
+              {universityConfig && (
+                <div className="imported-courses-info">
+                  <span className="imported-courses-label">🏫 Imported from:</span>
+                  <strong>{universityConfig.university.name}</strong>
+                  {universityConfig.semester && universityConfig.year && (
+                    <span className="semester-info">
+                      ({universityConfig.semester} {universityConfig.year})
+                    </span>
+                  )}
+                  {importedCourses && (
+                    <div className="import-stats">
+                      {importedCourses.length} course{importedCourses.length !== 1 ? 's' : ''} imported
+                    </div>
+                  )}
                 </div>
               )}
               {user && (

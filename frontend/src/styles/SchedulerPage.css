@@ -320,6 +320,39 @@
   to { transform: rotate(360deg); }
 }
 
+/* Imported Courses Notification */
+.imported-courses-info {
+  background: #e3f2fd;
+  border: 1px solid #2196F3;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 20px;
+  font-size: 14px;
+  box-shadow: 0 3px 10px rgba(33, 150, 243, 0.15);
+}
+
+.imported-courses-label {
+  color: #1565C0;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.semester-info {
+  color: #1976D2;
+  font-size: 0.875rem;
+  margin-left: 8px;
+}
+
+.import-stats {
+  color: #1565C0;
+  font-size: 0.875rem;
+  margin-top: 4px;
+  font-weight: 500;
+}
+
 /* Responsive Design */
 @media (max-width: 1024px) {
   .scheduler-content {
