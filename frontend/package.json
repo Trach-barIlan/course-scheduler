@@ -5,14 +5,14 @@
   "proxy": "https://course-scheduler-backend-b2v6.onrender.com",
   "dependencies": {
     "@testing-library/dom": "^10.4.0",
-    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/jest-dom": "^5.17.0",
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^13.5.0",
     "html2canvas": "^1.4.1",
     "jspdf": "^3.0.1",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
-    "react-router-dom": "^7.6.2",
+    "react-router-dom": "^6.30.1",
     "react-scripts": "5.0.1",
     "web-vitals": "^2.1.4"
   },
@@ -20,6 +20,9 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
+    "test:coverage": "react-scripts test --coverage --watchAll=false",
+    "test:ci": "react-scripts test --coverage --watchAll=false --ci",
+    "test:debug": "react-scripts test --verbose --no-coverage",
     "eject": "react-scripts eject"
   },
   "eslintConfig": {

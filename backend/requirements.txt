@@ -6,6 +6,12 @@ spacy-lookups-data
 supabase
 python-dotenv
 gunicorn
+pytest
+pytest-flask
+pytest-cov
+pytest-mock
+requests-mock
+factory-boy
 requests
 beautifulsoup4
 lxml

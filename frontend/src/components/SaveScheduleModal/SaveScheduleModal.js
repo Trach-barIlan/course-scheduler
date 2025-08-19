@@ -56,6 +56,7 @@ const SaveScheduleModal = ({ isOpen, onClose, onSave, schedule, user, authToken,
           'Authorization': `Bearer ${authToken}`,
           'Content-Type': 'application/json',
         },
+        // When saving:
         body: JSON.stringify({
           name: scheduleName.trim(),
           description: description.trim(),

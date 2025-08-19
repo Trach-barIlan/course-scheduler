@@ -5,7 +5,7 @@ import WeeklyScheduler from '../components/WeeklyScheduler';
 import ConstraintsDisplay from '../components/ConstraintsDisplay';
 import '../styles/SchedulerPage.css';
 
-// פונקציה להמרת קורסים שיובאו לפורמט של הקלט
+// Function to convert imported courses to the scheduler format
 const convertImportedCoursesToSchedulerFormat = (importedCourses) => {
   console.log('🔄 Converting imported courses:', importedCourses);
   
@@ -18,9 +18,9 @@ const convertImportedCoursesToSchedulerFormat = (importedCourses) => {
       practices: []
     };
 
-    // אם יש לנו sections, נמיר אותם
+    // If there are sections, we will convert them
     if (courseData.sections && courseData.sections.length > 0) {
-      // ניקח את הקטע הראשון כברירת מחדל
+      // Take the first section by default
       const section = courseData.sections[0];
       
       if (section.times) {
@@ -49,7 +49,7 @@ const convertImportedCoursesToSchedulerFormat = (importedCourses) => {
   });
 };
 
-// פונקציה להמרה פשוטה - מחוץ לקומפוננטה
+// Convert the loaded schedule data to the format used by the courses state
 const convertScheduleToCourses = (scheduleData) => {
   console.log('🔍 Raw schedule data:', scheduleData);
   
@@ -75,10 +75,9 @@ const convertScheduleToCourses = (scheduleData) => {
       practices: []
     };
 
-    // המר הרצאה
     if (courseData.lecture) {
       console.log('  📚 Processing lecture:', courseData.lecture);
-      // פשוט נבדוק אם זה בפורמט "Mon 9-11"
+
       const parts = courseData.lecture.split(' ');
       if (parts.length === 2) {
         const day = parts[0]; // Mon
@@ -95,7 +94,6 @@ const convertScheduleToCourses = (scheduleData) => {
       }
     }
 
-    // המר תרגול
     if (courseData.ta) {
       console.log('  👨‍🏫 Processing TA:', courseData.ta);
       const parts = courseData.ta.split(' ');
