@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import '../styles/CourseCatalog.css';
 
 const CourseCatalog = ({ university, semester, year, onCoursesSelected, onBack }) => {
@@ -16,7 +16,7 @@ const CourseCatalog = ({ university, semester, year, onCoursesSelected, onBack }
   const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
   // Mock course data - replace with real API calls
-  const mockCourses = [
+  const mockCourses = useMemo(() => [
     {
       id: 'cs101',
       code: 'CS 101',
@@ -113,7 +113,7 @@ const CourseCatalog = ({ university, semester, year, onCoursesSelected, onBack }
         }
       ]
     }
-  ];
+  ], []);
 
   useEffect(() => {
     const fetchCourses = async () => {
@@ -137,7 +137,7 @@ const CourseCatalog = ({ university, semester, year, onCoursesSelected, onBack }
     };
 
     fetchCourses();
-  }, [university, semester, year, API_BASE_URL, mockCourses]);
+  }, [university, semester, year, API_BASE_URL]);
 
   const filteredCourses = availableCourses.filter(course => {
     const matchesSearch = course.name.toLowerCase().includes(searchQuery.toLowerCase()) ||

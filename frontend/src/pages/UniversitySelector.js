@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import '../styles/UniversitySelector.css';
 
 const UniversitySelector = ({ user, authToken, onUniversitySelected }) => {
@@ -19,7 +19,7 @@ const UniversitySelector = ({ user, authToken, onUniversitySelected }) => {
   const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
   // Mock university data - replace with real API
-  const mockUniversities = [
+  const mockUniversities = useMemo(() => [
     // United States Universities
     {
       id: 'harvard',
@@ -193,7 +193,7 @@ const UniversitySelector = ({ user, authToken, onUniversitySelected }) => {
       catalogUrl: 'https://www.openu.ac.il',
       logo: 'https://upload.wikimedia.org/wikipedia/en/thumb/3/3f/Open_University_of_Israel_logo.svg/256px-Open_University_of_Israel_logo.svg.png'
     }
-  ];
+  ], []);
 
   useEffect(() => {
     const fetchUniversities = async () => {
@@ -245,7 +245,7 @@ const UniversitySelector = ({ user, authToken, onUniversitySelected }) => {
     };
 
     fetchUniversities();
-  }, [searchQuery, selectedCountry, API_BASE_URL, mockUniversities]);
+  }, [searchQuery, selectedCountry, API_BASE_URL]);
 
   const handleUniversitySelect = (university) => {
     console.log('University selected:', university);
