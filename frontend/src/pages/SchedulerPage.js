@@ -525,151 +525,152 @@ const SchedulerPage = ({ user, authToken }) => {
           <div className="course-scheduler">
             <div className="scheduler-header-section">
               <h2>Course Scheduler</h2>
-              {loadedScheduleName && (
-                <div className="loaded-schedule-info">
-                  <span className="loaded-schedule-label">📂 Loaded Schedule:</span>
-                  <strong>{loadedScheduleName}</strong>
-                  <div className="loaded-schedule-actions">
-                    <button 
-                      type="button" 
-                      className="clear-loaded-button"
-                      onClick={clearLoadedSchedule}
-                    >
-                      ✖ Clear & Start New
-                    </button>
-                  </div>
-                </div>
-              )}
-              {universityConfig && (
-                <div className="imported-courses-info">
-                  <span className="imported-courses-label">🏫 Imported from:</span>
-                  <strong>{universityConfig.university.name}</strong>
-                  {universityConfig.semester && universityConfig.year && (
-                    <span className="semester-info">
-                      ({universityConfig.semester} {universityConfig.year})
-                    </span>
-                  )}
-                  {importedCourses && (
-                    <div className="import-stats">
-                      {importedCourses.length} course{importedCourses.length !== 1 ? 's' : ''} imported
-                    </div>
-                  )}
-                </div>
-              )}
               {user && (
                 <div className="user-welcome">
                   Welcome back, <strong>{user.first_name}</strong>!
                 </div>
               )}
+              
+              {/* Compact notification sections */}
+              {loadedScheduleName && (
+                <div className="loaded-schedule-info">
+                  <span className="loaded-schedule-label">📂 {loadedScheduleName}</span>
+                  <button 
+                    type="button" 
+                    className="clear-loaded-button"
+                    onClick={clearLoadedSchedule}
+                    title="Clear loaded schedule and start new"
+                  >
+                    ✖
+                  </button>
+                </div>
+              )}
+              
+              {universityConfig && (
+                <div className="imported-courses-info">
+                  <span className="imported-courses-label">🏫 {universityConfig.university.name}</span>
+                  {universityConfig.semester && universityConfig.year && (
+                    <span className="semester-info">({universityConfig.semester} {universityConfig.year})</span>
+                  )}
+                  <span className="import-stats">{importedCourses?.length || 0} courses</span>
+                </div>
+              )}
             </div>
             
-            <form onSubmit={handleSubmit}>
-              <div className="schedule-preference">
-                <label htmlFor="preference">Schedule Preference</label>
-                <select
-                  id="preference"
-                  value={preference}
-                  onChange={(e) => setPreference(e.target.value)}
-                >
-                  <option value="crammed">Crammed (fewer days, back-to-back classes)</option>
-                  <option value="spaced">Spaced Out (more days, fewer gaps)</option>
-                </select>
-              </div>
-
-              <div className="university-selector">
-                <label htmlFor="university">University (for course autocomplete)</label>
-                <select
-                  id="university"
-                  value={selectedUniversity}
-                  onChange={(e) => setSelectedUniversity(e.target.value)}
-                  className="university-select"
-                >
-                  <option value="">Select university for autocomplete...</option>
-                  <option value="Bar-Ilan">Bar-Ilan University</option>
-                </select>
+            {/* Compact settings header */}
+            <div className="scheduler-settings">
+              <div className="settings-row">
+                <div className="setting-group">
+                  <label htmlFor="preference">Schedule Type</label>
+                  <select
+                    id="preference"
+                    value={preference}
+                    onChange={(e) => setPreference(e.target.value)}
+                    className="compact-select"
+                  >
+                    <option value="crammed">Crammed</option>
+                    <option value="spaced">Spaced Out</option>
+                  </select>
+                </div>
+                
+                <div className="setting-group">
+                  <label htmlFor="university">University</label>
+                  <select
+                    id="university"
+                    value={selectedUniversity}
+                    onChange={(e) => setSelectedUniversity(e.target.value)}
+                    className="compact-select"
+                  >
+                    <option value="">No autocomplete</option>
+                    <option value="Bar-Ilan">Bar-Ilan</option>
+                  </select>
+                </div>
+                
                 {selectedUniversity && (
-                  <div className="university-hint">
-                    💡 Now you can type course names and get autocomplete suggestions from {selectedUniversity}
+                  <div className="setting-group">
+                    <label htmlFor="semester">Semester</label>
+                    <select
+                      id="semester"
+                      value={selectedSemester}
+                      onChange={(e) => setSelectedSemester(e.target.value)}
+                      className="compact-select"
+                    >
+                      <option value="">All</option>
+                      <option value="A">A</option>
+                      <option value="B">B</option>
+                    </select>
                   </div>
                 )}
               </div>
-
+              
               {selectedUniversity && (
-                <div className="semester-selector">
-                  <label htmlFor="semester">Semester Filter</label>
-                  <select
-                    id="semester"
-                    value={selectedSemester}
-                    onChange={(e) => setSelectedSemester(e.target.value)}
-                    className="semester-select"
-                  >
-                    <option value="">All semesters</option>
-                    <option value="A">First Semester (A)</option>
-                    <option value="B">Second Semester (B)</option>
-                  </select>
-                  {selectedSemester && (
-                    <div className="semester-hint">
-                      🗓️ Only showing courses from semester {selectedSemester === 'A' ? 'A (First)' : 'B (Second)'}
-                    </div>
-                  )}
+                <div className="autocomplete-status">
+                  ✨ Autocomplete enabled for {selectedUniversity}
+                  {selectedSemester && ` (Semester ${selectedSemester})`}
                 </div>
               )}
+            </div>
+            
+            <form onSubmit={handleSubmit}>
+              {/* Courses Section - Now more prominent */}
+              <div className="courses-section">
+                <div className="courses-header">
+                  <h3>📚 Your Courses</h3>
+                  <button 
+                    type="button" 
+                    onClick={addCourse} 
+                    className="add-course-button"
+                    disabled={isSubmitting}
+                  >
+                    + Add Course
+                  </button>
+                </div>
+                
+                <div className="courses-list">
+                  {courses.map((course, i) => (
+                    <CourseInput
+                      key={i}
+                      course={course}
+                      onChange={handleCourseChange}
+                      onRemove={removeCourse}
+                      index={i}
+                      canRemove={courses.length > 1}
+                      selectedUniversity={selectedUniversity}
+                      selectedSemester={selectedSemester}
+                    />
+                  ))}
+                </div>
+              </div>
 
-              {courses.map((course, i) => (
-                <CourseInput
-                  key={i}
-                  course={course}
-                  onChange={handleCourseChange}
-                  onRemove={removeCourse}
-                  index={i}
-                  canRemove={courses.length > 1}
-                  selectedUniversity={selectedUniversity}
-                  selectedSemester={selectedSemester}
-                />
-              ))}
-
-              <div className="constraints-section">
-                <label htmlFor="constraints">Additional Constraints</label>
+              {/* Constraints - More compact */}
+              <div className="constraints-section-compact">
+                <h3>🎯 Additional Preferences</h3>
                 <textarea
                   id="constraints"
-                  className="constraints-input"
+                  className="constraints-input-compact"
                   value={constraints}
                   onChange={(e) => setConstraints(e.target.value)}
-                  placeholder="Enter your scheduling preferences in natural language:
-
-• No classes before 9am
-• No classes on Tuesday  
-• Avoid TA Smith
-• No classes after 5pm
-• Prefer morning sessions"
-                  rows={6}
+                  placeholder="Optional: No classes before 9am, Avoid TA Smith, etc."
+                  rows={3}
                 />
               </div>
 
-              <div className="button-group">
-                <button 
-                  type="button" 
-                  onClick={addCourse} 
-                  className="add-button"
-                  disabled={isSubmitting}
-                >
-                  + Add Another Course
-                </button>
-                <button 
-                  type="submit" 
-                  className="submit-button"
-                  disabled={isSubmitting}
-                >
-                  {isSubmitting ? (
-                    <>
-                      <div className="loading-spinner"></div>
-                      {loadedScheduleName ? 'Updating Schedule...' : 'Generating Schedule...'}
-                    </>
-                  ) : (
-                    loadedScheduleName ? 'Update Schedule' : 'Generate Schedule'
-                  )}
-                </button>
-              </div>
+              <button 
+                type="submit" 
+                className="generate-schedule-button"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? (
+                  <>
+                    <div className="loading-spinner"></div>
+                    {loadedScheduleName ? 'Updating...' : 'Generating...'}
+                  </>
+                ) : (
+                  <>
+                    🚀 {loadedScheduleName ? 'Update Schedule' : 'Generate Schedule'}
+                  </>
+                )}
+              </button>
             </form>
 
             {error && (
