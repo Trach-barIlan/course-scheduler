@@ -11,12 +11,14 @@ const Dashboard = ({ user, authToken, onQuickAction }) => {
   const [showGuide, setShowGuide] = useState(false);
   const [statistics, setStatistics] = useState(null);
   const [recentActivity, setRecentActivity] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isStatsLoading, setIsStatsLoading] = useState(true);
+  const [isActivityLoading, setIsActivityLoading] = useState(true);
   const [error, setError] = useState(null);
   const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
   const fetchUserData = useCallback(async () => {
-    setIsLoading(true);
+    setIsStatsLoading(true);
+    setIsActivityLoading(true);
     setError(null);
     
     try {
@@ -89,7 +91,8 @@ const Dashboard = ({ user, authToken, onQuickAction }) => {
       };
       setStatistics(fallbackStats);
     } finally {
-      setIsLoading(false);
+      setIsStatsLoading(false);
+      setIsActivityLoading(false);
     }
   }, [authToken, API_BASE_URL]);
 
@@ -98,7 +101,8 @@ const Dashboard = ({ user, authToken, onQuickAction }) => {
     if (user && authToken) {
       fetchUserData();
     } else {
-      setIsLoading(false);
+      setIsStatsLoading(false);
+      setIsActivityLoading(false);
       // Set default statistics for non-authenticated users
       setStatistics({
         schedules_created: 0,
@@ -117,6 +121,44 @@ const Dashboard = ({ user, authToken, onQuickAction }) => {
 
   // Generate stats array based on user authentication and data
   const getStatsArray = () => {
+    if (isStatsLoading) {
+      // Return skeleton data while loading
+      return [
+        {
+          icon: '📅',
+          label: 'Schedules Created',
+          value: '---',
+          change: 'Loading...',
+          color: 'primary',
+          isLoading: true
+        },
+        {
+          icon: '⏰',
+          label: 'Hours Saved',
+          value: '---',
+          change: 'Loading...',
+          color: 'success',
+          isLoading: true
+        },
+        {
+          icon: '🎯',
+          label: 'Success Rate',
+          value: '--%',
+          change: 'Loading...',
+          color: 'warning',
+          isLoading: true
+        },
+        {
+          icon: '📊',
+          label: 'Efficiency',
+          value: '--%',
+          change: 'Loading...',
+          color: 'info',
+          isLoading: true
+        }
+      ];
+    }
+
     if (!statistics) {
       return [];
     }
@@ -127,33 +169,67 @@ const Dashboard = ({ user, authToken, onQuickAction }) => {
         label: 'Schedules Created',
         value: statistics.schedules_created?.toString() || '0',
         change: user ? `+${statistics.schedules_this_week || 0} this week` : 'Sign in to track',
-        color: 'primary'
+        color: 'primary',
+        isLoading: false
       },
       {
         icon: '⏰',
         label: 'Hours Saved',
         value: statistics.hours_saved?.toFixed(1) || '0.0',
         change: 'vs manual planning',
-        color: 'success'
+        color: 'success',
+        isLoading: false
       },
       {
         icon: '🎯',
         label: 'Success Rate',
         value: `${statistics.success_rate || 98}%`,
         change: 'constraint satisfaction',
-        color: 'warning'
+        color: 'warning',
+        isLoading: false
       },
       {
         icon: '📊',
         label: 'Efficiency',
         value: `${statistics.efficiency || 85}%`,
         change: 'schedule optimization',
-        color: 'info'
+        color: 'info',
+        isLoading: false
       }
     ];
   };
 
   const getRecentSchedules = () => {
+    if (isActivityLoading) {
+      // Return skeleton data while loading
+      return [
+        {
+          id: 'loading-1',
+          name: 'Loading schedule...',
+          courses: '---',
+          created: 'Loading...',
+          status: 'loading',
+          isLoading: true
+        },
+        {
+          id: 'loading-2',
+          name: 'Loading schedule...',
+          courses: '---',
+          created: 'Loading...',
+          status: 'loading',
+          isLoading: true
+        },
+        {
+          id: 'loading-3',
+          name: 'Loading schedule...',
+          courses: '---',
+          created: 'Loading...',
+          status: 'loading',
+          isLoading: true
+        }
+      ];
+    }
+
     if (!user || !recentActivity.length) {
       return [
         {
@@ -266,17 +342,7 @@ const Dashboard = ({ user, authToken, onQuickAction }) => {
   const stats = getStatsArray();
   const recentSchedules = getRecentSchedules();
 
-  if (isLoading && user) {
-    return (
-      <div className="dashboard">
-        <div className="loading-container">
-          <div className="loading-spinner"></div>
-          <p>Loading your dashboard...</p>
-        </div>
-      </div>
-    );
-  }
-
+  // Remove the full page loading state - show layout immediately
   return (
     <>
       <div className="dashboard">
@@ -310,12 +376,24 @@ const Dashboard = ({ user, authToken, onQuickAction }) => {
 
         <div className="stats-grid">
           {stats.map((stat, index) => (
-            <div key={index} className={`stat-card ${stat.color}`}>
+            <div key={index} className={`stat-card ${stat.color} ${stat.isLoading ? 'loading' : ''}`}>
               <div className="stat-icon">{stat.icon}</div>
               <div className="stat-content">
-                <div className="stat-value">{stat.value}</div>
+                <div className={`stat-value ${stat.isLoading ? 'skeleton' : ''}`}>
+                  {stat.isLoading ? (
+                    <div className="skeleton-bar skeleton-value"></div>
+                  ) : (
+                    stat.value
+                  )}
+                </div>
                 <div className="stat-label">{stat.label}</div>
-                <div className="stat-change">{stat.change}</div>
+                <div className={`stat-change ${stat.isLoading ? 'skeleton' : ''}`}>
+                  {stat.isLoading ? (
+                    <div className="skeleton-bar skeleton-change"></div>
+                  ) : (
+                    stat.change
+                  )}
+                </div>
               </div>
             </div>
           ))}
@@ -336,23 +414,46 @@ const Dashboard = ({ user, authToken, onQuickAction }) => {
             </div>
             <div className="schedules-list">
               {recentSchedules.map((schedule, index) => (
-                <div key={index} className="schedule-card">
+                <div key={index} className={`schedule-card ${schedule.isLoading ? 'loading' : ''}`}>
                   <div className="schedule-info">
-                    <h3 className="schedule-name">{schedule.name}</h3>
+                    <h3 className={`schedule-name ${schedule.isLoading ? 'skeleton' : ''}`}>
+                      {schedule.isLoading ? (
+                        <div className="skeleton-bar skeleton-schedule-name"></div>
+                      ) : (
+                        schedule.name
+                      )}
+                    </h3>
                     <div className="schedule-meta">
-                      <span className="course-count">{schedule.courses} courses</span>
-                      <span className="schedule-date">{schedule.created}</span>
+                      <span className={`course-count ${schedule.isLoading ? 'skeleton' : ''}`}>
+                        {schedule.isLoading ? (
+                          <div className="skeleton-bar skeleton-meta"></div>
+                        ) : (
+                          `${schedule.courses} courses`
+                        )}
+                      </span>
+                      <span className={`schedule-date ${schedule.isLoading ? 'skeleton' : ''}`}>
+                        {schedule.isLoading ? (
+                          <div className="skeleton-bar skeleton-meta"></div>
+                        ) : (
+                          schedule.created
+                        )}
+                      </span>
                     </div>
                   </div>
                   <div className="schedule-actions">
-                    <span className={`status-badge ${schedule.status}`}>
-                      {schedule.status}
+                    <span className={`status-badge ${schedule.status} ${schedule.isLoading ? 'skeleton' : ''}`}>
+                      {schedule.isLoading ? (
+                        <div className="skeleton-bar skeleton-status"></div>
+                      ) : (
+                        schedule.status
+                      )}
                     </span>
                     <button 
-                      className="schedule-action"
-                      onClick={() => handleOpenSchedule(schedule)}
+                      className={`schedule-action ${schedule.isLoading ? 'loading' : ''}`}
+                      onClick={() => !schedule.isLoading && handleOpenSchedule(schedule)}
+                      disabled={schedule.isLoading}
                     >
-                      Open
+                      {schedule.isLoading ? '...' : 'Open'}
                     </button>
                   </div>
                 </div>
@@ -402,21 +503,46 @@ const Dashboard = ({ user, authToken, onQuickAction }) => {
           </div>
         </div>
 
-        {user && recentActivity.length > 0 && (
+        {user && (
           <div className="content-section">
             <div className="section-header">
               <h2 className="section-title">Recent Activity</h2>
             </div>
             <div className="activity-list">
-              {recentActivity.slice(0, 5).map((activity, index) => (
-                <div key={index} className="activity-item">
-                  <div className={`activity-dot ${activity.success ? 'success' : 'error'}`}></div>
+              {isActivityLoading ? (
+                // Show skeleton loading for activity
+                Array.from({ length: 3 }).map((_, index) => (
+                  <div key={`loading-${index}`} className="activity-item loading">
+                    <div className="activity-dot skeleton"></div>
+                    <div className="activity-content">
+                      <div className="activity-action skeleton">
+                        <div className="skeleton-bar" style={{ width: '200px', height: '1rem' }}></div>
+                      </div>
+                      <div className="activity-time skeleton">
+                        <div className="skeleton-bar" style={{ width: '100px', height: '0.875rem' }}></div>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              ) : recentActivity.length > 0 ? (
+                recentActivity.slice(0, 5).map((activity, index) => (
+                  <div key={index} className="activity-item">
+                    <div className={`activity-dot ${activity.success ? 'success' : 'error'}`}></div>
+                    <div className="activity-content">
+                      <div className="activity-action">{activity.action}</div>
+                      <div className="activity-time">{activity.time}</div>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="activity-item">
+                  <div className="activity-dot success"></div>
                   <div className="activity-content">
-                    <div className="activity-action">{activity.action}</div>
-                    <div className="activity-time">{activity.time}</div>
+                    <div className="activity-action">No recent activity</div>
+                    <div className="activity-time">Start creating schedules to see activity</div>
                   </div>
                 </div>
-              ))}
+              )}
             </div>
           </div>
         )}

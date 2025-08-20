@@ -3,6 +3,7 @@ import { useLocation } from 'react-router-dom';
 import CourseInput from '../components/CourseInput';
 import WeeklyScheduler from '../components/WeeklyScheduler';
 import ConstraintsDisplay from '../components/ConstraintsDisplay';
+import ScheduleErrorModal from '../components/ScheduleErrorModal';
 import '../styles/SchedulerPage.css';
 
 // Function to convert imported courses to the scheduler format
@@ -128,6 +129,7 @@ const SchedulerPage = ({ user, authToken }) => {
   const [courses, setCourses] = useState([]);
   const [constraints, setConstraints] = useState("");
   const [error, setError] = useState(null);
+  const [showErrorModal, setShowErrorModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [schedule, setSchedule] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -407,6 +409,7 @@ const SchedulerPage = ({ user, authToken }) => {
       } else {
         const errorMessage = data.error || 'No valid schedule found with the given constraints. Try adjusting your requirements.';
         setError(errorMessage);
+        setShowErrorModal(true);
       }
     } catch (err) {
       console.error('❌ Schedule generation error:', err);
@@ -420,6 +423,7 @@ const SchedulerPage = ({ user, authToken }) => {
       }
       
       setError(errorMessage);
+      setShowErrorModal(true);
     }
   }, [courses, preference, validateForm, user, authToken, API_BASE_URL, formatCourseForAPI]);
 
@@ -494,6 +498,7 @@ const SchedulerPage = ({ user, authToken }) => {
       }
       
       setError(errorMessage);
+      setShowErrorModal(true);
       setParsedConstraints(null);
     } finally {
       setIsSubmitting(false);
@@ -672,12 +677,6 @@ const SchedulerPage = ({ user, authToken }) => {
                 )}
               </button>
             </form>
-
-            {error && (
-              <div className="error-message">
-                {error}
-              </div>
-            )}
           </div>
         </div>
 
@@ -697,6 +696,18 @@ const SchedulerPage = ({ user, authToken }) => {
           />
         </div>
       </div>
+
+      <ScheduleErrorModal 
+        isOpen={showErrorModal}
+        error={error}
+        onClose={() => {
+          setShowErrorModal(false);
+          setError(null);
+        }}
+        onTryAgain={() => {
+          generateScheduleWithConstraints();
+        }}
+      />
     </div>
   );
 };
