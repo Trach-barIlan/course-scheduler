@@ -55,6 +55,72 @@
   font-family: inherit;
 }
 
+/* Autocomplete styles */
+.autocomplete-container {
+  position: relative;
+  width: 100%;
+}
+
+.autocomplete-hint {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  font-weight: normal;
+  margin-left: 8px;
+}
+
+.autocomplete-suggestions {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: var(--bg-primary);
+  border: 2px solid var(--border-color);
+  border-top: none;
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 1000;
+}
+
+.autocomplete-suggestion {
+  padding: var(--space-3) var(--space-4);
+  cursor: pointer;
+  border-bottom: 1px solid var(--border-color);
+  transition: background-color var(--transition-fast);
+}
+
+.autocomplete-suggestion:hover {
+  background-color: var(--primary-50);
+}
+
+.autocomplete-suggestion:last-child {
+  border-bottom: none;
+}
+
+.suggestion-name {
+  font-weight: 500;
+  color: var(--text-primary);
+  margin-bottom: 2px;
+}
+
+.suggestion-lecturers {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.loading-indicator {
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  transform: translateY(-50%);
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  background: var(--bg-primary);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
 .course-input::placeholder {
   color: var(--text-tertiary);
   font-weight: 400;

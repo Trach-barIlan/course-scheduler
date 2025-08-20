@@ -186,6 +186,18 @@ UNIVERSITIES = {
         'catalogUrl': 'https://www.openu.ac.il',
         'logo': 'https://upload.wikimedia.org/wikipedia/en/thumb/3/3f/Open_University_of_Israel_logo.svg/1200px-Open_University_of_Israel_logo.svg.png',
         'departments': ['Computer Science', 'Mathematics', 'Social Sciences', 'Education', 'Management']
+    },
+    'bar-ilan': {
+        'id': 'bar-ilan',
+        'name': 'Bar-Ilan University',
+        'location': 'Ramat Gan',
+        'country': 'Israel',
+        'hasApi': True,
+        'catalogUrl': 'https://courses.biu.ac.il',
+        'logo': 'https://upload.wikimedia.org/wikipedia/en/thumb/f/f4/Bar-Ilan_University_logo.svg/1200px-Bar-Ilan_University_logo.svg.png',
+        'departments': ['Computer Science', 'Mathematics', 'Physics', 'Chemistry', 'Biology', 'Psychology', 'Education', 'Business', 'Law', 'Medicine'],
+        'scraper_enabled': True,
+        'supports_hebrew': True
     }
 }
 

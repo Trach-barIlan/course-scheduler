@@ -133,6 +133,8 @@ const SchedulerPage = ({ user, authToken }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [parsedConstraints, setParsedConstraints] = useState(null);
   const [constraintsUpdateFunction, setConstraintsUpdateFunction] = useState(null);
+  const [selectedUniversity, setSelectedUniversity] = useState("");
+  const [selectedSemester, setSelectedSemester] = useState("");
   
   const [loadedScheduleName, setLoadedScheduleName] = useState(null);
   const [loadedScheduleId, setLoadedScheduleId] = useState(null);
@@ -574,6 +576,45 @@ const SchedulerPage = ({ user, authToken }) => {
                 </select>
               </div>
 
+              <div className="university-selector">
+                <label htmlFor="university">University (for course autocomplete)</label>
+                <select
+                  id="university"
+                  value={selectedUniversity}
+                  onChange={(e) => setSelectedUniversity(e.target.value)}
+                  className="university-select"
+                >
+                  <option value="">Select university for autocomplete...</option>
+                  <option value="Bar-Ilan">Bar-Ilan University</option>
+                </select>
+                {selectedUniversity && (
+                  <div className="university-hint">
+                    💡 Now you can type course names and get autocomplete suggestions from {selectedUniversity}
+                  </div>
+                )}
+              </div>
+
+              {selectedUniversity && (
+                <div className="semester-selector">
+                  <label htmlFor="semester">Semester Filter</label>
+                  <select
+                    id="semester"
+                    value={selectedSemester}
+                    onChange={(e) => setSelectedSemester(e.target.value)}
+                    className="semester-select"
+                  >
+                    <option value="">All semesters</option>
+                    <option value="A">First Semester (A)</option>
+                    <option value="B">Second Semester (B)</option>
+                  </select>
+                  {selectedSemester && (
+                    <div className="semester-hint">
+                      🗓️ Only showing courses from semester {selectedSemester === 'A' ? 'A (First)' : 'B (Second)'}
+                    </div>
+                  )}
+                </div>
+              )}
+
               {courses.map((course, i) => (
                 <CourseInput
                   key={i}
@@ -582,6 +623,8 @@ const SchedulerPage = ({ user, authToken }) => {
                   onRemove={removeCourse}
                   index={i}
                   canRemove={courses.length > 1}
+                  selectedUniversity={selectedUniversity}
+                  selectedSemester={selectedSemester}
                 />
               ))}
 

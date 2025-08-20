@@ -8,6 +8,8 @@ from auth.routes import auth_bp, token_required
 from api.schedules import schedules_bp
 from api.statistics import statistics_bp
 from api.university import university_bp
+
+from api.courses import courses_bp
 from auth.auth_manager import AuthManager
 import os
 from dotenv import load_dotenv
@@ -39,7 +41,9 @@ app.register_blueprint(auth_bp, url_prefix='/api/auth')
 app.register_blueprint(schedules_bp, url_prefix='/api/schedules')
 app.register_blueprint(statistics_bp, url_prefix='/api/statistics')
 app.register_blueprint(university_bp, url_prefix='/api/university')
+app.register_blueprint(courses_bp, url_prefix='/api')
 print("✅ University API registered successfully")
+print("✅ General courses API registered successfully")
 
 # Initialize AI parser with timeout handling
 schedule_parser = None

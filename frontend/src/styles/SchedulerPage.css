@@ -144,6 +144,120 @@
   box-shadow: 0 0 0 3px var(--primary-100);
 }
 
+/* University selector styles */
+.university-selector {
+  margin: var(--space-6) 0;
+  padding: var(--space-6);
+  background: var(--bg-tertiary);
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  transition: all var(--transition-fast);
+}
+
+.university-selector:hover {
+  border-color: var(--primary-200);
+}
+
+.university-selector label {
+  display: block;
+  color: var(--text-primary);
+  margin-bottom: var(--space-3);
+  font-weight: 600;
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.university-select {
+  width: 100%;
+  padding: var(--space-4);
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 1rem;
+  transition: all var(--transition-fast);
+  cursor: pointer;
+}
+
+.university-select:hover {
+  border-color: var(--primary-200);
+}
+
+.university-select:focus {
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 3px var(--primary-100);
+  outline: none;
+}
+
+.university-hint {
+  margin-top: var(--space-3);
+  padding: var(--space-3);
+  background: var(--primary-50);
+  border-left: 4px solid var(--primary-500);
+  border-radius: var(--radius-md);
+  color: var(--primary-700);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+/* Semester selector styles */
+.semester-selector {
+  margin: var(--space-4) 0;
+  padding: var(--space-5);
+  background: var(--bg-tertiary);
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  transition: all var(--transition-fast);
+}
+
+.semester-selector:hover {
+  border-color: var(--primary-200);
+}
+
+.semester-selector label {
+  display: block;
+  color: var(--text-primary);
+  margin-bottom: var(--space-3);
+  font-weight: 600;
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.semester-select {
+  width: 100%;
+  padding: var(--space-3);
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 0.95rem;
+  transition: all var(--transition-fast);
+  cursor: pointer;
+}
+
+.semester-select:hover {
+  border-color: var(--primary-200);
+}
+
+.semester-select:focus {
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 3px var(--primary-100);
+  outline: none;
+}
+
+.semester-hint {
+  margin-top: var(--space-3);
+  padding: var(--space-3);
+  background: var(--success-50);
+  border-left: 4px solid var(--success-500);
+  border-radius: var(--radius-md);
+  color: var(--success-700);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
 .constraints-section {
   margin: var(--space-8) 0;
   padding: var(--space-6);
