@@ -339,6 +339,41 @@ const Dashboard = ({ user, authToken, onQuickAction }) => {
     }
   };
 
+  const handleViewEnhancedSchedule = async (schedule) => {
+    if (schedule.isSample) {
+      // For sample schedules, we might not have real data
+      setShowNotImplemented(true);
+      setNotImplementedFeature('saved-schedules');
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/schedules/${schedule.id}`, {
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+          'Content-Type': 'application/json',
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        navigate('/schedule-viewer', {
+          state: {
+            schedule: data.schedule.schedule_data || data.schedule,
+            scheduleName: data.schedule.schedule_name || schedule.name,
+            scheduleId: schedule.id,
+            from: '/dashboard'
+          }
+        });
+      } else {
+        alert('Failed to load schedule. Please try again.');
+      }
+    } catch (error) {
+      console.error('❌ Error fetching schedule:', error);
+      alert('Failed to load schedule. Please check your connection.');
+    }
+  };
+
   const stats = getStatsArray();
   const recentSchedules = getRecentSchedules();
 
@@ -448,13 +483,23 @@ const Dashboard = ({ user, authToken, onQuickAction }) => {
                         schedule.status
                       )}
                     </span>
-                    <button 
-                      className={`schedule-action ${schedule.isLoading ? 'loading' : ''}`}
-                      onClick={() => !schedule.isLoading && handleOpenSchedule(schedule)}
-                      disabled={schedule.isLoading}
-                    >
-                      {schedule.isLoading ? '...' : 'Open'}
-                    </button>
+                    <div className="schedule-buttons">
+                      <button 
+                        className={`schedule-action secondary ${schedule.isLoading ? 'loading' : ''}`}
+                        onClick={() => !schedule.isLoading && handleViewEnhancedSchedule(schedule)}
+                        disabled={schedule.isLoading}
+                        title="View Enhanced Schedule"
+                      >
+                        {schedule.isLoading ? '...' : '✨'}
+                      </button>
+                      <button 
+                        className={`schedule-action primary ${schedule.isLoading ? 'loading' : ''}`}
+                        onClick={() => !schedule.isLoading && handleOpenSchedule(schedule)}
+                        disabled={schedule.isLoading}
+                      >
+                        {schedule.isLoading ? '...' : 'Edit'}
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))}

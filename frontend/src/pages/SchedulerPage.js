@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect } from "react";
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import CourseInput from '../components/CourseInput';
 import WeeklyScheduler from '../components/WeeklyScheduler';
 import ConstraintsDisplay from '../components/ConstraintsDisplay';
@@ -123,6 +123,7 @@ const convertScheduleToCourses = (scheduleData) => {
 
 const SchedulerPage = ({ user, authToken }) => {
   const location = useLocation();
+  const navigate = useNavigate();
   const { universityConfig, importedCourses } = location.state || {};
   
   const [preference, setPreference] = useState("crammed");
@@ -686,6 +687,7 @@ const SchedulerPage = ({ user, authToken }) => {
             onConstraintsUpdate={handleConstraintsUpdate}
             isRegenerating={isLoading}
           />
+          
           <WeeklyScheduler 
             user={user} 
             authToken={authToken} 
@@ -694,6 +696,26 @@ const SchedulerPage = ({ user, authToken }) => {
             scheduleName={loadedScheduleName}
             scheduleId={loadedScheduleId}
           />
+
+          {schedule && (
+            <div className="enhanced-view-section">
+              <button 
+                className="enhanced-view-button"
+                onClick={() => {
+                  navigate('/schedule-viewer', {
+                    state: {
+                      schedule: schedule,
+                      scheduleName: loadedScheduleName || "Generated Schedule",
+                      scheduleId: loadedScheduleId,
+                      from: '/scheduler'
+                    }
+                  });
+                }}
+              >
+                ✨ View Enhanced Schedule
+              </button>
+            </div>
+          )}
         </div>
       </div>
 

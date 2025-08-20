@@ -4,6 +4,7 @@ import Navigation from './components/Navigation/Navigation';
 import Sidebar from './components/Sidebar/Sidebar';
 import HomePage from './pages/HomePage';
 import SchedulerPage from './pages/SchedulerPage';
+import ScheduleViewerPage from './pages/ScheduleViewerPage';
 import AboutPage from './pages/AboutPage';
 import UniversitySelector from './pages/UniversitySelector';
 import CourseCatalog from './components/CourseCatalog';
@@ -193,6 +194,10 @@ function AppContent() {
             <Route 
               path="/scheduler" 
               element={<SchedulerPage user={user} authToken={authToken} />} 
+            />
+            <Route 
+              path="/schedule-viewer/:scheduleId?" 
+              element={<ScheduleViewerPage user={user} authToken={authToken} />} 
             />
             <Route
               path="/university-selector"
