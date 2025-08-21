@@ -451,11 +451,6 @@ const Dashboard = ({ user, authToken, onQuickAction }) => {
                 : "Sign in to track your scheduling progress and save your schedules."
               }
             </p>
-            {error && (
-              <div className="error-notice">
-                <span>⚠️ {error}</span>
-              </div>
-            )}
           </div>
           <div className="header-actions">
             <button 
@@ -630,22 +625,12 @@ const Dashboard = ({ user, authToken, onQuickAction }) => {
                     </div>
                   </div>
                 ))
-              ) : recentActivity.length > 0 ? (
-                recentActivity.slice(0, 5).map((activity, index) => (
-                  <div key={index} className="activity-item">
-                    <div className={`activity-dot ${activity.success ? 'success' : 'error'}`}></div>
-                    <div className="activity-content">
-                      <div className="activity-action">{activity.action}</div>
-                      <div className="activity-time">{activity.time}</div>
-                    </div>
-                  </div>
-                ))
               ) : (
                 <div className="activity-item">
                   <div className="activity-dot success"></div>
                   <div className="activity-content">
-                    <div className="activity-action">No recent activity</div>
-                    <div className="activity-time">Start creating schedules to see activity</div>
+                    <div className="activity-action">Welcome to Course Scheduler!</div>
+                    <div className="activity-time">Start by creating your first schedule</div>
                   </div>
                 </div>
               )}
