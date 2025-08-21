@@ -435,7 +435,7 @@ const Dashboard = ({ user, authToken, onQuickAction }) => {
 
   const stats = ENABLE_STATS ? getStatsArray() : [];
 
-  const recentSchedules = useMemo(() => getRecentSchedules(), [getRecentSchedules, isActivityLoading, savedSchedules, user]);
+  const recentSchedules = useMemo(() => getRecentSchedules(), [isActivityLoading, savedSchedules, user]);
 
   return (
     <>
