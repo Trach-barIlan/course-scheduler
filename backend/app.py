@@ -316,3 +316,25 @@ def test_session():
             "auth_header": request.headers.get('Authorization', 'Not provided'),
             "status": "error"
         }), 500
+
+@app.route("/api/health", methods=["GET"])
+def health():
+    return jsonify({
+        "status": "ok",
+        "ai_model_loaded": schedule_parser is not None,
+        "time": time.time()
+    }), 200
+
+
+if __name__ == "__main__":
+    # אפשר לדלג על מודל (לבדיקה ראשונית):
+    # set SKIP_AI_MODEL=1  (ב-PowerShell: $env:SKIP_AI_MODEL="1")
+    port = int(os.environ.get("PORT", 5000))
+    host = os.environ.get("HOST", "0.0.0.0")
+    debug = os.environ.get("FLASK_DEBUG", "1") == "1"
+
+    print(f"🚀 Starting Flask server on http://{host}:{port} (debug={debug})")
+    # אם אתה מעדיף להמתין לטעינת המודל לפני עלייה:
+    # if not os.environ.get("SKIP_AI_MODEL"): initialize_ai_model()
+
+    app.run(host=host, port=port, debug=debug, use_reloader=debug)
