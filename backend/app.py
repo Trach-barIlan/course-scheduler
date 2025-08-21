@@ -8,6 +8,7 @@ from auth.routes import auth_bp, token_required
 from api.schedules import schedules_bp
 from api.statistics import statistics_bp
 from api.university import university_bp
+from api.contact import contact_bp
 
 from api.supabase_courses import supabase_courses_bp  # New Supabase-based API
 # from api.courses import courses_bp  # Old JSON-based API (commented out)
@@ -42,6 +43,7 @@ app.register_blueprint(auth_bp, url_prefix='/api/auth')
 app.register_blueprint(schedules_bp, url_prefix='/api/schedules')
 app.register_blueprint(statistics_bp, url_prefix='/api/statistics')
 app.register_blueprint(university_bp, url_prefix='/api/university')
+app.register_blueprint(contact_bp, url_prefix='/api')
 app.register_blueprint(supabase_courses_bp, url_prefix='/api')  # New Supabase-based API
 # app.register_blueprint(courses_bp, url_prefix='/api')  # Old JSON-based API
 print("✅ University API registered successfully")

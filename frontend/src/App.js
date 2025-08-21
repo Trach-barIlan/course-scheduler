@@ -6,6 +6,7 @@ import HomePage from './pages/HomePage';
 import SchedulerPage from './pages/SchedulerPage';
 import ScheduleViewerPage from './pages/ScheduleViewerPage';
 import AboutPage from './pages/AboutPage';
+import ContactPage from './pages/ContactPage';
 import UniversitySelector from './pages/UniversitySelector';
 import CourseCatalog from './components/CourseCatalog';
 import BarIlanCourseCatalog from './components/BarIlanCourseCatalog';
@@ -238,6 +239,10 @@ function AppContent() {
             <Route 
               path="/about" 
               element={<AboutPage />} 
+            />
+            <Route 
+              path="/contact" 
+              element={<ContactPage />} 
             />
           </Routes>
         </main>
