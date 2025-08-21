@@ -326,15 +326,15 @@ def health():
     }), 200
 
 
-if __name__ == "__main__":
-    # אפשר לדלג על מודל (לבדיקה ראשונית):
-    # set SKIP_AI_MODEL=1  (ב-PowerShell: $env:SKIP_AI_MODEL="1")
-    port = int(os.environ.get("PORT", 5000))
-    host = os.environ.get("HOST", "0.0.0.0")
-    debug = os.environ.get("FLASK_DEBUG", "1") == "1"
+# if __name__ == "__main__":
+#     # אפשר לדלג על מודל (לבדיקה ראשונית):
+#     # set SKIP_AI_MODEL=1  (ב-PowerShell: $env:SKIP_AI_MODEL="1")
+#     port = int(os.environ.get("PORT", 5001))
+#     host = os.environ.get("HOST", "0.0.0.0")
+#     debug = os.environ.get("FLASK_DEBUG", "1") == "1"
 
-    print(f"🚀 Starting Flask server on http://{host}:{port} (debug={debug})")
-    # אם אתה מעדיף להמתין לטעינת המודל לפני עלייה:
-    # if not os.environ.get("SKIP_AI_MODEL"): initialize_ai_model()
+#     print(f"🚀 Starting Flask server on http://{host}:{port} (debug={debug})")
+#     # אם אתה מעדיף להמתין לטעינת המודל לפני עלייה:
+#     # if not os.environ.get("SKIP_AI_MODEL"): initialize_ai_model()
 
-    app.run(host=host, port=port, debug=debug, use_reloader=debug)
+#     app.run(host=host, port=port, debug=debug, use_reloader=debug)
