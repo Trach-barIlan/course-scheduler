@@ -13,11 +13,9 @@ const Dashboard = ({ user, authToken, onQuickAction }) => {
   const [notImplementedFeature, setNotImplementedFeature] = useState('');
   const [showGuide, setShowGuide] = useState(false);
   const [statistics, setStatistics] = useState(null);
-  const [recentActivity, setRecentActivity] = useState([]);
   const [savedSchedules, setSavedSchedules] = useState([]);
   const [isStatsLoading, setIsStatsLoading] = useState(true);
   const [isActivityLoading, setIsActivityLoading] = useState(true);
-  const [error, setError] = useState(null);
   const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
   const SCHEDULES_CACHE_KEY = 'saved_schedules_list';
   const CACHE_TTL_MS = 60 * 60 * 1000;          // 1 hour
@@ -104,7 +102,7 @@ const Dashboard = ({ user, authToken, onQuickAction }) => {
     } finally {
       setIsStatsLoading(false);
     }
-  }, [ENABLE_STATS, user, authToken, API_BASE_URL]);
+  }, [ENABLE_STATS, user, authToken, API_BASE_URL, CACHE_NEAR_EXPIRY_MS, LAST_STATS_FETCH_KEY, STATS_CACHE_TTL_MS]);
 
   const fetchSavedSchedules = useCallback(async (force = false) => {
     if (!user || !authToken) {
@@ -160,7 +158,7 @@ const Dashboard = ({ user, authToken, onQuickAction }) => {
     } finally {
       setIsActivityLoading(false);
     }
-  }, [user, authToken, API_BASE_URL, SCHEDULES_CACHE_KEY, LAST_FETCH_KEY]);
+  }, [user, authToken, API_BASE_URL, SCHEDULES_CACHE_KEY, LAST_FETCH_KEY, CACHE_NEAR_EXPIRY_MS, CACHE_TTL_MS]);
 
   // החלף fetchRecentActivity בקריאה לזו:
   useEffect(() => {
@@ -437,7 +435,7 @@ const Dashboard = ({ user, authToken, onQuickAction }) => {
 
   const stats = ENABLE_STATS ? getStatsArray() : [];
 
-  const recentSchedules = useMemo(() => getRecentSchedules(), [isActivityLoading, recentActivity, user]);
+  const recentSchedules = useMemo(() => getRecentSchedules(), [getRecentSchedules, isActivityLoading, savedSchedules, user]);
 
   return (
     <>

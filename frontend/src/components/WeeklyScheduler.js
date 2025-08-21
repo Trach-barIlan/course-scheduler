@@ -4,7 +4,7 @@ import html2canvas from "html2canvas";
 import SaveScheduleModal from './SaveScheduleModal/SaveScheduleModal';
 import NotImplementedModal from './NotImplementedModal/NotImplementedModal';
 import ScheduleSkeletonLoader from './SkeletonLoader/ScheduleSkeletonLoader';
-import { getCached, setCached, setScheduleDetail, deleteScheduleDetail } from '../utils/cache'; // עדכן נתיב יחסי אם צריך
+import { getCached, setCached, setScheduleDetail } from '../utils/cache'; // עדכן נתיב יחסי אם צריך
 import "../styles/WeeklyScheduler.css";
 
 const WeeklySchedule = ({ schedule, isLoading, user, authToken, scheduleName, scheduleId }) => {
