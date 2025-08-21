@@ -297,7 +297,7 @@ const Dashboard = ({ user, authToken, onQuickAction }) => {
     ];
   };
 
-  const getRecentSchedules = () => {
+  const getRecentSchedules = useCallback(() => {
     if (isActivityLoading) {
       return Array.from({ length: 3 }).map((_, i) => ({
         id: `loading-${i}`,
@@ -322,7 +322,7 @@ const Dashboard = ({ user, authToken, onQuickAction }) => {
       status: 'active',
       isSample: false
     }));
-  };
+  }, [isActivityLoading, user, savedSchedules]);
 
   const handleNotImplementedClick = (feature) => {
     setNotImplementedFeature(feature);
@@ -435,7 +435,7 @@ const Dashboard = ({ user, authToken, onQuickAction }) => {
 
   const stats = ENABLE_STATS ? getStatsArray() : [];
 
-  const recentSchedules = useMemo(() => getRecentSchedules(), [isActivityLoading, savedSchedules, user]);
+  const recentSchedules = useMemo(() => getRecentSchedules(), [getRecentSchedules]);
 
   return (
     <>
