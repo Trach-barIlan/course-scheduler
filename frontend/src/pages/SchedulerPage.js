@@ -1,14 +1,13 @@
 import React, { useState, useCallback, useEffect } from "react";
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import CourseInput from '../components/CourseInput';
 import WeeklyScheduler from '../components/WeeklyScheduler';
 import ConstraintsDisplay from '../components/ConstraintsDisplay';
+import ScheduleErrorModal from '../components/ScheduleErrorModal';
 import '../styles/SchedulerPage.css';
 
 // Function to convert imported courses to the scheduler format
 const convertImportedCoursesToSchedulerFormat = (importedCourses) => {
-  console.log('🔄 Converting imported courses:', importedCourses);
-  
   return importedCourses.map(courseData => {
     const course = {
       name: courseData.name || courseData.courseName || "",
@@ -44,15 +43,12 @@ const convertImportedCoursesToSchedulerFormat = (importedCourses) => {
       }
     }
 
-    console.log(`✅ Converted course: ${course.name}`, course);
     return course;
   });
 };
 
 // Convert the loaded schedule data to the format used by the courses state
 const convertScheduleToCourses = (scheduleData) => {
-  console.log('🔍 Raw schedule data:', scheduleData);
-  
   if (!Array.isArray(scheduleData)) {
     console.warn('Invalid schedule data format:', scheduleData);
     return [{ 
@@ -65,7 +61,6 @@ const convertScheduleToCourses = (scheduleData) => {
   }
 
   const converted = scheduleData.map((courseData, index) => {
-    console.log(`🔄 Converting course ${index}:`, courseData);
     
     const course = {
       name: courseData.name || "",
@@ -76,8 +71,6 @@ const convertScheduleToCourses = (scheduleData) => {
     };
 
     if (courseData.lecture) {
-      console.log('  📚 Processing lecture:', courseData.lecture);
-
       const parts = courseData.lecture.split(' ');
       if (parts.length === 2) {
         const day = parts[0]; // Mon
@@ -90,12 +83,10 @@ const convertScheduleToCourses = (scheduleData) => {
           startTime: start,
           endTime: end
         }];
-        console.log('  ✅ Converted lecture to:', course.lectures[0]);
       }
     }
 
     if (courseData.ta) {
-      console.log('  👨‍🏫 Processing TA:', courseData.ta);
       const parts = courseData.ta.split(' ');
       if (parts.length === 2) {
         const day = parts[0]; // Tue
@@ -108,31 +99,32 @@ const convertScheduleToCourses = (scheduleData) => {
           startTime: start,
           endTime: end
         }];
-        console.log('  ✅ Converted practice to:', course.practices[0]);
       }
     }
 
-    console.log(`✅ Final converted course ${index}:`, course);
     return course;
   });
 
-  console.log('🎯 All converted courses:', converted);
   return converted;
 };
 
 const SchedulerPage = ({ user, authToken }) => {
   const location = useLocation();
+  const navigate = useNavigate();
   const { universityConfig, importedCourses } = location.state || {};
   
   const [preference, setPreference] = useState("crammed");
   const [courses, setCourses] = useState([]);
   const [constraints, setConstraints] = useState("");
   const [error, setError] = useState(null);
+  const [showErrorModal, setShowErrorModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [schedule, setSchedule] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [parsedConstraints, setParsedConstraints] = useState(null);
   const [constraintsUpdateFunction, setConstraintsUpdateFunction] = useState(null);
+  const [selectedUniversity, setSelectedUniversity] = useState("");
+  const [selectedSemester, setSelectedSemester] = useState("");
   
   const [loadedScheduleName, setLoadedScheduleName] = useState(null);
   const [loadedScheduleId, setLoadedScheduleId] = useState(null);
@@ -140,12 +132,19 @@ const SchedulerPage = ({ user, authToken }) => {
   const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
   useEffect(() => {
+    // Handle restored state from schedule viewer
+    if (location.state?.preserveState) {
+      setCourses(location.state.courses || []);
+      setPreference(location.state.preference || "crammed");
+      setConstraints(location.state.constraints || "");
+      setSelectedUniversity(location.state.selectedUniversity || "");
+      setSelectedSemester(location.state.selectedSemester || "");
+      setLoadedScheduleName(location.state.loadedScheduleName || null);
+      setLoadedScheduleId(location.state.loadedScheduleId || null);
+      return; // Don't process other state
+    }
+
     if (location.state?.loadedSchedule) {
-      console.log('🔍 Loading schedule from Dashboard:', location.state);
-      console.log('📋 Schedule data:', location.state.loadedSchedule);
-      console.log('📝 Schedule name:', location.state.scheduleName);
-      console.log('🆔 Schedule ID:', location.state.scheduleId);
-      console.log('🎯 Original course options:', location.state.originalCourseOptions);
       
       setSchedule(location.state.loadedSchedule);
       setLoadedScheduleName(location.state.scheduleName);
@@ -154,7 +153,6 @@ const SchedulerPage = ({ user, authToken }) => {
 
       // Check if we have original course options (preferred) or need to convert from schedule data
       if (location.state.originalCourseOptions && location.state.originalCourseOptions.length > 0) {
-        console.log('✅ Using original course options from saved schedule');
         // Convert backend format to frontend format
         const convertedCourses = location.state.originalCourseOptions.map(courseData => {
           return {
@@ -185,9 +183,7 @@ const SchedulerPage = ({ user, authToken }) => {
         });
         setCourses(convertedCourses);
       } else {
-        console.log('⚠️ No original course options found, converting from schedule data (limited functionality)');
         const loadedCourses = convertScheduleToCourses(location.state.loadedSchedule);
-        console.log('✅ Converted courses:', loadedCourses);
         setCourses(loadedCourses);
       }
       
@@ -198,7 +194,6 @@ const SchedulerPage = ({ user, authToken }) => {
   // Initialize courses from imported university data
   useEffect(() => {
     if (importedCourses && importedCourses.length > 0) {
-      console.log('🏫 Initializing with imported courses:', importedCourses);
       const convertedCourses = convertImportedCoursesToSchedulerFormat(importedCourses);
       setCourses(convertedCourses);
     }
@@ -362,13 +357,6 @@ const SchedulerPage = ({ user, authToken }) => {
         headers['Authorization'] = `Bearer ${authToken}`;
       }
 
-      console.log('🔄 Sending request to:', API_BASE_URL + "/api/schedule");
-      console.log('📋 Request payload:', {
-        preference,
-        courses: formattedCourses,
-        constraints: constraintsToUse
-      });
-
       const scheduleRes = await fetch(API_BASE_URL + "/api/schedule", {
         method: "POST",
         headers: headers,
@@ -379,25 +367,21 @@ const SchedulerPage = ({ user, authToken }) => {
         }),
       });
 
-      console.log('📡 Response status:', scheduleRes.status);
-      console.log('📡 Response headers:', scheduleRes.headers);
-
       // Check if response is actually JSON
       const contentType = scheduleRes.headers.get('content-type');
       if (!contentType || !contentType.includes('application/json')) {
         const responseText = await scheduleRes.text();
-        console.error('❌ Non-JSON response received:', responseText);
+        console.error('Non-JSON response received:', responseText);
         throw new Error(`Server returned non-JSON response. Status: ${scheduleRes.status}. This usually means the backend server is not running or the API endpoint is incorrect.`);
       }
 
       if (!scheduleRes.ok) {
         const errorData = await scheduleRes.json();
-        console.error('❌ API Error:', errorData);
+        console.error('API Error:', errorData);
         throw new Error(errorData.error || `Server error: ${scheduleRes.status}`);
       }
 
       const data = await scheduleRes.json();
-      console.log('✅ Schedule response:', data);
       
       if (data.schedule) {
         setSchedule(data.schedule);
@@ -405,9 +389,10 @@ const SchedulerPage = ({ user, authToken }) => {
       } else {
         const errorMessage = data.error || 'No valid schedule found with the given constraints. Try adjusting your requirements.';
         setError(errorMessage);
+        setShowErrorModal(true);
       }
     } catch (err) {
-      console.error('❌ Schedule generation error:', err);
+      console.error('Schedule generation error:', err);
       let errorMessage = err.message;
       
       // Provide more helpful error messages
@@ -418,6 +403,7 @@ const SchedulerPage = ({ user, authToken }) => {
       }
       
       setError(errorMessage);
+      setShowErrorModal(true);
     }
   }, [courses, preference, validateForm, user, authToken, API_BASE_URL, formatCourseForAPI]);
 
@@ -442,27 +428,23 @@ const SchedulerPage = ({ user, authToken }) => {
           headers['Authorization'] = `Bearer ${authToken}`;
         }
 
-        console.log('🔄 Parsing constraints...');
-        
         const parseRes = await fetch(API_BASE_URL + "/api/parse", {
           method: "POST",
           headers: headers,
           body: JSON.stringify({ text: constraints }),
         });
 
-        console.log('📡 Parse response status:', parseRes.status);
-
         // Check if response is actually JSON
         const contentType = parseRes.headers.get('content-type');
         if (!contentType || !contentType.includes('application/json')) {
           const responseText = await parseRes.text();
-          console.error('❌ Non-JSON response from parse endpoint:', responseText);
+          console.error('Non-JSON response from parse endpoint:', responseText);
           throw new Error(`Constraints parsing failed. Server returned non-JSON response. This usually means the backend server is not running.`);
         }
 
         if (!parseRes.ok) {
           const errorData = await parseRes.json();
-          console.error('❌ Parse error:', errorData);
+          console.error('Parse error:', errorData);
           throw new Error(errorData.error || 'Failed to parse constraints');
         }
 
@@ -478,12 +460,11 @@ const SchedulerPage = ({ user, authToken }) => {
         };
         
         setParsedConstraints(enhancedConstraintsData);
-        console.log('✅ Constraints parsed:', enhancedConstraintsData);
       }
 
       await generateScheduleWithConstraints(parsedConstraints);
     } catch (err) {
-      console.error('❌ Submit error:', err);
+      console.error('Submit error:', err);
       let errorMessage = err.message;
       
       // Provide more helpful error messages
@@ -492,6 +473,7 @@ const SchedulerPage = ({ user, authToken }) => {
       }
       
       setError(errorMessage);
+      setShowErrorModal(true);
       setParsedConstraints(null);
     } finally {
       setIsSubmitting(false);
@@ -523,126 +505,196 @@ const SchedulerPage = ({ user, authToken }) => {
           <div className="course-scheduler">
             <div className="scheduler-header-section">
               <h2>Course Scheduler</h2>
-              {loadedScheduleName && (
-                <div className="loaded-schedule-info">
-                  <span className="loaded-schedule-label">📂 Loaded Schedule:</span>
-                  <strong>{loadedScheduleName}</strong>
-                  <div className="loaded-schedule-actions">
-                    <button 
-                      type="button" 
-                      className="clear-loaded-button"
-                      onClick={clearLoadedSchedule}
-                    >
-                      ✖ Clear & Start New
-                    </button>
-                  </div>
-                </div>
-              )}
-              {universityConfig && (
-                <div className="imported-courses-info">
-                  <span className="imported-courses-label">🏫 Imported from:</span>
-                  <strong>{universityConfig.university.name}</strong>
-                  {universityConfig.semester && universityConfig.year && (
-                    <span className="semester-info">
-                      ({universityConfig.semester} {universityConfig.year})
-                    </span>
-                  )}
-                  {importedCourses && (
-                    <div className="import-stats">
-                      {importedCourses.length} course{importedCourses.length !== 1 ? 's' : ''} imported
-                    </div>
-                  )}
-                </div>
-              )}
               {user && (
                 <div className="user-welcome">
                   Welcome back, <strong>{user.first_name}</strong>!
                 </div>
               )}
+              
+              {/* Compact notification sections */}
+              {loadedScheduleName && (
+                <div className="loaded-schedule-info">
+                  <span className="loaded-schedule-label">📂 {loadedScheduleName}</span>
+                  <button 
+                    type="button" 
+                    className="clear-loaded-button"
+                    onClick={clearLoadedSchedule}
+                    title="Clear loaded schedule and start new"
+                  >
+                    ✖
+                  </button>
+                </div>
+              )}
+              
+              {universityConfig && (
+                <div className="imported-courses-info">
+                  <span className="imported-courses-label">🏫 {universityConfig.university.name}</span>
+                  {universityConfig.semester && universityConfig.year && (
+                    <span className="semester-info">({universityConfig.semester} {universityConfig.year})</span>
+                  )}
+                  <span className="import-stats">{importedCourses?.length || 0} courses</span>
+                </div>
+              )}
+            </div>
+            
+            {/* Compact settings header */}
+            <div className="scheduler-settings">
+              <div className="settings-row">
+                <div className="setting-group">
+                  <label htmlFor="preference">Schedule Type</label>
+                  <select
+                    id="preference"
+                    value={preference}
+                    onChange={(e) => setPreference(e.target.value)}
+                    className="compact-select"
+                  >
+                    <option value="crammed">Crammed</option>
+                    <option value="spaced">Spaced Out</option>
+                  </select>
+                </div>
+                
+                <div className="setting-group">
+                  <label htmlFor="university">University</label>
+                  <select
+                    id="university"
+                    value={selectedUniversity}
+                    onChange={(e) => setSelectedUniversity(e.target.value)}
+                    className="compact-select"
+                  >
+                    <option value="">No autocomplete</option>
+                    <option value="Bar-Ilan">Bar-Ilan</option>
+                  </select>
+                </div>
+                
+                {selectedUniversity && (
+                  <div className="setting-group">
+                    <label htmlFor="semester">Semester</label>
+                    <select
+                      id="semester"
+                      value={selectedSemester}
+                      onChange={(e) => setSelectedSemester(e.target.value)}
+                      className="compact-select"
+                    >
+                      <option value="">Select Semester</option>
+                      <option value="A">A</option>
+                      <option value="B">B</option>
+                      <option value="Summer">Summer</option>
+                    </select>
+                  </div>
+                )}
+              </div>
+              
+              {selectedUniversity && (
+                <div className="autocomplete-status">
+                  {selectedSemester ? (
+                    <>✨ Autocomplete enabled for {selectedUniversity} (Semester {selectedSemester})</>
+                  ) : (
+                    <>⚠️ Select a semester to enable autocomplete for {selectedUniversity}</>
+                  )}
+                </div>
+              )}
             </div>
             
             <form onSubmit={handleSubmit}>
-              <div className="schedule-preference">
-                <label htmlFor="preference">Schedule Preference</label>
-                <select
-                  id="preference"
-                  value={preference}
-                  onChange={(e) => setPreference(e.target.value)}
-                >
-                  <option value="crammed">Crammed (fewer days, back-to-back classes)</option>
-                  <option value="spaced">Spaced Out (more days, fewer gaps)</option>
-                </select>
+              {/* Courses Section - Now more prominent */}
+              <div className="courses-section">
+                <div className="courses-header">
+                  <h3>📚 Your Courses</h3>
+                  <button 
+                    type="button" 
+                    onClick={addCourse} 
+                    className="add-course-button"
+                    disabled={isSubmitting}
+                  >
+                    + Add Course
+                  </button>
+                </div>
+                
+                <div className="courses-list">
+                  {courses.map((course, i) => (
+                    <CourseInput
+                      key={i}
+                      course={course}
+                      onChange={handleCourseChange}
+                      onRemove={removeCourse}
+                      index={i}
+                      canRemove={courses.length > 1}
+                      selectedUniversity={selectedUniversity}
+                      selectedSemester={selectedSemester}
+                    />
+                  ))}
+                </div>
               </div>
 
-              {courses.map((course, i) => (
-                <CourseInput
-                  key={i}
-                  course={course}
-                  onChange={handleCourseChange}
-                  onRemove={removeCourse}
-                  index={i}
-                  canRemove={courses.length > 1}
-                />
-              ))}
-
-              <div className="constraints-section">
-                <label htmlFor="constraints">Additional Constraints</label>
+              {/* Constraints - More compact */}
+              <div className="constraints-section-compact">
+                <h3>🎯 Additional Preferences</h3>
                 <textarea
                   id="constraints"
-                  className="constraints-input"
+                  className="constraints-input-compact"
                   value={constraints}
                   onChange={(e) => setConstraints(e.target.value)}
-                  placeholder="Enter your scheduling preferences in natural language:
-
-• No classes before 9am
-• No classes on Tuesday  
-• Avoid TA Smith
-• No classes after 5pm
-• Prefer morning sessions"
-                  rows={6}
+                  placeholder="Optional: No classes before 9am, Avoid TA Smith, etc."
+                  rows={3}
                 />
               </div>
 
-              <div className="button-group">
-                <button 
-                  type="button" 
-                  onClick={addCourse} 
-                  className="add-button"
-                  disabled={isSubmitting}
-                >
-                  + Add Another Course
-                </button>
-                <button 
-                  type="submit" 
-                  className="submit-button"
-                  disabled={isSubmitting}
-                >
-                  {isSubmitting ? (
-                    <>
-                      <div className="loading-spinner"></div>
-                      {loadedScheduleName ? 'Updating Schedule...' : 'Generating Schedule...'}
-                    </>
-                  ) : (
-                    loadedScheduleName ? 'Update Schedule' : 'Generate Schedule'
-                  )}
-                </button>
-              </div>
+              <button 
+                type="submit" 
+                className="generate-schedule-button"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? (
+                  <>
+                    <div className="loading-spinner"></div>
+                    {loadedScheduleName ? 'Updating...' : 'Generating...'}
+                  </>
+                ) : (
+                  <>
+                    🚀 {loadedScheduleName ? 'Update Schedule' : 'Generate Schedule'}
+                  </>
+                )}
+              </button>
             </form>
-
-            {error && (
-              <div className="error-message">
-                {error}
-              </div>
-            )}
           </div>
         </div>
 
         <div className="right-panel">
+          {schedule && (
+            <div className="enhanced-view-section">
+              <button 
+                className="enhanced-view-button"
+                onClick={() => {
+                  navigate('/schedule-viewer', {
+                    state: {
+                      schedule: schedule,
+                      scheduleName: loadedScheduleName || "Generated Schedule",
+                      scheduleId: loadedScheduleId,
+                      from: '/scheduler',
+                      schedulerState: {
+                        courses: courses,
+                        preference: preference,
+                        constraints: constraints,
+                        selectedUniversity: selectedUniversity,
+                        selectedSemester: selectedSemester,
+                        loadedScheduleName: loadedScheduleName,
+                        loadedScheduleId: loadedScheduleId
+                      }
+                    }
+                  });
+                }}
+              >
+                ✨ View Enhanced Schedule
+              </button>
+            </div>
+          )}
+
           <ConstraintsDisplay 
             parsedConstraints={parsedConstraints} 
             onConstraintsUpdate={handleConstraintsUpdate}
             isRegenerating={isLoading}
           />
+          
           <WeeklyScheduler 
             user={user} 
             authToken={authToken} 
@@ -653,6 +705,18 @@ const SchedulerPage = ({ user, authToken }) => {
           />
         </div>
       </div>
+
+      <ScheduleErrorModal 
+        isOpen={showErrorModal}
+        error={error}
+        onClose={() => {
+          setShowErrorModal(false);
+          setError(null);
+        }}
+        onTryAgain={() => {
+          generateScheduleWithConstraints();
+        }}
+      />
     </div>
   );
 };

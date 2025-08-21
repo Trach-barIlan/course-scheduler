@@ -51,6 +51,12 @@ const Navigation = ({ user, onAuthClick, onProfileClick }) => {
             >
               About
             </button>
+            <button 
+              className={`nav-link ${isActive('/contact') ? 'active' : ''}`}
+              onClick={() => handleNavClick('/contact')}
+            >
+              Contact
+            </button>
           </div>
 
           <div className="nav-actions">

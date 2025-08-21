@@ -24,6 +24,109 @@
   font-weight: 500;
 }
 
+/* Skeleton Loading States */
+.skeleton {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: loading-shimmer 1.5s infinite;
+  border-radius: var(--radius-sm);
+}
+
+@keyframes loading-shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.skeleton-bar {
+  height: 1em;
+  border-radius: var(--radius-sm);
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: loading-shimmer 1.5s infinite;
+}
+
+.skeleton-value {
+  width: 60px;
+  height: 2.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.skeleton-change {
+  width: 100px;
+  height: 1rem;
+}
+
+.skeleton-schedule-name {
+  width: 70%;
+  height: 1.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.skeleton-meta {
+  width: 80px;
+  height: 1rem;
+}
+
+.skeleton-status {
+  width: 60px;
+  height: 1.5rem;
+}
+
+/* Loading states for cards */
+.stat-card.loading {
+  opacity: 0.7;
+}
+
+.stat-card.loading .stat-icon {
+  opacity: 0.5;
+}
+
+.schedule-card.loading {
+  opacity: 0.7;
+}
+
+.schedule-card.loading .schedule-action {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.schedule-action.loading {
+  background: var(--gray-300);
+  cursor: not-allowed;
+}
+
+.schedule-action:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.status-badge.loading {
+  background: var(--gray-200);
+  color: transparent;
+}
+
+/* Activity loading states */
+.activity-item.loading {
+  opacity: 0.7;
+}
+
+.activity-item.loading .activity-dot {
+  background: var(--gray-300);
+}
+
+.activity-content .skeleton {
+  display: block;
+  margin-bottom: 0.25rem;
+}
+
+.activity-content .skeleton:last-child {
+  margin-bottom: 0;
+}
+
 .dashboard-header {
   display: flex;
   justify-content: space-between;
@@ -279,6 +382,11 @@
   gap: var(--space-3);
 }
 
+.schedule-buttons {
+  display: flex;
+  gap: var(--space-2);
+}
+
 .status-badge {
   padding: var(--space-1) var(--space-2);
   border-radius: var(--radius-md);
@@ -318,6 +426,34 @@
 .schedule-action:hover {
   background: var(--primary-600);
   transform: translateY(-1px);
+}
+
+.schedule-action.secondary {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  font-size: 1rem;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.schedule-action.secondary:hover {
+  background: var(--primary-50);
+  border-color: var(--primary-200);
+  color: var(--primary-600);
+  transform: translateY(-1px);
+}
+
+.schedule-action.primary {
+  background: var(--primary-500);
+}
+
+.schedule-action.primary:hover {
+  background: var(--primary-600);
 }
 
 .quick-start-cards {

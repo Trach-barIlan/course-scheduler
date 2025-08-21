@@ -1,8 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import '../styles/CourseInput.css';
 
-const CourseInput = ({ course, onChange, index, onRemove, canRemove }) => {
+const CourseInput = ({ course, onChange, index, onRemove, canRemove, selectedUniversity, selectedSemester }) => {
     const [errors, setErrors] = useState({});
+    const [suggestions, setSuggestions] = useState([]);
+    const [showSuggestions, setShowSuggestions] = useState(false);
+    const [isLoadingCourse, setIsLoadingCourse] = useState(false);
+    const [isExpanded, setIsExpanded] = useState(false);
 
     const days = [
         { value: 'Sun', label: 'Sunday' },
@@ -21,6 +25,203 @@ const CourseInput = ({ course, onChange, index, onRemove, canRemove }) => {
             label: `${hour}:00`
         };
     });
+
+    // Helper functions for value conversion
+    const getDayValue = (day) => {
+        const dayMap = {
+            'Sunday': 'Sun',
+            'Monday': 'Mon',
+            'Tuesday': 'Tue', 
+            'Wednesday': 'Wed',
+            'Thursday': 'Thu',
+            'Friday': 'Fri',
+            'Saturday': 'Sat',
+            'Sun': 'Sun',
+            'Mon': 'Mon',
+            'Tue': 'Tue',
+            'Wed': 'Wed',
+            'Thu': 'Thu',
+            'Fri': 'Fri',
+            'Sat': 'Sat'
+        };
+        return dayMap[day] || day;
+    };
+
+    const getTimeValue = (time) => {
+        if (!time) return '';
+        // If it's a string with ":", take only the first part
+        if (typeof time === 'string' && time.includes(':')) {
+            return parseInt(time.split(':')[0]);
+        }
+        // If it's a number, return it
+        return parseInt(time);
+    };
+
+    // Autocomplete functions
+    const fetchSuggestions = async (query) => {
+        if (!selectedUniversity || !selectedSemester || query.trim().length < 2) {
+            setSuggestions([]);
+            setShowSuggestions(false);
+            return;
+        }
+
+        try {
+            const token = localStorage.getItem('auth_token');
+            if (!token) {
+                console.log('No auth token found');
+                return;
+            }
+
+            const response = await fetch(`http://localhost:5001/api/courses/autocomplete?q=${encodeURIComponent(query)}&semester=${selectedSemester}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                setSuggestions(data.suggestions || []);
+                setShowSuggestions(true);
+            }
+        } catch (error) {
+            console.error('Error fetching autocomplete suggestions:', error);
+            setSuggestions([]);
+            setShowSuggestions(false);
+        }
+    };
+
+    const handleCourseNameChange = (value) => {
+        onChange(index, "name", value);
+        
+        // Debounced autocomplete
+        if (selectedUniversity) {
+            clearTimeout(window.autocompleteTimeout);
+            window.autocompleteTimeout = setTimeout(() => {
+                fetchSuggestions(value);
+            }, 300);
+        }
+    };
+
+    const selectCourseFromSuggestion = async (suggestion) => {
+        setIsLoadingCourse(true);
+        setShowSuggestions(false);
+        
+        try {
+            const token = localStorage.getItem('auth_token');
+            if (!token) {
+                console.log('No auth token found');
+                return;
+            }
+
+            const response = await fetch(`http://localhost:5001/api/courses/course/${suggestion.id}${selectedSemester ? `?semester=${selectedSemester}` : ''}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (response.ok) {
+                const responseData = await response.json();
+                console.log('📋 API response received:', responseData);
+                
+                // Extract course data from the API response
+                const courseData = responseData.success ? responseData.course : responseData;
+                console.log('📋 Course data extracted:', courseData);
+                
+                // Convert course data to scheduler format, preserving existing course structure
+                const updatedCourse = {
+                    ...course, // Keep existing course data
+                    name: courseData.name || course.name,
+                    hasLecture: false,
+                    hasPractice: false,
+                    lectures: [],
+                    practices: []
+                };
+
+                console.log('📝 Initial updated course:', updatedCourse);
+
+                // Process events to create time slots
+                if (courseData.events && courseData.events.length > 0) {
+                    console.log('🎯 Processing events:', courseData.events);
+                    
+                    // Use Sets to track unique time slots and avoid duplicates
+                    const uniqueLectures = new Set();
+                    const uniquePractices = new Set();
+                    
+                    courseData.events.forEach(event => {
+                        console.log('📚 Processing event:', event);
+                        if (event.timeSlots && event.timeSlots.length > 0) {
+                            event.timeSlots.forEach(timeSlot => {
+                                console.log('⏰ Processing time slot:', timeSlot);
+                                const slot = {
+                                    day: timeSlot.day || '',
+                                    startTime: timeSlot.from ? timeSlot.from.split(':')[0] : '', // Extract hour from 'from'
+                                    endTime: timeSlot.to ? timeSlot.to.split(':')[0] : '' // Extract hour from 'to'
+                                };
+
+                                console.log('✅ Created slot:', slot);
+                                
+                                // Create a unique key for this time slot to avoid duplicates
+                                const slotKey = `${slot.day}-${slot.startTime}-${slot.endTime}`;
+
+                                // Determine if it's a lecture or practice based on category
+                                if (event.category && (event.category.includes('הרצאה') || event.category.includes('lecture'))) {
+                                    console.log('📚 Adding as lecture');
+                                    if (!uniqueLectures.has(slotKey)) {
+                                        uniqueLectures.add(slotKey);
+                                        updatedCourse.hasLecture = true;
+                                        updatedCourse.lectures.push(slot);
+                                    }
+                                } else {
+                                    console.log('👨‍🏫 Adding as practice');
+                                    if (!uniquePractices.has(slotKey)) {
+                                        uniquePractices.add(slotKey);
+                                        updatedCourse.hasPractice = true;
+                                        updatedCourse.practices.push(slot);
+                                    }
+                                }
+                            });
+                        }
+                    });
+                } else {
+                    console.log('⚠️ No events found in course data');
+                }
+
+                // If no sessions were found, set defaults
+                if (!updatedCourse.hasLecture && !updatedCourse.hasPractice) {
+                    console.log('🔧 No sessions found, setting default lecture');
+                    updatedCourse.hasLecture = true;
+                    updatedCourse.lectures = [{ day: '', startTime: '', endTime: '' }];
+                }
+
+                console.log('🎯 Final updated course before onChange:', updatedCourse);
+
+                // Update the course with all the new data at once to avoid controlled/uncontrolled issues
+                // Instead of calling onChange multiple times, we'll update each property individually but synchronously
+                onChange(index, "name", updatedCourse.name);
+                onChange(index, "hasLecture", updatedCourse.hasLecture);
+                onChange(index, "hasPractice", updatedCourse.hasPractice);
+                onChange(index, "lectures", updatedCourse.lectures);
+                onChange(index, "practices", updatedCourse.practices);
+                
+                console.log('✅ All onChange calls completed');
+            } else {
+                console.error('❌ API response not OK:', response.status, response.statusText);
+            }
+        } catch (error) {
+            console.error('Error fetching course details:', error);
+        } finally {
+            setIsLoadingCourse(false);
+        }
+    };
+
+    // Close suggestions when clicking outside
+    useEffect(() => {
+        const handleClickOutside = () => setShowSuggestions(false);
+        document.addEventListener('click', handleClickOutside);
+        return () => document.removeEventListener('click', handleClickOutside);
+    }, []);
 
     const validateTimeSlot = (day, startTime, endTime, type, slotIndex) => {
         const newErrors = { ...errors };
@@ -206,38 +407,6 @@ const CourseInput = ({ course, onChange, index, onRemove, canRemove }) => {
             (course.lectures && course.lectures.length > 1) : 
             (course.practices && course.practices.length > 1);
 
-        // Convert day to a value that the select can understand
-        const getDayValue = (day) => {
-            const dayMap = {
-                'Sunday': 'Sun',
-                'Monday': 'Mon',
-                'Tuesday': 'Tue', 
-                'Wednesday': 'Wed',
-                'Thursday': 'Thu',
-                'Friday': 'Fri',
-                'Saturday': 'Sat',
-                'Sun': 'Sun',
-                'Mon': 'Mon',
-                'Tue': 'Tue',
-                'Wed': 'Wed',
-                'Thu': 'Thu',
-                'Fri': 'Fri',
-                'Sat': 'Sat'
-            };
-            return dayMap[day] || day;
-        };
-
-        // Convert time to a value that the select can understand
-        const getTimeValue = (time) => {
-            if (!time) return '';
-            // If it's a string with ":", take only the first part
-            if (typeof time === 'string' && time.includes(':')) {
-                return parseInt(time.split(':')[0]);
-            }
-            // If it's a number, return it
-            return parseInt(time);
-        };
-
         return (
             <div key={slotIndex} className="time-slot-item">
                 <div className="time-slot-header">
@@ -322,8 +491,27 @@ const CourseInput = ({ course, onChange, index, onRemove, canRemove }) => {
         );
     };
 
+    // Generate a compact summary of the course sessions
+    const getCourseSummary = () => {
+        const lectureSummary = course.lectures && course.lectures.length > 0 
+            ? course.lectures
+                .filter(lecture => lecture.day && lecture.startTime && lecture.endTime)
+                .map(lecture => `${getDayValue(lecture.day)} ${getTimeValue(lecture.startTime)}:00-${getTimeValue(lecture.endTime)}:00`)
+                .join(', ')
+            : '';
+        
+        const practiceSummary = course.practices && course.practices.length > 0 
+            ? course.practices
+                .filter(practice => practice.day && practice.startTime && practice.endTime)
+                .map(practice => `${getDayValue(practice.day)} ${getTimeValue(practice.startTime)}:00-${getTimeValue(practice.endTime)}:00`)
+                .join(', ')
+            : '';
+
+        return { lectureSummary, practiceSummary };
+    };
+
     return (
-        <div className={`course-block ${!hasValidSession() ? 'invalid' : ''}`}>
+        <div className={`course-block ${!hasValidSession() ? 'invalid' : ''} ${isExpanded ? 'expanded' : 'collapsed'}`}>
             {canRemove && (
                 <button 
                     type="button"
@@ -336,26 +524,93 @@ const CourseInput = ({ course, onChange, index, onRemove, canRemove }) => {
                 </button>
             )}
             
-            <div className="input-group">
-                <label className="input-label" htmlFor={`course-name-${index}`}>
-                    Course Name *
-                </label>
-                <input
-                    id={`course-name-${index}`}
-                    type="text"
-                    placeholder="e.g., CS101, Mathematics, Physics"
-                    value={course.name}
-                    onChange={(e) => onChange(index, "name", e.target.value)}
-                    className="course-input"
-                    required
-                />
+            <div className="course-header">
+                <div className="input-group">
+                    <label className="input-label" htmlFor={`course-name-${index}`}>
+                        Course Name * {selectedUniversity && <span className="autocomplete-hint">(Type to search {selectedUniversity} courses)</span>}
+                    </label>
+                    <div className="autocomplete-container">
+                        <input
+                            id={`course-name-${index}`}
+                            type="text"
+                            placeholder={selectedUniversity ? "Start typing course name..." : "e.g., CS101, Mathematics, Physics"}
+                            value={course.name}
+                            onChange={(e) => handleCourseNameChange(e.target.value)}
+                            className="course-input"
+                            required
+                            disabled={isLoadingCourse}
+                            onClick={(e) => e.stopPropagation()}
+                        />
+                        {isLoadingCourse && <div className="loading-indicator">Loading course details...</div>}
+                        {showSuggestions && suggestions.length > 0 && (
+                            <div className="autocomplete-suggestions">
+                                {suggestions.map((suggestion) => (
+                                    <div
+                                        key={suggestion.id}
+                                        className="autocomplete-suggestion"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            selectCourseFromSuggestion(suggestion);
+                                        }}
+                                    >
+                                        <div className="suggestion-name">{suggestion.name}</div>
+                                        {suggestion.lecturers && suggestion.lecturers.length > 0 && (
+                                            <div className="suggestion-lecturers">
+                                                {suggestion.lecturers.join(', ')}
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                {!isExpanded && course.name && (
+                    <div className="course-summary">
+                        {(() => {
+                            const { lectureSummary, practiceSummary } = getCourseSummary();
+                            return (
+                                <div className="summary-content">
+                                    {lectureSummary && (
+                                        <div className="summary-item">
+                                            <span className="summary-label">📚 Lectures:</span>
+                                            <span className="summary-value">{lectureSummary}</span>
+                                        </div>
+                                    )}
+                                    {practiceSummary && (
+                                        <div className="summary-item">
+                                            <span className="summary-label">👨‍🏫 Practice:</span>
+                                            <span className="summary-value">{practiceSummary}</span>
+                                        </div>
+                                    )}
+                                    {!lectureSummary && !practiceSummary && (
+                                        <div className="summary-item no-sessions">
+                                            <span className="summary-value">No sessions configured</span>
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        })()}
+                    </div>
+                )}
+
+                <button
+                    type="button"
+                    className="expand-toggle-btn"
+                    onClick={() => setIsExpanded(!isExpanded)}
+                    title={isExpanded ? "Collapse course details" : "Expand course details"}
+                >
+                    {isExpanded ? "▲ Collapse" : "▼ Edit Sessions"}
+                </button>
             </div>
 
-            <div className="sessions-container">
-                <div className="session-header">
-                    <h4>Course Sessions</h4>
-                    <p className="session-note">Add at least one lecture or practice session</p>
-                </div>
+            {isExpanded && (
+                <div className="sessions-container">
+                    <div className="session-header">
+                        <h4>Course Sessions</h4>
+                        <p className="session-note">Add at least one lecture or practice session</p>
+                    </div>
 
                 {/* Lecture Section */}
                 <div className="session-section">
@@ -453,7 +708,8 @@ const CourseInput = ({ course, onChange, index, onRemove, canRemove }) => {
                         ⚠️ Please add at least one lecture or practice session
                     </div>
                 )}
-            </div>
+                </div>
+            )}
         </div>
     );
 };

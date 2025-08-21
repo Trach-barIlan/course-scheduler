@@ -2,11 +2,23 @@
   background: var(--bg-secondary);
   border: 2px solid var(--border-color);
   border-radius: var(--radius-xl);
-  padding: var(--space-6);
-  margin-bottom: var(--space-6);
+  padding: var(--space-5);
+  margin-bottom: var(--space-4);
   transition: all var(--transition-normal);
   position: relative;
   overflow: hidden;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.course-block.collapsed {
+  padding: var(--space-3);
+  margin-bottom: var(--space-3);
+}
+
+.course-block.expanded {
+  padding: var(--space-5);
+  margin-bottom: var(--space-4);
 }
 
 .course-block.invalid {
@@ -43,16 +55,84 @@
 
 .course-input {
   width: 100%;
-  padding: var(--space-4);
-  margin-bottom: var(--space-4);
+  padding: var(--space-3);
+  margin-bottom: var(--space-3);
   border: 2px solid var(--border-color);
   border-radius: var(--radius-lg);
-  font-size: 1.1rem;
+  font-size: 1rem;
   font-weight: 500;
-  background-color: var(--bg-tertiary);
+  background-color: var(--bg-primary);
   color: var(--text-primary);
   transition: all var(--transition-fast);
+  box-sizing: border-box;
+  min-width: 0; /* Allow shrinking */
   font-family: inherit;
+}
+
+/* Autocomplete styles */
+.autocomplete-container {
+  position: relative;
+  width: 100%;
+}
+
+.autocomplete-hint {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  font-weight: normal;
+  margin-left: 8px;
+}
+
+.autocomplete-suggestions {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: var(--bg-primary);
+  border: 2px solid var(--border-color);
+  border-top: none;
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 1000;
+}
+
+.autocomplete-suggestion {
+  padding: var(--space-3) var(--space-4);
+  cursor: pointer;
+  border-bottom: 1px solid var(--border-color);
+  transition: background-color var(--transition-fast);
+}
+
+.autocomplete-suggestion:hover {
+  background-color: var(--primary-50);
+}
+
+.autocomplete-suggestion:last-child {
+  border-bottom: none;
+}
+
+.suggestion-name {
+  font-weight: 500;
+  color: var(--text-primary);
+  margin-bottom: 2px;
+}
+
+.suggestion-lecturers {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.loading-indicator {
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  transform: translateY(-50%);
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  background: var(--bg-primary);
+  padding: 2px 6px;
+  border-radius: 4px;
 }
 
 .course-input::placeholder {
@@ -254,8 +334,8 @@
 
 .time-selector-row {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap: var(--space-4);
+  grid-template-columns: 1.2fr 1fr 1fr;
+  gap: var(--space-3);
   margin-bottom: var(--space-3);
 }
 
@@ -263,27 +343,34 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
+  min-width: 0; /* Allow shrinking */
 }
 
 .selector-group label {
-  font-size: 0.875rem;
+  font-size: 0.8rem;
   font-weight: 600;
   color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.05em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .day-selector,
 .time-selector {
-  padding: var(--space-3);
+  padding: var(--space-2) var(--space-3);
   border: 2px solid var(--border-color);
   border-radius: var(--radius-md);
-  font-size: 0.95rem;
-  background-color: var(--bg-secondary);
+  background-color: var(--bg-primary);
   color: var(--text-primary);
+  font-size: 0.875rem;
+  font-weight: 500;
   transition: all var(--transition-fast);
-  font-family: inherit;
   cursor: pointer;
+  font-family: inherit;
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 .day-selector:hover,
@@ -315,6 +402,8 @@
   font-size: 0.875rem;
   text-align: center;
   margin-top: var(--space-2);
+  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
 /* Error Message */
@@ -386,6 +475,14 @@
   opacity: 1;
 }
 
+.course-block.collapsed .remove-course-btn {
+  top: var(--space-2);
+  right: var(--space-2);
+  width: 24px;
+  height: 24px;
+  font-size: 1rem;
+}
+
 .remove-course-btn:hover {
   background: var(--error-600);
   transform: scale(1.1);
@@ -411,7 +508,25 @@
   animation: slideInLeft 0.3s ease-out;
 }
 
-/* Responsive Design */
+/* Responsive adjustments for medium screens */
+@media (max-width: 1100px) {
+  .time-selector-row {
+    grid-template-columns: 1.3fr 0.85fr 0.85fr;
+    gap: var(--space-2);
+  }
+  
+  .selector-group label {
+    font-size: 0.75rem;
+  }
+  
+  .day-selector,
+  .time-selector {
+    padding: var(--space-2);
+    font-size: 0.8rem;
+  }
+}
+
+/* Mobile responsive design */
 @media (max-width: 768px) {
   .course-block {
     padding: var(--space-4);
@@ -488,4 +603,91 @@
   .delete-section-btn {
     width: 100%;
   }
+}
+
+/* Course Header and Summary Styles */
+.course-header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.course-block.collapsed .course-header {
+  gap: var(--space-2);
+}
+
+.course-block.collapsed .input-group {
+  margin-bottom: var(--space-2);
+}
+
+.course-block.collapsed .course-input {
+  padding: var(--space-2);
+  margin-bottom: var(--space-2);
+  font-size: 0.9rem;
+}
+
+.course-summary {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: var(--space-2);
+  margin-top: var(--space-1);
+  font-size: 0.85rem;
+}
+
+.summary-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.summary-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 0.8rem;
+  line-height: 1.3;
+}
+
+.summary-label {
+  font-weight: 600;
+  color: var(--text-secondary);
+  min-width: 80px;
+}
+
+.summary-value {
+  color: var(--text-primary);
+  flex: 1;
+}
+
+.summary-item.no-sessions .summary-value {
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+.expand-toggle-btn {
+  background: linear-gradient(135deg, var(--primary-500), var(--primary-600));
+  color: white;
+  border: none;
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-md);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  align-self: flex-start;
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  margin-top: var(--space-1);
+}
+
+.expand-toggle-btn:hover {
+  background: linear-gradient(135deg, var(--primary-600), var(--primary-700));
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.expand-toggle-btn:active {
+  transform: translateY(0);
 }

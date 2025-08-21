@@ -8,6 +8,10 @@ from auth.routes import auth_bp, token_required
 from api.schedules import schedules_bp
 from api.statistics import statistics_bp
 from api.university import university_bp
+from api.contact import contact_bp
+
+from api.supabase_courses import supabase_courses_bp  # New Supabase-based API
+# from api.courses import courses_bp  # Old JSON-based API (commented out)
 from auth.auth_manager import AuthManager
 import os
 from dotenv import load_dotenv
@@ -39,7 +43,11 @@ app.register_blueprint(auth_bp, url_prefix='/api/auth')
 app.register_blueprint(schedules_bp, url_prefix='/api/schedules')
 app.register_blueprint(statistics_bp, url_prefix='/api/statistics')
 app.register_blueprint(university_bp, url_prefix='/api/university')
+app.register_blueprint(contact_bp, url_prefix='/api')
+app.register_blueprint(supabase_courses_bp, url_prefix='/api')  # New Supabase-based API
+# app.register_blueprint(courses_bp, url_prefix='/api')  # Old JSON-based API
 print("✅ University API registered successfully")
+print("✅ Supabase courses API registered successfully")
 
 # Initialize AI parser with timeout handling
 schedule_parser = None
@@ -308,3 +316,25 @@ def test_session():
             "auth_header": request.headers.get('Authorization', 'Not provided'),
             "status": "error"
         }), 500
+
+@app.route("/api/health", methods=["GET"])
+def health():
+    return jsonify({
+        "status": "ok",
+        "ai_model_loaded": schedule_parser is not None,
+        "time": time.time()
+    }), 200
+
+
+# if __name__ == "__main__":
+#     # אפשר לדלג על מודל (לבדיקה ראשונית):
+#     # set SKIP_AI_MODEL=1  (ב-PowerShell: $env:SKIP_AI_MODEL="1")
+#     port = int(os.environ.get("PORT", 5001))
+#     host = os.environ.get("HOST", "0.0.0.0")
+#     debug = os.environ.get("FLASK_DEBUG", "1") == "1"
+
+#     print(f"🚀 Starting Flask server on http://{host}:{port} (debug={debug})")
+#     # אם אתה מעדיף להמתין לטעינת המודל לפני עלייה:
+#     # if not os.environ.get("SKIP_AI_MODEL"): initialize_ai_model()
+
+#     app.run(host=host, port=port, debug=debug, use_reloader=debug)

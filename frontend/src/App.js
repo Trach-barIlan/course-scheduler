@@ -4,7 +4,9 @@ import Navigation from './components/Navigation/Navigation';
 import Sidebar from './components/Sidebar/Sidebar';
 import HomePage from './pages/HomePage';
 import SchedulerPage from './pages/SchedulerPage';
+import ScheduleViewerPage from './pages/ScheduleViewerPage';
 import AboutPage from './pages/AboutPage';
+import ContactPage from './pages/ContactPage';
 import UniversitySelector from './pages/UniversitySelector';
 import CourseCatalog from './components/CourseCatalog';
 import BarIlanCourseCatalog from './components/BarIlanCourseCatalog';
@@ -194,6 +196,10 @@ function AppContent() {
               path="/scheduler" 
               element={<SchedulerPage user={user} authToken={authToken} />} 
             />
+            <Route 
+              path="/schedule-viewer/:scheduleId?" 
+              element={<ScheduleViewerPage user={user} authToken={authToken} />} 
+            />
             <Route
               path="/university-selector"
               element={
@@ -233,6 +239,10 @@ function AppContent() {
             <Route 
               path="/about" 
               element={<AboutPage />} 
+            />
+            <Route 
+              path="/contact" 
+              element={<ContactPage />} 
             />
           </Routes>
         </main>

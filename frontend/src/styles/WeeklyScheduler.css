@@ -1,10 +1,12 @@
 .weekly-scheduler-container {
   background: var(--bg-secondary);
   border-radius: var(--radius-xl);
-  padding: var(--space-8);
+  padding: var(--space-6);
   box-shadow: var(--shadow-lg);
   border: 1px solid var(--border-color);
   min-height: 600px;
+  overflow-x: auto; /* Allow horizontal scrolling if needed */
+  width: 100%;
 }
 
 .scheduler-header {
@@ -219,11 +221,15 @@
   overflow-x: auto;
   width: 100%;
   border-radius: var(--radius-lg);
+  margin-top: var(--space-4);
+  /* Ensure the table container stays within bounds */
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 #schedule-table {
   width: 100%;
-  min-width: 800px;  /* Ensure table is wide enough for 7 columns */
+  min-width: 700px;  /* Reduced min-width for better fit */
   border-collapse: separate;
   border-spacing: 0;
   font-family: var(--font-sans);

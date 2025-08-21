@@ -6,3 +6,5 @@ check_cookies.py
 .DS_Store
 ai_model/.DS_Store
 ai_model/schedule_ner/.DS_Store
+integrations/csv
+integrations/t.txt

@@ -4,6 +4,7 @@ import html2canvas from "html2canvas";
 import SaveScheduleModal from './SaveScheduleModal/SaveScheduleModal';
 import NotImplementedModal from './NotImplementedModal/NotImplementedModal';
 import ScheduleSkeletonLoader from './SkeletonLoader/ScheduleSkeletonLoader';
+import { getCached, setCached, setScheduleDetail } from '../utils/cache'; // עדכן נתיב יחסי אם צריך
 import "../styles/WeeklyScheduler.css";
 
 const WeeklySchedule = ({ schedule, isLoading, user, authToken, scheduleName, scheduleId }) => {
@@ -145,6 +146,36 @@ const WeeklySchedule = ({ schedule, isLoading, user, authToken, scheduleName, sc
     
     // Show success message
     alert(`Schedule "${savedSchedule.schedule_name}" saved successfully!`);
+    
+    // Update cached schedules list
+    try {
+      if (user?.id) {
+        // עדכון רשימת summary
+        const key = 'saved_schedules_list';
+        const existing = getCached(key, user.id) || [];
+        const newSummary = {
+          id: savedSchedule.id,
+          name: savedSchedule.schedule_name,
+          courseCount: savedSchedule.schedule_data?.length || 0,
+          created: savedSchedule.created_at,
+          status: 'active'
+        };
+        const updatedSummaries = [
+          newSummary,
+          ...existing.filter(s => s.id !== newSummary.id)
+        ].slice(0, 20);
+        setCached(key, user.id, updatedSummaries, 5 * 60 * 1000);
+
+        // עדכון detail cache
+        setScheduleDetail(user.id, savedSchedule.id, {
+          id: savedSchedule.id,
+          schedule_name: savedSchedule.schedule_name,
+          schedule_data: savedSchedule.schedule_data,
+          original_course_options: savedSchedule.original_course_options || [],
+          created_at: savedSchedule.created_at
+        });
+      }
+    } catch {}
   };
 
   // Show loading skeleton ONLY for NEW schedule generation, not loaded schedules
