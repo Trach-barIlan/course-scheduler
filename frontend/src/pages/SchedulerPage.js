@@ -656,21 +656,6 @@ const SchedulerPage = ({ user, authToken }) => {
         </div>
 
         <div className="right-panel">
-          <ConstraintsDisplay 
-            parsedConstraints={parsedConstraints} 
-            onConstraintsUpdate={handleConstraintsUpdate}
-            isRegenerating={isLoading}
-          />
-          
-          <WeeklyScheduler 
-            user={user} 
-            authToken={authToken} 
-            schedule={schedule} 
-            isLoading={isLoading}
-            scheduleName={loadedScheduleName}
-            scheduleId={loadedScheduleId}
-          />
-
           {schedule && (
             <div className="enhanced-view-section">
               <button 
@@ -699,6 +684,21 @@ const SchedulerPage = ({ user, authToken }) => {
               </button>
             </div>
           )}
+
+          <ConstraintsDisplay 
+            parsedConstraints={parsedConstraints} 
+            onConstraintsUpdate={handleConstraintsUpdate}
+            isRegenerating={isLoading}
+          />
+          
+          <WeeklyScheduler 
+            user={user} 
+            authToken={authToken} 
+            schedule={schedule} 
+            isLoading={isLoading}
+            scheduleName={loadedScheduleName}
+            scheduleId={loadedScheduleId}
+          />
         </div>
       </div>
 

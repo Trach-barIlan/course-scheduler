@@ -6,6 +6,7 @@ const CourseInput = ({ course, onChange, index, onRemove, canRemove, selectedUni
     const [suggestions, setSuggestions] = useState([]);
     const [showSuggestions, setShowSuggestions] = useState(false);
     const [isLoadingCourse, setIsLoadingCourse] = useState(false);
+    const [isExpanded, setIsExpanded] = useState(false);
 
     const days = [
         { value: 'Sun', label: 'Sunday' },
@@ -24,6 +25,37 @@ const CourseInput = ({ course, onChange, index, onRemove, canRemove, selectedUni
             label: `${hour}:00`
         };
     });
+
+    // Helper functions for value conversion
+    const getDayValue = (day) => {
+        const dayMap = {
+            'Sunday': 'Sun',
+            'Monday': 'Mon',
+            'Tuesday': 'Tue', 
+            'Wednesday': 'Wed',
+            'Thursday': 'Thu',
+            'Friday': 'Fri',
+            'Saturday': 'Sat',
+            'Sun': 'Sun',
+            'Mon': 'Mon',
+            'Tue': 'Tue',
+            'Wed': 'Wed',
+            'Thu': 'Thu',
+            'Fri': 'Fri',
+            'Sat': 'Sat'
+        };
+        return dayMap[day] || day;
+    };
+
+    const getTimeValue = (time) => {
+        if (!time) return '';
+        // If it's a string with ":", take only the first part
+        if (typeof time === 'string' && time.includes(':')) {
+            return parseInt(time.split(':')[0]);
+        }
+        // If it's a number, return it
+        return parseInt(time);
+    };
 
     // Autocomplete functions
     const fetchSuggestions = async (query) => {
@@ -361,38 +393,6 @@ const CourseInput = ({ course, onChange, index, onRemove, canRemove, selectedUni
             (course.lectures && course.lectures.length > 1) : 
             (course.practices && course.practices.length > 1);
 
-        // Convert day to a value that the select can understand
-        const getDayValue = (day) => {
-            const dayMap = {
-                'Sunday': 'Sun',
-                'Monday': 'Mon',
-                'Tuesday': 'Tue', 
-                'Wednesday': 'Wed',
-                'Thursday': 'Thu',
-                'Friday': 'Fri',
-                'Saturday': 'Sat',
-                'Sun': 'Sun',
-                'Mon': 'Mon',
-                'Tue': 'Tue',
-                'Wed': 'Wed',
-                'Thu': 'Thu',
-                'Fri': 'Fri',
-                'Sat': 'Sat'
-            };
-            return dayMap[day] || day;
-        };
-
-        // Convert time to a value that the select can understand
-        const getTimeValue = (time) => {
-            if (!time) return '';
-            // If it's a string with ":", take only the first part
-            if (typeof time === 'string' && time.includes(':')) {
-                return parseInt(time.split(':')[0]);
-            }
-            // If it's a number, return it
-            return parseInt(time);
-        };
-
         return (
             <div key={slotIndex} className="time-slot-item">
                 <div className="time-slot-header">
@@ -477,8 +477,27 @@ const CourseInput = ({ course, onChange, index, onRemove, canRemove, selectedUni
         );
     };
 
+    // Generate a compact summary of the course sessions
+    const getCourseSummary = () => {
+        const lectureSummary = course.lectures && course.lectures.length > 0 
+            ? course.lectures
+                .filter(lecture => lecture.day && lecture.startTime && lecture.endTime)
+                .map(lecture => `${getDayValue(lecture.day)} ${getTimeValue(lecture.startTime)}:00-${getTimeValue(lecture.endTime)}:00`)
+                .join(', ')
+            : '';
+        
+        const practiceSummary = course.practices && course.practices.length > 0 
+            ? course.practices
+                .filter(practice => practice.day && practice.startTime && practice.endTime)
+                .map(practice => `${getDayValue(practice.day)} ${getTimeValue(practice.startTime)}:00-${getTimeValue(practice.endTime)}:00`)
+                .join(', ')
+            : '';
+
+        return { lectureSummary, practiceSummary };
+    };
+
     return (
-        <div className={`course-block ${!hasValidSession() ? 'invalid' : ''}`}>
+        <div className={`course-block ${!hasValidSession() ? 'invalid' : ''} ${isExpanded ? 'expanded' : 'collapsed'}`}>
             {canRemove && (
                 <button 
                     type="button"
@@ -491,52 +510,93 @@ const CourseInput = ({ course, onChange, index, onRemove, canRemove, selectedUni
                 </button>
             )}
             
-            <div className="input-group">
-                <label className="input-label" htmlFor={`course-name-${index}`}>
-                    Course Name * {selectedUniversity && <span className="autocomplete-hint">(Type to search {selectedUniversity} courses)</span>}
-                </label>
-                <div className="autocomplete-container">
-                    <input
-                        id={`course-name-${index}`}
-                        type="text"
-                        placeholder={selectedUniversity ? "Start typing course name..." : "e.g., CS101, Mathematics, Physics"}
-                        value={course.name}
-                        onChange={(e) => handleCourseNameChange(e.target.value)}
-                        className="course-input"
-                        required
-                        disabled={isLoadingCourse}
-                        onClick={(e) => e.stopPropagation()}
-                    />
-                    {isLoadingCourse && <div className="loading-indicator">Loading course details...</div>}
-                    {showSuggestions && suggestions.length > 0 && (
-                        <div className="autocomplete-suggestions">
-                            {suggestions.map((suggestion) => (
-                                <div
-                                    key={suggestion.id}
-                                    className="autocomplete-suggestion"
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        selectCourseFromSuggestion(suggestion);
-                                    }}
-                                >
-                                    <div className="suggestion-name">{suggestion.name}</div>
-                                    {suggestion.lecturers && suggestion.lecturers.length > 0 && (
-                                        <div className="suggestion-lecturers">
-                                            {suggestion.lecturers.join(', ')}
+            <div className="course-header">
+                <div className="input-group">
+                    <label className="input-label" htmlFor={`course-name-${index}`}>
+                        Course Name * {selectedUniversity && <span className="autocomplete-hint">(Type to search {selectedUniversity} courses)</span>}
+                    </label>
+                    <div className="autocomplete-container">
+                        <input
+                            id={`course-name-${index}`}
+                            type="text"
+                            placeholder={selectedUniversity ? "Start typing course name..." : "e.g., CS101, Mathematics, Physics"}
+                            value={course.name}
+                            onChange={(e) => handleCourseNameChange(e.target.value)}
+                            className="course-input"
+                            required
+                            disabled={isLoadingCourse}
+                            onClick={(e) => e.stopPropagation()}
+                        />
+                        {isLoadingCourse && <div className="loading-indicator">Loading course details...</div>}
+                        {showSuggestions && suggestions.length > 0 && (
+                            <div className="autocomplete-suggestions">
+                                {suggestions.map((suggestion) => (
+                                    <div
+                                        key={suggestion.id}
+                                        className="autocomplete-suggestion"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            selectCourseFromSuggestion(suggestion);
+                                        }}
+                                    >
+                                        <div className="suggestion-name">{suggestion.name}</div>
+                                        {suggestion.lecturers && suggestion.lecturers.length > 0 && (
+                                            <div className="suggestion-lecturers">
+                                                {suggestion.lecturers.join(', ')}
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                {!isExpanded && course.name && (
+                    <div className="course-summary">
+                        {(() => {
+                            const { lectureSummary, practiceSummary } = getCourseSummary();
+                            return (
+                                <div className="summary-content">
+                                    {lectureSummary && (
+                                        <div className="summary-item">
+                                            <span className="summary-label">📚 Lectures:</span>
+                                            <span className="summary-value">{lectureSummary}</span>
+                                        </div>
+                                    )}
+                                    {practiceSummary && (
+                                        <div className="summary-item">
+                                            <span className="summary-label">👨‍🏫 Practice:</span>
+                                            <span className="summary-value">{practiceSummary}</span>
+                                        </div>
+                                    )}
+                                    {!lectureSummary && !practiceSummary && (
+                                        <div className="summary-item no-sessions">
+                                            <span className="summary-value">No sessions configured</span>
                                         </div>
                                     )}
                                 </div>
-                            ))}
-                        </div>
-                    )}
-                </div>
+                            );
+                        })()}
+                    </div>
+                )}
+
+                <button
+                    type="button"
+                    className="expand-toggle-btn"
+                    onClick={() => setIsExpanded(!isExpanded)}
+                    title={isExpanded ? "Collapse course details" : "Expand course details"}
+                >
+                    {isExpanded ? "▲ Collapse" : "▼ Edit Sessions"}
+                </button>
             </div>
 
-            <div className="sessions-container">
-                <div className="session-header">
-                    <h4>Course Sessions</h4>
-                    <p className="session-note">Add at least one lecture or practice session</p>
-                </div>
+            {isExpanded && (
+                <div className="sessions-container">
+                    <div className="session-header">
+                        <h4>Course Sessions</h4>
+                        <p className="session-note">Add at least one lecture or practice session</p>
+                    </div>
 
                 {/* Lecture Section */}
                 <div className="session-section">
@@ -634,7 +694,8 @@ const CourseInput = ({ course, onChange, index, onRemove, canRemove, selectedUni
                         ⚠️ Please add at least one lecture or practice session
                     </div>
                 )}
-            </div>
+                </div>
+            )}
         </div>
     );
 };

@@ -8,7 +8,7 @@
 
 .scheduler-content {
   display: grid;
-  grid-template-columns: minmax(500px, 1.3fr) 1.7fr;
+  grid-template-columns: minmax(450px, 1.2fr) 1.8fr;
   gap: var(--space-6);
   height: calc(100vh - 120px); /* Fixed height for independent scrolling */
   overflow: hidden; /* Prevent main container from scrolling */
@@ -16,13 +16,13 @@
 
 @media (max-width: 1400px) {
   .scheduler-content {
-    grid-template-columns: minmax(480px, 1.4fr) 1.6fr;
+    grid-template-columns: minmax(420px, 1.3fr) 1.7fr;
   }
 }
 
 @media (max-width: 1200px) {
   .scheduler-content {
-    grid-template-columns: minmax(450px, 1.5fr) 1.5fr;
+    grid-template-columns: minmax(400px, 1.4fr) 1.6fr;
     gap: var(--space-4);
   }
 }
@@ -40,14 +40,15 @@
   flex-direction: column;
   gap: 0;
   overflow-y: auto; /* Enable independent scrolling for right panel */
-  overflow-x: hidden;
+  overflow-x: auto; /* Allow horizontal scrolling for wide schedules */
   padding-right: var(--space-2); /* Space for scrollbar */
+  min-width: 0; /* Allow flex shrinking */
 }
 
 .course-scheduler {
   background: var(--bg-secondary);
   border-radius: var(--radius-xl);
-  padding: var(--space-6);
+  padding: var(--space-5);
   box-shadow: var(--shadow-lg);
   border: 1px solid var(--border-color);
   height: fit-content;
@@ -827,10 +828,11 @@
 
 /* Enhanced View Button */
 .enhanced-view-section {
-  margin-top: var(--space-4);
+  margin-bottom: var(--space-4);
   display: flex;
   justify-content: center;
-  padding: var(--space-4) 0;
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .enhanced-view-button {

@@ -11,6 +11,16 @@
   box-sizing: border-box;
 }
 
+.course-block.collapsed {
+  padding: var(--space-3);
+  margin-bottom: var(--space-3);
+}
+
+.course-block.expanded {
+  padding: var(--space-5);
+  margin-bottom: var(--space-4);
+}
+
 .course-block.invalid {
   border-color: var(--error-500);
   background: linear-gradient(135deg, var(--error-50), var(--bg-secondary));
@@ -465,6 +475,14 @@
   opacity: 1;
 }
 
+.course-block.collapsed .remove-course-btn {
+  top: var(--space-2);
+  right: var(--space-2);
+  width: 24px;
+  height: 24px;
+  font-size: 1rem;
+}
+
 .remove-course-btn:hover {
   background: var(--error-600);
   transform: scale(1.1);
@@ -585,4 +603,91 @@
   .delete-section-btn {
     width: 100%;
   }
+}
+
+/* Course Header and Summary Styles */
+.course-header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.course-block.collapsed .course-header {
+  gap: var(--space-2);
+}
+
+.course-block.collapsed .input-group {
+  margin-bottom: var(--space-2);
+}
+
+.course-block.collapsed .course-input {
+  padding: var(--space-2);
+  margin-bottom: var(--space-2);
+  font-size: 0.9rem;
+}
+
+.course-summary {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: var(--space-2);
+  margin-top: var(--space-1);
+  font-size: 0.85rem;
+}
+
+.summary-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.summary-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 0.8rem;
+  line-height: 1.3;
+}
+
+.summary-label {
+  font-weight: 600;
+  color: var(--text-secondary);
+  min-width: 80px;
+}
+
+.summary-value {
+  color: var(--text-primary);
+  flex: 1;
+}
+
+.summary-item.no-sessions .summary-value {
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+.expand-toggle-btn {
+  background: linear-gradient(135deg, var(--primary-500), var(--primary-600));
+  color: white;
+  border: none;
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-md);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  align-self: flex-start;
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  margin-top: var(--space-1);
+}
+
+.expand-toggle-btn:hover {
+  background: linear-gradient(135deg, var(--primary-600), var(--primary-700));
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.expand-toggle-btn:active {
+  transform: translateY(0);
 }
