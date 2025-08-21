@@ -67,11 +67,32 @@ const ScheduleViewerPage = ({ user, authToken }) => {
   }, [scheduleId, location.state, loadScheduleFromAPI]);
 
   const handleBackClick = () => {
-    // Go back to where they came from, or dashboard if no referrer
-    if (location.state?.from) {
-      navigate(location.state.from);
-    } else {
-      navigate('/dashboard');
+    try {
+      // Go back to where they came from with proper state preservation
+      if (location.state?.from) {
+        // If coming from scheduler, preserve the courses and state
+        if (location.state.from === '/scheduler' && location.state.schedulerState) {
+          navigate('/scheduler', {
+            state: {
+              preserveState: true,
+              ...location.state.schedulerState
+            }
+          });
+        } else if (location.state.from === '/' || location.state.from === '/dashboard') {
+          // Handle both home page and any dashboard references
+          navigate('/', { replace: true });
+        } else {
+          // Navigate back to the specified page
+          navigate(location.state.from, { replace: true });
+        }
+      } else {
+        // Default fallback - always go home
+        navigate('/', { replace: true });
+      }
+    } catch (error) {
+      console.error('Navigation error:', error);
+      // Ultimate fallback - just go home
+      window.location.href = '/';
     }
   };
 
@@ -117,9 +138,6 @@ const ScheduleViewerPage = ({ user, authToken }) => {
     <div className="schedule-viewer-page">
       <div className="page-header">
         <div className="header-left">
-          <button className="back-button" onClick={handleBackClick}>
-            ← Back
-          </button>
           <div className="page-title">
             <h1>Schedule Viewer</h1>
             <p>Enhanced visualization of your course schedule</p>
@@ -150,6 +168,11 @@ const ScheduleViewerPage = ({ user, authToken }) => {
         <ScheduleViewer 
           schedule={schedule}
           title={scheduleName}
+          backButton={
+            <button className="back-button" onClick={handleBackClick}>
+              ← Back
+            </button>
+          }
         />
       </div>
     </div>

@@ -362,7 +362,7 @@ const Dashboard = ({ user, authToken, onQuickAction }) => {
             schedule: data.schedule.schedule_data || data.schedule,
             scheduleName: data.schedule.schedule_name || schedule.name,
             scheduleId: schedule.id,
-            from: '/dashboard'
+            from: '/'
           }
         });
       } else {

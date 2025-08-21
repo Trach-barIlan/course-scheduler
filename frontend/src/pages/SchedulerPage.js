@@ -8,8 +8,6 @@ import '../styles/SchedulerPage.css';
 
 // Function to convert imported courses to the scheduler format
 const convertImportedCoursesToSchedulerFormat = (importedCourses) => {
-  console.log('🔄 Converting imported courses:', importedCourses);
-  
   return importedCourses.map(courseData => {
     const course = {
       name: courseData.name || courseData.courseName || "",
@@ -45,15 +43,12 @@ const convertImportedCoursesToSchedulerFormat = (importedCourses) => {
       }
     }
 
-    console.log(`✅ Converted course: ${course.name}`, course);
     return course;
   });
 };
 
 // Convert the loaded schedule data to the format used by the courses state
 const convertScheduleToCourses = (scheduleData) => {
-  console.log('🔍 Raw schedule data:', scheduleData);
-  
   if (!Array.isArray(scheduleData)) {
     console.warn('Invalid schedule data format:', scheduleData);
     return [{ 
@@ -66,7 +61,6 @@ const convertScheduleToCourses = (scheduleData) => {
   }
 
   const converted = scheduleData.map((courseData, index) => {
-    console.log(`🔄 Converting course ${index}:`, courseData);
     
     const course = {
       name: courseData.name || "",
@@ -77,8 +71,6 @@ const convertScheduleToCourses = (scheduleData) => {
     };
 
     if (courseData.lecture) {
-      console.log('  📚 Processing lecture:', courseData.lecture);
-
       const parts = courseData.lecture.split(' ');
       if (parts.length === 2) {
         const day = parts[0]; // Mon
@@ -91,12 +83,10 @@ const convertScheduleToCourses = (scheduleData) => {
           startTime: start,
           endTime: end
         }];
-        console.log('  ✅ Converted lecture to:', course.lectures[0]);
       }
     }
 
     if (courseData.ta) {
-      console.log('  👨‍🏫 Processing TA:', courseData.ta);
       const parts = courseData.ta.split(' ');
       if (parts.length === 2) {
         const day = parts[0]; // Tue
@@ -109,15 +99,12 @@ const convertScheduleToCourses = (scheduleData) => {
           startTime: start,
           endTime: end
         }];
-        console.log('  ✅ Converted practice to:', course.practices[0]);
       }
     }
 
-    console.log(`✅ Final converted course ${index}:`, course);
     return course;
   });
 
-  console.log('🎯 All converted courses:', converted);
   return converted;
 };
 
@@ -145,12 +132,19 @@ const SchedulerPage = ({ user, authToken }) => {
   const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
   useEffect(() => {
+    // Handle restored state from schedule viewer
+    if (location.state?.preserveState) {
+      setCourses(location.state.courses || []);
+      setPreference(location.state.preference || "crammed");
+      setConstraints(location.state.constraints || "");
+      setSelectedUniversity(location.state.selectedUniversity || "");
+      setSelectedSemester(location.state.selectedSemester || "");
+      setLoadedScheduleName(location.state.loadedScheduleName || null);
+      setLoadedScheduleId(location.state.loadedScheduleId || null);
+      return; // Don't process other state
+    }
+
     if (location.state?.loadedSchedule) {
-      console.log('🔍 Loading schedule from Dashboard:', location.state);
-      console.log('📋 Schedule data:', location.state.loadedSchedule);
-      console.log('📝 Schedule name:', location.state.scheduleName);
-      console.log('🆔 Schedule ID:', location.state.scheduleId);
-      console.log('🎯 Original course options:', location.state.originalCourseOptions);
       
       setSchedule(location.state.loadedSchedule);
       setLoadedScheduleName(location.state.scheduleName);
@@ -159,7 +153,6 @@ const SchedulerPage = ({ user, authToken }) => {
 
       // Check if we have original course options (preferred) or need to convert from schedule data
       if (location.state.originalCourseOptions && location.state.originalCourseOptions.length > 0) {
-        console.log('✅ Using original course options from saved schedule');
         // Convert backend format to frontend format
         const convertedCourses = location.state.originalCourseOptions.map(courseData => {
           return {
@@ -190,9 +183,7 @@ const SchedulerPage = ({ user, authToken }) => {
         });
         setCourses(convertedCourses);
       } else {
-        console.log('⚠️ No original course options found, converting from schedule data (limited functionality)');
         const loadedCourses = convertScheduleToCourses(location.state.loadedSchedule);
-        console.log('✅ Converted courses:', loadedCourses);
         setCourses(loadedCourses);
       }
       
@@ -203,7 +194,6 @@ const SchedulerPage = ({ user, authToken }) => {
   // Initialize courses from imported university data
   useEffect(() => {
     if (importedCourses && importedCourses.length > 0) {
-      console.log('🏫 Initializing with imported courses:', importedCourses);
       const convertedCourses = convertImportedCoursesToSchedulerFormat(importedCourses);
       setCourses(convertedCourses);
     }
@@ -367,13 +357,6 @@ const SchedulerPage = ({ user, authToken }) => {
         headers['Authorization'] = `Bearer ${authToken}`;
       }
 
-      console.log('🔄 Sending request to:', API_BASE_URL + "/api/schedule");
-      console.log('📋 Request payload:', {
-        preference,
-        courses: formattedCourses,
-        constraints: constraintsToUse
-      });
-
       const scheduleRes = await fetch(API_BASE_URL + "/api/schedule", {
         method: "POST",
         headers: headers,
@@ -384,25 +367,21 @@ const SchedulerPage = ({ user, authToken }) => {
         }),
       });
 
-      console.log('📡 Response status:', scheduleRes.status);
-      console.log('📡 Response headers:', scheduleRes.headers);
-
       // Check if response is actually JSON
       const contentType = scheduleRes.headers.get('content-type');
       if (!contentType || !contentType.includes('application/json')) {
         const responseText = await scheduleRes.text();
-        console.error('❌ Non-JSON response received:', responseText);
+        console.error('Non-JSON response received:', responseText);
         throw new Error(`Server returned non-JSON response. Status: ${scheduleRes.status}. This usually means the backend server is not running or the API endpoint is incorrect.`);
       }
 
       if (!scheduleRes.ok) {
         const errorData = await scheduleRes.json();
-        console.error('❌ API Error:', errorData);
+        console.error('API Error:', errorData);
         throw new Error(errorData.error || `Server error: ${scheduleRes.status}`);
       }
 
       const data = await scheduleRes.json();
-      console.log('✅ Schedule response:', data);
       
       if (data.schedule) {
         setSchedule(data.schedule);
@@ -413,7 +392,7 @@ const SchedulerPage = ({ user, authToken }) => {
         setShowErrorModal(true);
       }
     } catch (err) {
-      console.error('❌ Schedule generation error:', err);
+      console.error('Schedule generation error:', err);
       let errorMessage = err.message;
       
       // Provide more helpful error messages
@@ -449,27 +428,23 @@ const SchedulerPage = ({ user, authToken }) => {
           headers['Authorization'] = `Bearer ${authToken}`;
         }
 
-        console.log('🔄 Parsing constraints...');
-        
         const parseRes = await fetch(API_BASE_URL + "/api/parse", {
           method: "POST",
           headers: headers,
           body: JSON.stringify({ text: constraints }),
         });
 
-        console.log('📡 Parse response status:', parseRes.status);
-
         // Check if response is actually JSON
         const contentType = parseRes.headers.get('content-type');
         if (!contentType || !contentType.includes('application/json')) {
           const responseText = await parseRes.text();
-          console.error('❌ Non-JSON response from parse endpoint:', responseText);
+          console.error('Non-JSON response from parse endpoint:', responseText);
           throw new Error(`Constraints parsing failed. Server returned non-JSON response. This usually means the backend server is not running.`);
         }
 
         if (!parseRes.ok) {
           const errorData = await parseRes.json();
-          console.error('❌ Parse error:', errorData);
+          console.error('Parse error:', errorData);
           throw new Error(errorData.error || 'Failed to parse constraints');
         }
 
@@ -485,12 +460,11 @@ const SchedulerPage = ({ user, authToken }) => {
         };
         
         setParsedConstraints(enhancedConstraintsData);
-        console.log('✅ Constraints parsed:', enhancedConstraintsData);
       }
 
       await generateScheduleWithConstraints(parsedConstraints);
     } catch (err) {
-      console.error('❌ Submit error:', err);
+      console.error('Submit error:', err);
       let errorMessage = err.message;
       
       // Provide more helpful error messages
@@ -707,7 +681,16 @@ const SchedulerPage = ({ user, authToken }) => {
                       schedule: schedule,
                       scheduleName: loadedScheduleName || "Generated Schedule",
                       scheduleId: loadedScheduleId,
-                      from: '/scheduler'
+                      from: '/scheduler',
+                      schedulerState: {
+                        courses: courses,
+                        preference: preference,
+                        constraints: constraints,
+                        selectedUniversity: selectedUniversity,
+                        selectedSemester: selectedSemester,
+                        loadedScheduleName: loadedScheduleName,
+                        loadedScheduleId: loadedScheduleId
+                      }
                     }
                   });
                 }}

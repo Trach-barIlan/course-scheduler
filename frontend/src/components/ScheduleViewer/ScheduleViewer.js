@@ -86,7 +86,7 @@ const convertScheduleFormat = (scheduleData) => {
   return {};
 };
 
-const ScheduleViewer = ({ schedule, title = "My Schedule" }) => {
+const ScheduleViewer = ({ schedule, title, backButton }) => {
   const [hoveredCourse, setHoveredCourse] = useState(null);
   const [selectedCourse, setSelectedCourse] = useState(null);
 
@@ -267,6 +267,7 @@ const ScheduleViewer = ({ schedule, title = "My Schedule" }) => {
     return (
       <div className="schedule-viewer">
         <div className="schedule-viewer-header">
+          {backButton && <div className="header-back-button">{backButton}</div>}
           <h2>{title}</h2>
         </div>
         <div className="no-schedule">
@@ -281,6 +282,7 @@ const ScheduleViewer = ({ schedule, title = "My Schedule" }) => {
   return (
     <div className="schedule-viewer">
       <div className="schedule-viewer-header">
+        {backButton && <div className="header-back-button">{backButton}</div>}
         <h2>{title}</h2>
         <div className="schedule-stats">
           <div className="stat">

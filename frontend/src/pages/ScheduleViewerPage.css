@@ -24,16 +24,18 @@
 .back-button {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 10px 16px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  color: #64748b;
-  text-decoration: none;
+  gap: var(--space-2);
+  background: var(--bg-tertiary);
+  border: 2px solid var(--primary-200);
+  color: var(--primary-600);
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-lg);
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all var(--transition-fast);
+  font-family: inherit;
+  font-size: 0.9rem;
+  position: relative;
 }
 
 .back-button:hover {

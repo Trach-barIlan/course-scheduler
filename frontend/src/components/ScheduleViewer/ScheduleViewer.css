@@ -16,6 +16,33 @@
   border-bottom: 2px solid #f1f5f9;
 }
 
+.header-back-button {
+  margin-right: 16px;
+}
+
+.header-back-button button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--primary-500, #3B82F6);
+  color: white;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.2);
+}
+
+.header-back-button button:hover {
+  background: var(--primary-600, #2563EB);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
 .schedule-viewer-header h2 {
   margin: 0;
   color: #1e293b;
