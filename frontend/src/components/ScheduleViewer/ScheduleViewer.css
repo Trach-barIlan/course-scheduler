@@ -88,7 +88,7 @@
   display: grid;
   grid-template-columns: 1fr 350px;
   gap: 24px;
-  min-height: 600px;
+  min-height: 850px; /* Ensure minimum height for full schedule display */
 }
 
 /* No Schedule State */
@@ -124,14 +124,17 @@
 .schedule-grid-container {
   background: #fafafa;
   border-radius: 12px;
-  overflow: hidden;
+  overflow: auto;
   border: 1px solid #e5e7eb;
+  height: 100%;
+  min-height: 850px; /* Ensure enough height for all 25 time slots */
 }
 
 .schedule-grid {
   display: grid;
   grid-template-columns: 80px repeat(6, 1fr);
-  min-height: 600px;
+  height: 100%; /* Take full container height */
+  min-height: 850px; /* Ensure enough height for 25 slots (25*30 + 50 header + padding) */
 }
 
 .time-column {
@@ -292,8 +295,11 @@
   border-radius: 12px;
   padding: 20px;
   border: 1px solid #e5e7eb;
-  max-height: 600px;
-  overflow-y: auto;
+  height: 100%;
+  max-height: 850px; /* Match the schedule height for consistency */
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .course-list-container h3 {
@@ -310,6 +316,32 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 8px; /* Space for scrollbar */
+  margin-right: -8px; /* Compensate for padding to align with container */
+  max-height: calc(100% - 60px); /* Account for header height */
+}
+
+/* Custom scrollbar for course list */
+.course-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.course-list::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 3px;
+}
+
+.course-list::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+  transition: background-color 0.2s ease;
+}
+
+.course-list::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
 }
 
 .course-card {
@@ -389,6 +421,12 @@
   line-height: 1.2;
 }
 
+.course-type-badges {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
 .course-type-badge {
   background: var(--course-color);
   color: white;
@@ -425,18 +463,31 @@
 .session-info {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
   padding: 6px 12px;
   background: #f8fafc;
   border-radius: 8px;
   font-size: 13px;
   border-left: 3px solid var(--course-color);
+  flex-wrap: wrap;
+}
+
+.session-type {
+  background: var(--course-color);
+  color: white;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  min-width: 60px;
+  text-align: center;
 }
 
 .session-day {
   font-weight: 600;
   color: #374151;
-  min-width: 70px;
+  min-width: 45px;
 }
 
 .session-time {

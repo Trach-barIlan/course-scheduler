@@ -153,7 +153,7 @@ const ScheduleViewer = ({ schedule, title, backButton }) => {
     }, {});
   }, [schedule]);
 
-  // Get all unique courses for the course list
+  // Get all unique courses for the course list, grouped by course name
   const getAllCourses = useCallback(() => {
     const coursesMap = new Map();
     
@@ -172,29 +172,52 @@ const ScheduleViewer = ({ schedule, title, backButton }) => {
           
           console.log('📊 Extracted data - name:', courseName, 'type:', courseType, 'lecturer:', lecturer, 'location:', location);
           
-          const key = `${courseName}-${courseType}`;
+          // Group by course name only, not by course name + type
+          const key = courseName;
           
           if (!coursesMap.has(key)) {
             coursesMap.set(key, {
               courseName: courseName,
-              type: courseType,
               lecturer: lecturer,
-              location: location,
               color: course.color,
-              sessions: []
+              sessions: [],
+              types: new Set() // Track unique types for this course
             });
           }
-          coursesMap.get(key).sessions.push({
+          
+          const courseData = coursesMap.get(key);
+          courseData.types.add(courseType);
+          courseData.sessions.push({
             day,
             time: course.time || 'TBA',
-            location: location
+            location: location,
+            type: courseType
           });
         });
       }
     });
 
-    const result = Array.from(coursesMap.values());
-    console.log('📊 Final course list:', result);
+    // Convert to array and sort sessions by type (lectures first, then practices)
+    const result = Array.from(coursesMap.values()).map(course => ({
+      ...course,
+      types: Array.from(course.types).sort((a, b) => {
+        // Sort lectures before practices/labs
+        const typeOrder = { 'lecture': 0, 'practice': 1, 'lab': 1, 'ta': 1 };
+        return (typeOrder[a.toLowerCase()] || 2) - (typeOrder[b.toLowerCase()] || 2);
+      }),
+      sessions: course.sessions.sort((a, b) => {
+        // Sort by type first, then by day
+        const typeOrder = { 'lecture': 0, 'practice': 1, 'lab': 1, 'ta': 1 };
+        const typeComparison = (typeOrder[a.type.toLowerCase()] || 2) - (typeOrder[b.type.toLowerCase()] || 2);
+        if (typeComparison !== 0) return typeComparison;
+        
+        // Then sort by day
+        const dayOrder = { 'Sun': 0, 'Mon': 1, 'Tue': 2, 'Wed': 3, 'Thu': 4, 'Fri': 5, 'Sat': 6 };
+        return (dayOrder[a.day] || 7) - (dayOrder[b.day] || 7);
+      })
+    }));
+
+    console.log('📊 Final grouped course list:', result);
     return result;
   }, [processedSchedule]);
 
@@ -240,13 +263,12 @@ const ScheduleViewer = ({ schedule, title, backButton }) => {
     if (!course) return false;
     
     const courseName = course.course_name || course.name || '';
-    const courseType = course.type || '';
     
     if (selectedCourse) {
-      return courseName === selectedCourse.courseName && courseType === selectedCourse.type;
+      return courseName === selectedCourse.courseName;
     }
     if (hoveredCourse) {
-      return courseName === hoveredCourse.courseName && courseType === hoveredCourse.type;
+      return courseName === hoveredCourse.courseName;
     }
     return false;
   };
@@ -260,7 +282,7 @@ const ScheduleViewer = ({ schedule, title, backButton }) => {
   };
 
   const handleCourseClick = (course) => {
-    setSelectedCourse(selectedCourse?.courseName === course.courseName && selectedCourse?.type === course.type ? null : course);
+    setSelectedCourse(selectedCourse?.courseName === course.courseName ? null : course);
   };
 
   if (!schedule || Object.keys(schedule).length === 0) {
@@ -374,11 +396,11 @@ const ScheduleViewer = ({ schedule, title, backButton }) => {
           <div className="course-list">
             {getAllCourses().map((course, index) => (
               <div
-                key={`${course.courseName}-${course.type}`}
+                key={course.courseName}
                 className={`course-card ${
-                  (selectedCourse?.courseName === course.courseName && selectedCourse?.type === course.type) ? 'selected' : ''
+                  (selectedCourse?.courseName === course.courseName) ? 'selected' : ''
                 } ${
-                  (hoveredCourse?.courseName === course.courseName && hoveredCourse?.type === course.type) ? 'hovered' : ''
+                  (hoveredCourse?.courseName === course.courseName) ? 'hovered' : ''
                 }`}
                 style={{ '--course-color': course.color }}
                 onMouseEnter={() => handleCourseHover(course, true)}
@@ -392,7 +414,11 @@ const ScheduleViewer = ({ schedule, title, backButton }) => {
                   ></div>
                   <div className="course-title">
                     <h4>{course.courseName}</h4>
-                    <span className="course-type-badge">{course.type}</span>
+                    <div className="course-type-badges">
+                      {course.types.map((type, typeIndex) => (
+                        <span key={typeIndex} className="course-type-badge">{type}</span>
+                      ))}
+                    </div>
                   </div>
                 </div>
                 
@@ -406,6 +432,7 @@ const ScheduleViewer = ({ schedule, title, backButton }) => {
                 <div className="course-sessions">
                   {course.sessions.map((session, sessionIndex) => (
                     <div key={sessionIndex} className="session-info">
+                      <span className="session-type">{session.type}</span>
                       <span className="session-day">{session.day}</span>
                       <span className="session-time">{session.time}</span>
                       {session.location && (
