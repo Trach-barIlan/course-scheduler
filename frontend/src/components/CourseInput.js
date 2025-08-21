@@ -144,6 +144,11 @@ const CourseInput = ({ course, onChange, index, onRemove, canRemove, selectedUni
                 // Process events to create time slots
                 if (courseData.events && courseData.events.length > 0) {
                     console.log('🎯 Processing events:', courseData.events);
+                    
+                    // Use Sets to track unique time slots and avoid duplicates
+                    const uniqueLectures = new Set();
+                    const uniquePractices = new Set();
+                    
                     courseData.events.forEach(event => {
                         console.log('📚 Processing event:', event);
                         if (event.timeSlots && event.timeSlots.length > 0) {
@@ -156,16 +161,25 @@ const CourseInput = ({ course, onChange, index, onRemove, canRemove, selectedUni
                                 };
 
                                 console.log('✅ Created slot:', slot);
+                                
+                                // Create a unique key for this time slot to avoid duplicates
+                                const slotKey = `${slot.day}-${slot.startTime}-${slot.endTime}`;
 
                                 // Determine if it's a lecture or practice based on category
                                 if (event.category && (event.category.includes('הרצאה') || event.category.includes('lecture'))) {
                                     console.log('📚 Adding as lecture');
-                                    updatedCourse.hasLecture = true;
-                                    updatedCourse.lectures.push(slot);
+                                    if (!uniqueLectures.has(slotKey)) {
+                                        uniqueLectures.add(slotKey);
+                                        updatedCourse.hasLecture = true;
+                                        updatedCourse.lectures.push(slot);
+                                    }
                                 } else {
                                     console.log('👨‍🏫 Adding as practice');
-                                    updatedCourse.hasPractice = true;
-                                    updatedCourse.practices.push(slot);
+                                    if (!uniquePractices.has(slotKey)) {
+                                        uniquePractices.add(slotKey);
+                                        updatedCourse.hasPractice = true;
+                                        updatedCourse.practices.push(slot);
+                                    }
                                 }
                             });
                         }
