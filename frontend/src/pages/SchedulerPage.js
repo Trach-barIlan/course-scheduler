@@ -575,9 +575,10 @@ const SchedulerPage = ({ user, authToken }) => {
                       onChange={(e) => setSelectedSemester(e.target.value)}
                       className="compact-select"
                     >
-                      <option value="">All</option>
+                      <option value="">Select Semester</option>
                       <option value="A">A</option>
                       <option value="B">B</option>
+                      <option value="Summer">Summer</option>
                     </select>
                   </div>
                 )}
@@ -585,8 +586,11 @@ const SchedulerPage = ({ user, authToken }) => {
               
               {selectedUniversity && (
                 <div className="autocomplete-status">
-                  ✨ Autocomplete enabled for {selectedUniversity}
-                  {selectedSemester && ` (Semester ${selectedSemester})`}
+                  {selectedSemester ? (
+                    <>✨ Autocomplete enabled for {selectedUniversity} (Semester {selectedSemester})</>
+                  ) : (
+                    <>⚠️ Select a semester to enable autocomplete for {selectedUniversity}</>
+                  )}
                 </div>
               )}
             </div>

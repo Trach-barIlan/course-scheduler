@@ -59,7 +59,7 @@ const CourseInput = ({ course, onChange, index, onRemove, canRemove, selectedUni
 
     // Autocomplete functions
     const fetchSuggestions = async (query) => {
-        if (!selectedUniversity || query.trim().length < 2) {
+        if (!selectedUniversity || !selectedSemester || query.trim().length < 2) {
             setSuggestions([]);
             setShowSuggestions(false);
             return;
@@ -72,7 +72,7 @@ const CourseInput = ({ course, onChange, index, onRemove, canRemove, selectedUni
                 return;
             }
 
-            const response = await fetch(`http://localhost:5001/api/courses/autocomplete?q=${encodeURIComponent(query)}&semester=${selectedSemester || ''}`, {
+            const response = await fetch(`http://localhost:5001/api/courses/autocomplete?q=${encodeURIComponent(query)}&semester=${selectedSemester}`, {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'
