@@ -439,7 +439,7 @@ def get_course_details(course_id):
                 time_slots = []
                 for slot in event.get('time_slots', []):
                     time_slot = {
-                        'day': slot.get('day', {}).get('name_hebrew', ''),
+                        'day': slot.get('day', {}).get('name_english', ''),  # Use English day names
                         'from': slot.get('start_time', ''),
                         'to': slot.get('end_time', ''),
                         'semester': slot.get('semester', {}).get('code', ''),
