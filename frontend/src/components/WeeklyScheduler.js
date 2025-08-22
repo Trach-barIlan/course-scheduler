@@ -11,6 +11,7 @@ const WeeklySchedule = ({ schedule, isLoading, user, authToken, scheduleName, sc
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
   const [selectedClass, setSelectedClass] = useState(null);
+  const [highlightedCourse, setHighlightedCourse] = useState(null); // For highlighting all slots of a course
   const [draggedClass, setDraggedClass] = useState(null);
   const [availableSlots, setAvailableSlots] = useState([]);
   const [currentSchedule, setCurrentSchedule] = useState(schedule);
@@ -382,18 +383,33 @@ const WeeklySchedule = ({ schedule, isLoading, user, authToken, scheduleName, sc
   };
 
   const handleClassClick = (slot) => {
+    // If we're in drag mode and clicking the same class, cancel drag mode
     if (draggedClass && draggedClass.slotKey === slot.slotKey) {
-      // Clicking on the same class again - cancel drag mode
       setDraggedClass(null);
       setAvailableSlots([]);
-    } else {
-      // Start drag mode
+      setHighlightedCourse(null);
+      return;
+    }
+    
+    // If we're in drag mode and clicking a different class, switch to new class
+    if (draggedClass && draggedClass.slotKey !== slot.slotKey) {
       setDraggedClass(slot);
       const availableSlots = findAvailableSlots(slot);
       setAvailableSlots(availableSlots);
+      setHighlightedCourse(slot.courseName);
       console.log('Available slots for', slot.text, ':', availableSlots);
+      return;
     }
-    setSelectedClass(null);
+
+    // If clicking the same course that's already highlighted, toggle off
+    if (highlightedCourse === slot.courseName) {
+      setHighlightedCourse(null);
+      return;
+    }
+
+    // Otherwise, highlight all sessions of this course
+    setHighlightedCourse(slot.courseName);
+    console.log('Highlighting all sessions for course:', slot.courseName);
   };
 
   const handleSlotDrop = (targetSlot) => {
@@ -438,6 +454,22 @@ const WeeklySchedule = ({ schedule, isLoading, user, authToken, scheduleName, sc
   const cancelDragMode = () => {
     setDraggedClass(null);
     setAvailableSlots([]);
+    setHighlightedCourse(null);
+  };
+
+  // Check if a course slot should be highlighted
+  const isCourseHighlighted = (slot) => {
+    return highlightedCourse && slot.courseName === highlightedCourse;
+  };
+
+  // Add double-click handler to start drag mode
+  const handleClassDoubleClick = (slot) => {
+    // Start drag mode on double-click
+    setDraggedClass(slot);
+    const availableSlots = findAvailableSlots(slot);
+    setAvailableSlots(availableSlots);
+    setHighlightedCourse(slot.courseName);
+    console.log('Drag mode started for', slot.text, ':', availableSlots);
   };
 
   const downloadPDF = async () => {
@@ -450,50 +482,113 @@ const WeeklySchedule = ({ schedule, isLoading, user, authToken, scheduleName, sc
     try {
       const containerElement = document.querySelector(".weekly-scheduler-container");
       
+      // Temporarily hide non-essential elements
+      const elementsToHide = document.querySelectorAll('.scheduler-actions, .constraints-display, .enhanced-view-section');
+      elementsToHide.forEach(el => el.style.display = 'none');
+      
       const canvas = await html2canvas(containerElement, { 
-        scale: 1.2,
+        scale: 1.5, // Good quality
         useCORS: true,
         backgroundColor: '#ffffff',
         scrollX: 0,
         scrollY: 0,
-        width: containerElement.scrollWidth,
-        height: containerElement.scrollHeight,
-        allowTaint: true,
-        removeContainer: false
+        width: Math.max(containerElement.scrollWidth, 1100), // Force minimum width
+        height: Math.max(containerElement.scrollHeight, 800), // Force minimum height
+        allowTaint: false,
+        removeContainer: false,
+        logging: false,
+        pixelRatio: 1,
+        windowWidth: Math.max(containerElement.scrollWidth, 1100),
+        windowHeight: Math.max(containerElement.scrollHeight, 800),
+        imageTimeout: 15000,
+        onclone: (clonedDoc) => {
+          // Make the table wider during capture
+          const style = clonedDoc.createElement('style');
+          style.textContent = `
+            .scheduler-actions, .constraints-display, .enhanced-view-section { display: none !important; }
+            .weekly-scheduler-container { 
+              padding: 20px !important; 
+              background: #ffffff !important;
+              box-shadow: none !important;
+              border: none !important;
+              min-width: 1050px !important; /* Force wider container */
+              width: 1050px !important;
+              opacity: 1 !important;
+            }
+            #schedule-table { 
+              font-size: 16px !important; 
+              width: 1000px !important; /* Much wider table */
+              min-width: 1000px !important;
+              border-collapse: collapse !important;
+              background: #ffffff !important;
+              font-weight: 600 !important;
+              opacity: 1 !important;
+            }
+            #schedule-table th, #schedule-table td { 
+              padding: 18px 15px !important; 
+              border: 2px solid #000000 !important;
+              word-wrap: break-word !important;
+              font-size: 15px !important;
+              min-height: 50px !important;
+              font-weight: 700 !important;
+              opacity: 1 !important;
+            }
+            #schedule-table th {
+              background: #d1ecf1 !important;
+              font-weight: 900 !important;
+              color: #000000 !important;
+              opacity: 1 !important;
+            }
+            #schedule-table td:empty,
+            #schedule-table td:not([style*="background-color"]) {
+              background: #ffffff !important;
+              color: #000000 !important;
+              opacity: 1 !important;
+            }
+            #schedule-table td[style*="background-color"] {
+              font-weight: 900 !important;
+              border: 2px solid #000000 !important;
+              opacity: 1 !important;
+              color: #000000 !important;
+              text-shadow: none !important;
+            }
+          `;
+          clonedDoc.head.appendChild(style);
+        }
       });
       
-      const imgData = canvas.toDataURL("image/png");
-      const pdf = new jsPDF("landscape", "mm", "a4");
+      // Restore hidden elements
+      elementsToHide.forEach(el => el.style.display = '');
+      
+      // Use PNG with no compression for maximum quality
+      const imgData = canvas.toDataURL("image/png", 1.0);
+      const pdf = new jsPDF("portrait", "mm", "a4"); // Changed to portrait orientation
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
       
-      pdf.setFontSize(16);
-      pdf.setTextColor(59, 130, 246);
-      pdf.text("Weekly Course Schedule", 20, 20);
-      
-      pdf.setFontSize(10);
-      pdf.setTextColor(107, 114, 128);
-      pdf.text(`Generated on ${new Date().toLocaleDateString()}`, 20, 30);
-      
-      const margin = 10;
+      // No header text - use full page for schedule
+      const margin = 3; // Even smaller margins for maximum width
       const availableWidth = pdfWidth - (2 * margin);
-      const availableHeight = pdfHeight - 40; 
+      const availableHeight = pdfHeight - (2 * margin);
       
+      // Calculate proper sizing - prioritize width usage
       const canvasAspectRatio = canvas.width / canvas.height;
-      const pageAspectRatio = availableWidth / availableHeight;
       
       let imgWidth, imgHeight;
       
-      if (canvasAspectRatio > pageAspectRatio) {
-        imgWidth = availableWidth;
-        imgHeight = availableWidth / canvasAspectRatio;
-      } else {
+      // Always try to use maximum width first
+      imgWidth = availableWidth;
+      imgHeight = availableWidth / canvasAspectRatio;
+      
+      // If height exceeds available space, then scale down
+      if (imgHeight > availableHeight) {
         imgHeight = availableHeight;
         imgWidth = availableHeight * canvasAspectRatio;
       }
       
+      // Center the schedule on the page
       const x = (pdfWidth - imgWidth) / 2;
-      const y = 40; 
+      const y = (pdfHeight - imgHeight) / 2; 
       
       pdf.addImage(imgData, "PNG", x, y, imgWidth, imgHeight);
       pdf.save("WeeklySchedule.pdf");
@@ -551,13 +646,6 @@ const WeeklySchedule = ({ schedule, isLoading, user, authToken, scheduleName, sc
     return `${hour - 12}:00 PM`;
   };
 
-  // Debugging output
-  console.log('WeeklyScheduler received:');
-  console.log('- schedule:', schedule);
-  console.log('- scheduleName:', scheduleName);
-  console.log('- scheduleId:', scheduleId);
-  console.log('- isLoading:', isLoading);
-
   return (
     <div className="weekly-scheduler-container">
       <div className="scheduler-header">
@@ -569,18 +657,18 @@ const WeeklySchedule = ({ schedule, isLoading, user, authToken, scheduleName, sc
             <div className="schedule-source">
               <div className="source-info">
                 <span className="source-badge">📂 Loaded Schedule</span>
-                <span className="edit-hint">You can modify course times on the left and regenerate</span>
+                <span className="edit-hint">You can modify course times on the left and regenerate, or you can double click a class to move it</span>
               </div>
             </div>
           )}
         </div>
         <div className="scheduler-actions">
-          {draggedClass && (
+          {(draggedClass || highlightedCourse) && (
             <button 
               onClick={cancelDragMode}
               className="action-button button-cancel"
             >
-              Cancel Move
+              {draggedClass ? 'Cancel Move' : 'Clear Highlight'}
             </button>
           )}
           <button 
@@ -633,13 +721,20 @@ const WeeklySchedule = ({ schedule, isLoading, user, authToken, scheduleName, sc
 
       {draggedClass && (
         <div className="drag-mode-info">
-          <p>Moving: <strong>{draggedClass.text}</strong></p>
+          <p>🔄 Moving: <strong>{draggedClass.text}</strong></p>
           <p>
             {availableSlots.some(slot => slot.isOriginalOption) 
               ? "Click on a highlighted time slot to switch to an alternative option for this class."
               : "Click on a highlighted time slot to move the class there, or click \"Cancel Move\" to exit."
             }
           </p>
+        </div>
+      )}
+
+      {highlightedCourse && !draggedClass && (
+        <div className="highlight-mode-info">
+          <p>✨ Highlighting all sessions for: <strong>{highlightedCourse}</strong></p>
+          <p>Double-click any session to move it, or click another course to highlight it instead.</p>
         </div>
       )}
       
@@ -669,17 +764,28 @@ const WeeklySchedule = ({ schedule, isLoading, user, authToken, scheduleName, sc
                   if (occupyingSlot) {
                     const isStartHour = h === occupyingSlot.start;
                     const isDragging = draggedClass && draggedClass.slotKey === occupyingSlot.slotKey;
+                    const isHighlighted = isCourseHighlighted(occupyingSlot);
                     
                     return isStartHour ? (
                       <td 
                         key={d} 
                         rowSpan={occupyingSlot.end - occupyingSlot.start} 
-                        style={{ backgroundColor: occupyingSlot.color }}
-                        title={occupyingSlot.text}
+                        style={{ 
+                          backgroundColor: occupyingSlot.color,
+                          opacity: isHighlighted ? 1 : (highlightedCourse ? 0.3 : 1),
+                          transform: isDragging ? 'scale(0.95)' : 'scale(1)',
+                          transition: 'all 0.2s ease'
+                        }}
+                        title={`${occupyingSlot.text} - Click to highlight all sessions, Double-click to move`}
                         onClick={() => handleClassClick(occupyingSlot)}
-                        className={`clickable-cell ${isDragging ? 'dragging' : ''}`}
+                        onDoubleClick={() => handleClassDoubleClick(occupyingSlot)}
+                        className={`clickable-cell ${isDragging ? 'dragging' : ''} ${isHighlighted ? 'highlighted-course' : ''}`}
                       >
-                        {occupyingSlot.text}
+                        <div className="class-content">
+                          {occupyingSlot.text}
+                          {isHighlighted && <span className="highlight-indicator">✨</span>}
+                          {isDragging && <span className="drag-indicator">🔄</span>}
+                        </div>
                       </td>
                     ) : null;
                   }

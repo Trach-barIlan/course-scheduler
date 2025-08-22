@@ -7,6 +7,9 @@
   min-height: 600px;
   overflow-x: auto; /* Allow horizontal scrolling if needed */
   width: 100%;
+  margin-top: var(--space-12); /* Increased space to prevent overlap with expanded constraints */
+  position: relative;
+  z-index: 5;
 }
 
 .scheduler-header {
@@ -188,6 +191,67 @@
   color: var(--primary-900);
 }
 
+/* Highlight Mode Info */
+.highlight-mode-info {
+  background: linear-gradient(135deg, var(--warning-50), var(--warning-100));
+  border: 2px solid var(--warning-200);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+  margin-bottom: var(--space-6);
+  text-align: center;
+}
+
+.highlight-mode-info p {
+  margin: var(--space-1) 0;
+  color: var(--warning-800);
+}
+
+.highlight-mode-info strong {
+  color: var(--warning-900);
+}
+
+/* Course Highlighting Styles */
+.highlighted-course {
+  position: relative;
+  box-shadow: 0 0 15px rgba(59, 130, 246, 0.4), inset 0 0 15px rgba(59, 130, 246, 0.1) !important;
+  border: 2px solid rgba(59, 130, 246, 0.6) !important;
+  z-index: 10;
+}
+
+.class-content {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  text-align: center;
+}
+
+.highlight-indicator {
+  display: block;
+  font-size: 0.8em;
+  margin-top: 2px;
+  animation: sparkle 1.5s ease-in-out infinite;
+}
+
+.drag-indicator {
+  display: block;
+  font-size: 0.8em;
+  margin-top: 2px;
+  animation: spin 2s linear infinite;
+}
+
+@keyframes sparkle {
+  0%, 100% { opacity: 0.5; transform: scale(0.8); }
+  50% { opacity: 1; transform: scale(1.1); }
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
 .empty-state {
   display: flex;
   flex-direction: column;
@@ -312,12 +376,15 @@
 
 .clickable-cell {
   cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
 }
 
 .clickable-cell:hover {
   transform: scale(1.02);
   box-shadow: var(--shadow-lg);
   z-index: 5;
+  filter: brightness(1.05);
 }
 
 .dragging {
@@ -620,25 +687,71 @@
 
 /* Print Styles */
 @media print {
-  .scheduler-actions {
-    display: none;
+  /* Hide UI elements that shouldn't be in PDF */
+  .scheduler-actions,
+  .popup-overlay,
+  .drag-mode-info,
+  .constraints-display,
+  .enhanced-view-section {
+    display: none !important;
   }
   
+  /* Optimize container for printing */
   .weekly-scheduler-container {
     box-shadow: none;
     border: none;
-    padding: 0;
+    padding: 10px;
+    margin: 0;
+    background: white !important;
+    width: 100% !important;
+    max-width: none !important;
+    min-height: auto !important;
   }
   
+  /* Optimize table for PDF */
   #schedule-table {
     box-shadow: none;
+    width: 100% !important;
+    min-width: 100% !important;
+    max-width: 100% !important;
+    font-size: 10px !important;
+    border-collapse: collapse !important;
+    page-break-inside: avoid;
   }
   
-  .popup-overlay {
-    display: none;
+  /* Optimize table headers */
+  #schedule-table th {
+    background: #f8f9fa !important;
+    color: #212529 !important;
+    padding: 8px 4px !important;
+    font-size: 9px !important;
+    font-weight: bold !important;
+    border: 1px solid #dee2e6 !important;
+    text-align: center !important;
   }
-
-  .drag-mode-info {
-    display: none;
+  
+  /* Optimize table cells */
+  #schedule-table td {
+    padding: 6px 3px !important;
+    font-size: 8px !important;
+    border: 1px solid #dee2e6 !important;
+    background: white !important;
+    vertical-align: top !important;
+    word-wrap: break-word !important;
+    max-width: 80px !important;
+  }
+  
+  /* Handle course blocks in print */
+  #schedule-table td[style*="background-color"] {
+    background: #e3f2fd !important;
+    color: #1565c0 !important;
+    font-weight: bold !important;
+  }
+  
+  /* Ensure text fits properly */
+  .course-block {
+    font-size: 7px !important;
+    line-height: 1.2 !important;
+    padding: 2px !important;
   }
 }

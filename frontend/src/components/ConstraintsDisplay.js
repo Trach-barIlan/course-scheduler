@@ -1,27 +1,26 @@
 import React, { useState } from 'react';
 import '../styles/ConstraintsDisplay.css';
 
-const ConstraintsDisplay = ({ parsedConstraints, onConstraintsUpdate, isRegenerating }) => {
-  const [constraints, setConstraints] = useState(parsedConstraints?.constraints || []);
-  const [isEditing, setIsEditing] = useState(false);
-  const [editingIndex, setEditingIndex] = useState(null);
-  const [editForm, setEditForm] = useState({});
-  const [showAddForm, setShowAddForm] = useState(false);
-  const [addForm, setAddForm] = useState({
-    type: 'No Class Before',
-    time: '',
-    day: '',
-    name: ''
-  });
-
-  // Update local state when props change
-  React.useEffect(() => {
+const ConstraintsDisplay = ({ parsedConstraints, onConstraintsChange }) => {
+    const [showAddForm, setShowAddForm] = useState(false);
+    const [isRegenerating, setIsRegenerating] = useState(false);
+    const [isExpanded, setIsExpanded] = useState(false);
+    const [constraints, setConstraints] = useState(parsedConstraints?.constraints || []);
+    const [editingIndex, setEditingIndex] = useState(null);
+    const [editForm, setEditForm] = useState({});
+    const [isEditing, setIsEditing] = useState(false);
+    const [addForm, setAddForm] = useState({
+        type: 'No Class Before',
+        time: '',
+        day: '',
+        name: ''
+    });  React.useEffect(() => {
     if (parsedConstraints?.constraints) {
       setConstraints(parsedConstraints.constraints);
     }
   }, [parsedConstraints]);
 
-  if (!parsedConstraints || !parsedConstraints.constraints || parsedConstraints.constraints.length === 0) {
+  if (!constraints || constraints.length === 0) {
     return null;
   }
 
@@ -119,6 +118,11 @@ const ConstraintsDisplay = ({ parsedConstraints, onConstraintsUpdate, isRegenera
     setEditingIndex(null);
     setEditForm({});
     setIsEditing(false);
+    
+    // Notify parent component
+    if (onConstraintsChange) {
+      onConstraintsChange(newConstraints);
+    }
   };
 
   const handleCancelEdit = () => {
@@ -130,6 +134,11 @@ const ConstraintsDisplay = ({ parsedConstraints, onConstraintsUpdate, isRegenera
   const handleDelete = (index) => {
     const newConstraints = constraints.filter((_, i) => i !== index);
     setConstraints(newConstraints);
+    
+    // Notify parent component
+    if (onConstraintsChange) {
+      onConstraintsChange(newConstraints);
+    }
   };
 
   const handleAdd = () => {
@@ -148,7 +157,8 @@ const ConstraintsDisplay = ({ parsedConstraints, onConstraintsUpdate, isRegenera
         delete newConstraint.day;
       }
       
-      setConstraints([...constraints, newConstraint]);
+      const newConstraints = [...constraints, newConstraint];
+      setConstraints(newConstraints);
       setAddForm({
         type: 'No Class Before',
         time: '',
@@ -156,6 +166,11 @@ const ConstraintsDisplay = ({ parsedConstraints, onConstraintsUpdate, isRegenera
         name: ''
       });
       setShowAddForm(false);
+      
+      // Notify parent component
+      if (onConstraintsChange) {
+        onConstraintsChange(newConstraints);
+      }
     }
   };
 
@@ -170,8 +185,15 @@ const ConstraintsDisplay = ({ parsedConstraints, onConstraintsUpdate, isRegenera
     return false;
   };
 
-  const handleRegenerateSchedule = () => {
-    onConstraintsUpdate(constraints);
+  const handleRegenerateSchedule = async () => {
+    if (onConstraintsChange) {
+      setIsRegenerating(true);
+      try {
+        await onConstraintsChange(constraints);
+      } finally {
+        setIsRegenerating(false);
+      }
+    }
   };
 
   const renderEditForm = (constraint, index) => {
@@ -339,22 +361,70 @@ const ConstraintsDisplay = ({ parsedConstraints, onConstraintsUpdate, isRegenera
   };
 
   return (
-    <div className="constraints-display">
-      <div className="constraints-header">
-        <div className="constraints-title-section">
-          <h3 className="constraints-title">
-            🤖 AI Interpreted Constraints
-          </h3>
-          <p className="constraints-subtitle">
-            Your natural language preferences have been automatically parsed and applied
-          </p>
-        </div>
-        <div className="constraints-count">
-          {constraints.length} constraint{constraints.length !== 1 ? 's' : ''} found
-        </div>
-      </div>
-      
-      <div className="constraints-list">
+        <div 
+          className={`constraints-display ${isExpanded ? 'expanded' : 'collapsed'}`}
+          onClick={!isExpanded ? () => setIsExpanded(true) : undefined}
+          style={{ cursor: !isExpanded ? 'pointer' : 'default' }}
+        >
+            <div className="constraints-header">
+                <div className="constraints-title-section">
+                    <h3 className="constraints-title">
+                        🎯 Scheduling Constraints
+                    </h3>
+                    <p className="constraints-subtitle">
+                        AI-parsed preferences and requirements from your input
+                    </p>
+                    {!isExpanded && (
+                        <div className="constraints-summary">
+                            {constraints.length > 0 ? (
+                                <div>
+                                    <span className="summary-text">
+                                        {constraints.length} constraint{constraints.length !== 1 ? 's' : ''} found
+                                        {constraints.some(c => c.type === 'No Class Before' || c.type === 'No Class After') && ' • Time preferences'}
+                                        {constraints.some(c => c.type === 'No Class Day') && ' • Day preferences'}
+                                        {constraints.some(c => c.type === 'Avoid TA' || c.type === 'Prefer TA') && ' • TA preferences'}
+                                        {constraints.some(c => c.type === 'No Gap' || c.type === 'Max Gap') && ' • Gap constraints'}
+                                    </span>
+                                    <div className="constraints-preview">
+                                        {constraints.slice(0, 3).map((constraint, index) => (
+                                            <div key={index} className="constraint-preview-item">
+                                                <span className="preview-icon">{getConstraintIcon(constraint.type)}</span>
+                                                <span className="preview-text">{formatConstraintText(constraint)}</span>
+                                            </div>
+                                        ))}
+                                        {constraints.length > 3 && (
+                                            <div className="constraint-preview-more">
+                                                +{constraints.length - 3} more constraint{constraints.length - 3 !== 1 ? 's' : ''}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            ) : (
+                                <span className="summary-text">No constraints found</span>
+                            )}
+                        </div>
+                    )}
+                </div>
+                <div className="constraints-count">
+                    {constraints.length} Found
+                </div>
+            </div>
+
+            <button
+                type="button"
+                className="expand-toggle-btn"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsExpanded(!isExpanded);
+                }}
+                title={isExpanded ? "Collapse constraints" : "Expand constraints"}
+            >
+                {isExpanded ? "▲ Collapse" : "▼ View Constraints"}
+            </button>
+
+            {isExpanded && (
+            <div>
+            <div className="constraints-list">
         {constraints.map((constraint, index) => (
           <div key={index} className={`constraint-item ${getConstraintColor(constraint.type)}`}>
             <div className="constraint-icon">
@@ -425,7 +495,8 @@ const ConstraintsDisplay = ({ parsedConstraints, onConstraintsUpdate, isRegenera
           )}
         </button>
       </div>
-
+      </div>
+      )}
       
     </div>
   );
