@@ -482,50 +482,114 @@ const WeeklySchedule = ({ schedule, isLoading, user, authToken, scheduleName, sc
     try {
       const containerElement = document.querySelector(".weekly-scheduler-container");
       
+      // Temporarily hide non-essential elements
+      const elementsToHide = document.querySelectorAll('.scheduler-actions, .constraints-display, .enhanced-view-section');
+      elementsToHide.forEach(el => el.style.display = 'none');
+      
       const canvas = await html2canvas(containerElement, { 
-        scale: 1.2,
+        scale: 1.5, // Good quality
         useCORS: true,
         backgroundColor: '#ffffff',
         scrollX: 0,
         scrollY: 0,
-        width: containerElement.scrollWidth,
-        height: containerElement.scrollHeight,
-        allowTaint: true,
-        removeContainer: false
+        width: Math.max(containerElement.scrollWidth, 1100), // Force minimum width
+        height: Math.max(containerElement.scrollHeight, 800), // Force minimum height
+        allowTaint: false,
+        removeContainer: false,
+        logging: false,
+        pixelRatio: 1,
+        windowWidth: Math.max(containerElement.scrollWidth, 1100),
+        windowHeight: Math.max(containerElement.scrollHeight, 800),
+        imageTimeout: 15000,
+        onclone: (clonedDoc) => {
+          // Make the table wider during capture
+          const style = clonedDoc.createElement('style');
+          style.textContent = `
+            .scheduler-actions, .constraints-display, .enhanced-view-section { display: none !important; }
+            .weekly-scheduler-container { 
+              padding: 20px !important; 
+              background: #ffffff !important;
+              box-shadow: none !important;
+              border: none !important;
+              min-width: 1050px !important; /* Force wider container */
+              width: 1050px !important;
+              opacity: 1 !important;
+            }
+            #schedule-table { 
+              font-size: 16px !important; 
+              width: 1000px !important; /* Much wider table */
+              min-width: 1000px !important;
+              border-collapse: collapse !important;
+              background: #ffffff !important;
+              font-weight: 600 !important;
+              opacity: 1 !important;
+            }
+            #schedule-table th, #schedule-table td { 
+              padding: 18px 15px !important; 
+              border: 2px solid #000000 !important;
+              word-wrap: break-word !important;
+              font-size: 15px !important;
+              min-height: 50px !important;
+              font-weight: 700 !important;
+              opacity: 1 !important;
+            }
+            #schedule-table th {
+              background: #d1ecf1 !important;
+              font-weight: 900 !important;
+              color: #000000 !important;
+              opacity: 1 !important;
+            }
+            #schedule-table td:empty,
+            #schedule-table td:not([style*="background-color"]) {
+              background: #ffffff !important;
+              color: #000000 !important;
+              opacity: 1 !important;
+            }
+            #schedule-table td[style*="background-color"] {
+              font-weight: 900 !important;
+              border: 2px solid #000000 !important;
+              opacity: 1 !important;
+              color: #000000 !important;
+              text-shadow: none !important;
+            }
+          `;
+          clonedDoc.head.appendChild(style);
+        }
       });
       
-      const imgData = canvas.toDataURL("image/png");
-      const pdf = new jsPDF("landscape", "mm", "a4");
+      // Restore hidden elements
+      elementsToHide.forEach(el => el.style.display = '');
+      
+      // Use PNG with no compression for maximum quality
+      const imgData = canvas.toDataURL("image/png", 1.0);
+      const pdf = new jsPDF("portrait", "mm", "a4"); // Changed to portrait orientation
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
       
-      pdf.setFontSize(16);
-      pdf.setTextColor(59, 130, 246);
-      pdf.text("Weekly Course Schedule", 20, 20);
-      
-      pdf.setFontSize(10);
-      pdf.setTextColor(107, 114, 128);
-      pdf.text(`Generated on ${new Date().toLocaleDateString()}`, 20, 30);
-      
-      const margin = 10;
+      // No header text - use full page for schedule
+      const margin = 3; // Even smaller margins for maximum width
       const availableWidth = pdfWidth - (2 * margin);
-      const availableHeight = pdfHeight - 40; 
+      const availableHeight = pdfHeight - (2 * margin);
       
+      // Calculate proper sizing - prioritize width usage
       const canvasAspectRatio = canvas.width / canvas.height;
       const pageAspectRatio = availableWidth / availableHeight;
       
       let imgWidth, imgHeight;
       
-      if (canvasAspectRatio > pageAspectRatio) {
-        imgWidth = availableWidth;
-        imgHeight = availableWidth / canvasAspectRatio;
-      } else {
+      // Always try to use maximum width first
+      imgWidth = availableWidth;
+      imgHeight = availableWidth / canvasAspectRatio;
+      
+      // If height exceeds available space, then scale down
+      if (imgHeight > availableHeight) {
         imgHeight = availableHeight;
         imgWidth = availableHeight * canvasAspectRatio;
       }
       
+      // Center the schedule on the page
       const x = (pdfWidth - imgWidth) / 2;
-      const y = 40; 
+      const y = (pdfHeight - imgHeight) / 2; 
       
       pdf.addImage(imgData, "PNG", x, y, imgWidth, imgHeight);
       pdf.save("WeeklySchedule.pdf");

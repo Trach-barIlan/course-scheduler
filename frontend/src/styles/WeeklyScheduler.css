@@ -687,25 +687,71 @@
 
 /* Print Styles */
 @media print {
-  .scheduler-actions {
-    display: none;
+  /* Hide UI elements that shouldn't be in PDF */
+  .scheduler-actions,
+  .popup-overlay,
+  .drag-mode-info,
+  .constraints-display,
+  .enhanced-view-section {
+    display: none !important;
   }
   
+  /* Optimize container for printing */
   .weekly-scheduler-container {
     box-shadow: none;
     border: none;
-    padding: 0;
+    padding: 10px;
+    margin: 0;
+    background: white !important;
+    width: 100% !important;
+    max-width: none !important;
+    min-height: auto !important;
   }
   
+  /* Optimize table for PDF */
   #schedule-table {
     box-shadow: none;
+    width: 100% !important;
+    min-width: 100% !important;
+    max-width: 100% !important;
+    font-size: 10px !important;
+    border-collapse: collapse !important;
+    page-break-inside: avoid;
   }
   
-  .popup-overlay {
-    display: none;
+  /* Optimize table headers */
+  #schedule-table th {
+    background: #f8f9fa !important;
+    color: #212529 !important;
+    padding: 8px 4px !important;
+    font-size: 9px !important;
+    font-weight: bold !important;
+    border: 1px solid #dee2e6 !important;
+    text-align: center !important;
   }
-
-  .drag-mode-info {
-    display: none;
+  
+  /* Optimize table cells */
+  #schedule-table td {
+    padding: 6px 3px !important;
+    font-size: 8px !important;
+    border: 1px solid #dee2e6 !important;
+    background: white !important;
+    vertical-align: top !important;
+    word-wrap: break-word !important;
+    max-width: 80px !important;
+  }
+  
+  /* Handle course blocks in print */
+  #schedule-table td[style*="background-color"] {
+    background: #e3f2fd !important;
+    color: #1565c0 !important;
+    font-weight: bold !important;
+  }
+  
+  /* Ensure text fits properly */
+  .course-block {
+    font-size: 7px !important;
+    line-height: 1.2 !important;
+    padding: 2px !important;
   }
 }
