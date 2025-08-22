@@ -59,9 +59,9 @@ const CourseInput = ({ course, onChange, index, onRemove, canRemove, selectedUni
         return parseInt(time);
     };
 
-    // Autocomplete functions
+    // Autocomplete functions - Using hybrid approach for optimal performance
     const fetchSuggestions = async (query) => {
-        if (!selectedUniversity || !selectedSemester || query.trim().length < 2) {
+        if (!selectedUniversity || !selectedSemester || query.trim().length < 3) {
             setSuggestions([]);
             setShowSuggestions(false);
             return;
@@ -74,7 +74,8 @@ const CourseInput = ({ course, onChange, index, onRemove, canRemove, selectedUni
                 return;
             }
 
-            const response = await fetch(`${API_BASE_URL}/api/courses/autocomplete?q=${encodeURIComponent(query)}&semester=${selectedSemester}`, {
+            // Use fast JSON-based autocomplete for better performance
+            const response = await fetch(`${API_BASE_URL}/api/courses/fast-autocomplete?q=${encodeURIComponent(query)}&semester=${selectedSemester}&limit=8`, {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'
@@ -96,12 +97,12 @@ const CourseInput = ({ course, onChange, index, onRemove, canRemove, selectedUni
     const handleCourseNameChange = (value) => {
         onChange(index, "name", value);
         
-        // Debounced autocomplete
+        // Enhanced debounced autocomplete with faster JSON-based backend
         if (selectedUniversity) {
             clearTimeout(window.autocompleteTimeout);
             window.autocompleteTimeout = setTimeout(() => {
                 fetchSuggestions(value);
-            }, 300);
+            }, 250);  // Reduced from 300ms to 250ms since JSON is much faster
         }
     };
 
@@ -529,13 +530,13 @@ const CourseInput = ({ course, onChange, index, onRemove, canRemove, selectedUni
             <div className="course-header">
                 <div className="input-group">
                     <label className="input-label" htmlFor={`course-name-${index}`}>
-                        Course Name * {selectedUniversity && <span className="autocomplete-hint">(Type to search {selectedUniversity} courses)</span>}
+                        Course Name * {selectedUniversity && <span className="autocomplete-hint">(Type 3+ characters to search courses)</span>}
                     </label>
                     <div className="autocomplete-container">
                         <input
                             id={`course-name-${index}`}
                             type="text"
-                            placeholder={selectedUniversity ? "Start typing course name..." : "e.g., CS101, Mathematics, Physics"}
+                            placeholder={selectedUniversity ? "Type 3+ characters for fast search..." : "e.g., CS101, Mathematics, Physics"}
                             value={course.name}
                             onChange={(e) => handleCourseNameChange(e.target.value)}
                             className="course-input"

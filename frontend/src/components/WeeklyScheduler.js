@@ -551,13 +551,6 @@ const WeeklySchedule = ({ schedule, isLoading, user, authToken, scheduleName, sc
     return `${hour - 12}:00 PM`;
   };
 
-  // Debugging output
-  console.log('WeeklyScheduler received:');
-  console.log('- schedule:', schedule);
-  console.log('- scheduleName:', scheduleName);
-  console.log('- scheduleId:', scheduleId);
-  console.log('- isLoading:', isLoading);
-
   return (
     <div className="weekly-scheduler-container">
       <div className="scheduler-header">

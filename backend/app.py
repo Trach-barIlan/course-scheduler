@@ -10,7 +10,8 @@ from api.statistics import statistics_bp
 from api.university import university_bp
 from api.contact import contact_bp
 
-from api.supabase_courses import supabase_courses_bp  # New Supabase-based API
+from api.supabase_courses import supabase_courses_bp  # Database-based API for course details
+from api.hybrid_autocomplete import hybrid_autocomplete_bp  # Fast JSON-based autocomplete
 # from api.courses import courses_bp  # Old JSON-based API (commented out)
 from auth.auth_manager import AuthManager
 import os
@@ -44,10 +45,12 @@ app.register_blueprint(schedules_bp, url_prefix='/api/schedules')
 app.register_blueprint(statistics_bp, url_prefix='/api/statistics')
 app.register_blueprint(university_bp, url_prefix='/api/university')
 app.register_blueprint(contact_bp, url_prefix='/api')
-app.register_blueprint(supabase_courses_bp, url_prefix='/api')  # New Supabase-based API
+app.register_blueprint(supabase_courses_bp, url_prefix='/api')  # Database-based API for course details
+app.register_blueprint(hybrid_autocomplete_bp, url_prefix='/api')  # Fast JSON-based autocomplete
 # app.register_blueprint(courses_bp, url_prefix='/api')  # Old JSON-based API
 print("✅ University API registered successfully")
 print("✅ Supabase courses API registered successfully")
+print("✅ Hybrid autocomplete API registered successfully")
 
 # Initialize AI parser with timeout handling
 schedule_parser = None
