@@ -27,13 +27,14 @@
 
 .constraints-display.expanded {
   padding: var(--space-6) var(--space-5) var(--space-8) var(--space-5);
-  max-height: 800px; /* Increased from 600px */
+  min-height: 300px; /* Force minimum size */
+  max-height: 85vh; /* But don't exceed viewport */
   margin: var(--space-10) 0 var(--space-12) 0;
   z-index: 25;
   position: relative;
   background: var(--bg-secondary);
   border: 2px solid var(--primary-300);
-  overflow-y: auto; /* Enable scrolling if content is too tall */
+  overflow-y: auto; /* Enable scrolling if needed */
 }
 
 .constraints-display::before {
@@ -229,7 +230,8 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
-  max-height: 600px; /* Increased from 400px */
+  min-height: 350px; /* Force minimum size */
+  max-height: 75vh; /* But don't exceed viewport */
   overflow-y: auto;
   padding-right: var(--space-2);
 }
