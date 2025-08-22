@@ -7,6 +7,9 @@
   min-height: 600px;
   overflow-x: auto; /* Allow horizontal scrolling if needed */
   width: 100%;
+  margin-top: var(--space-12); /* Increased space to prevent overlap with expanded constraints */
+  position: relative;
+  z-index: 5;
 }
 
 .scheduler-header {

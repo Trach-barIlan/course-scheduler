@@ -1,13 +1,39 @@
 .constraints-display {
   background: var(--bg-secondary);
   border-radius: var(--radius-xl);
-  padding: var(--space-6);
-  margin-bottom: var(--space-6);
+  padding: var(--space-5); /* Reduced from space-6 */
+  margin: var(--space-8) 0 var(--space-8) 0; /* Reduced from space-10 */
   box-shadow: var(--shadow-md);
   border: 1px solid var(--border-color);
   animation: slideInFromTop 0.5s ease-out;
   position: relative;
   overflow: hidden;
+  min-height: 200px; /* Reduced from 280px */
+  z-index: 10;
+}
+
+.constraints-display.collapsed {
+  padding-bottom: var(--space-4);
+  min-height: 180px; /* Much more compact */
+  transition: all var(--transition-fast);
+}
+
+.constraints-display.collapsed:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-xl);
+  border-color: var(--primary-300);
+  z-index: 20;
+}
+
+.constraints-display.expanded {
+  padding: var(--space-6) var(--space-5) var(--space-8) var(--space-5);
+  max-height: 800px; /* Increased from 600px */
+  margin: var(--space-10) 0 var(--space-12) 0;
+  z-index: 25;
+  position: relative;
+  background: var(--bg-secondary);
+  border: 2px solid var(--primary-300);
+  overflow-y: auto; /* Enable scrolling if content is too tall */
 }
 
 .constraints-display::before {
@@ -42,9 +68,21 @@
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
+  margin-bottom: var(--space-4);
+  padding-bottom: var(--space-3);
+  border-bottom: 2px solid var(--border-color);
+}
+
+.constraints-display.collapsed .constraints-header {
+  margin-bottom: var(--space-2);
+  padding-bottom: var(--space-1);
+}
+
+.constraints-display.expanded .constraints-header {
   margin-bottom: var(--space-6);
   padding-bottom: var(--space-4);
-  border-bottom: 2px solid var(--border-color);
+  padding-right: var(--space-32); /* Add space for corner button */
+  border-bottom: 2px solid var(--primary-300);
 }
 
 .constraints-title-section {
@@ -87,10 +125,113 @@
   white-space: nowrap;
 }
 
+.constraints-summary {
+  margin-top: var(--space-3);
+  margin-bottom: var(--space-3);
+  padding: var(--space-4);
+  background: linear-gradient(135deg, var(--primary-50), var(--bg-secondary));
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--primary-200);
+  box-shadow: var(--shadow-sm);
+  min-height: 80px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.constraints-summary .summary-text {
+  font-size: 0.95rem;
+  color: var(--primary-700);
+  line-height: 1.4;
+  font-weight: 600;
+  margin-bottom: var(--space-2);
+  display: block;
+}
+
+.constraints-preview {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+.constraint-preview-item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-2);
+  background: var(--primary-100);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--primary-200);
+  font-size: 0.85rem;
+}
+
+.preview-icon {
+  font-size: 1rem;
+  width: 18px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.preview-text {
+  font-size: 0.85rem;
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.constraint-preview-more {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  font-style: italic;
+  display: inline-flex;
+  align-items: center;
+  padding: var(--space-1) var(--space-2);
+  background: var(--gray-100);
+  border-radius: var(--radius-md);
+  border: 1px dashed var(--border-color);
+}
+
+.expand-toggle-btn {
+  background: linear-gradient(135deg, var(--primary-500), var(--primary-600));
+  color: white;
+  border: none;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-lg);
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  box-shadow: var(--shadow-md);
+  min-height: 36px;
+  width: auto;
+  min-width: 120px;
+  position: absolute;
+  top: var(--space-4);
+  right: var(--space-4);
+  z-index: 100;
+}
+
+.expand-toggle-btn:hover {
+  background: linear-gradient(135deg, var(--primary-600), var(--primary-700));
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-lg);
+}
+
+.expand-toggle-btn:active {
+  transform: translateY(0);
+}
+
 .constraints-list {
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
+  max-height: 600px; /* Increased from 400px */
+  overflow-y: auto;
+  padding-right: var(--space-2);
 }
 
 .constraint-item {
