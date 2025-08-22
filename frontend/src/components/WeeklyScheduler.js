@@ -11,6 +11,7 @@ const WeeklySchedule = ({ schedule, isLoading, user, authToken, scheduleName, sc
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
   const [selectedClass, setSelectedClass] = useState(null);
+  const [highlightedCourse, setHighlightedCourse] = useState(null); // For highlighting all slots of a course
   const [draggedClass, setDraggedClass] = useState(null);
   const [availableSlots, setAvailableSlots] = useState([]);
   const [currentSchedule, setCurrentSchedule] = useState(schedule);
@@ -382,18 +383,33 @@ const WeeklySchedule = ({ schedule, isLoading, user, authToken, scheduleName, sc
   };
 
   const handleClassClick = (slot) => {
+    // If we're in drag mode and clicking the same class, cancel drag mode
     if (draggedClass && draggedClass.slotKey === slot.slotKey) {
-      // Clicking on the same class again - cancel drag mode
       setDraggedClass(null);
       setAvailableSlots([]);
-    } else {
-      // Start drag mode
+      setHighlightedCourse(null);
+      return;
+    }
+    
+    // If we're in drag mode and clicking a different class, switch to new class
+    if (draggedClass && draggedClass.slotKey !== slot.slotKey) {
       setDraggedClass(slot);
       const availableSlots = findAvailableSlots(slot);
       setAvailableSlots(availableSlots);
+      setHighlightedCourse(slot.courseName);
       console.log('Available slots for', slot.text, ':', availableSlots);
+      return;
     }
-    setSelectedClass(null);
+
+    // If clicking the same course that's already highlighted, toggle off
+    if (highlightedCourse === slot.courseName) {
+      setHighlightedCourse(null);
+      return;
+    }
+
+    // Otherwise, highlight all sessions of this course
+    setHighlightedCourse(slot.courseName);
+    console.log('Highlighting all sessions for course:', slot.courseName);
   };
 
   const handleSlotDrop = (targetSlot) => {
@@ -438,6 +454,22 @@ const WeeklySchedule = ({ schedule, isLoading, user, authToken, scheduleName, sc
   const cancelDragMode = () => {
     setDraggedClass(null);
     setAvailableSlots([]);
+    setHighlightedCourse(null);
+  };
+
+  // Check if a course slot should be highlighted
+  const isCourseHighlighted = (slot) => {
+    return highlightedCourse && slot.courseName === highlightedCourse;
+  };
+
+  // Add double-click handler to start drag mode
+  const handleClassDoubleClick = (slot) => {
+    // Start drag mode on double-click
+    setDraggedClass(slot);
+    const availableSlots = findAvailableSlots(slot);
+    setAvailableSlots(availableSlots);
+    setHighlightedCourse(slot.courseName);
+    console.log('Drag mode started for', slot.text, ':', availableSlots);
   };
 
   const downloadPDF = async () => {
@@ -562,18 +594,18 @@ const WeeklySchedule = ({ schedule, isLoading, user, authToken, scheduleName, sc
             <div className="schedule-source">
               <div className="source-info">
                 <span className="source-badge">📂 Loaded Schedule</span>
-                <span className="edit-hint">You can modify course times on the left and regenerate</span>
+                <span className="edit-hint">You can modify course times on the left and regenerate, or you can double click a class to move it</span>
               </div>
             </div>
           )}
         </div>
         <div className="scheduler-actions">
-          {draggedClass && (
+          {(draggedClass || highlightedCourse) && (
             <button 
               onClick={cancelDragMode}
               className="action-button button-cancel"
             >
-              Cancel Move
+              {draggedClass ? 'Cancel Move' : 'Clear Highlight'}
             </button>
           )}
           <button 
@@ -626,13 +658,20 @@ const WeeklySchedule = ({ schedule, isLoading, user, authToken, scheduleName, sc
 
       {draggedClass && (
         <div className="drag-mode-info">
-          <p>Moving: <strong>{draggedClass.text}</strong></p>
+          <p>🔄 Moving: <strong>{draggedClass.text}</strong></p>
           <p>
             {availableSlots.some(slot => slot.isOriginalOption) 
               ? "Click on a highlighted time slot to switch to an alternative option for this class."
               : "Click on a highlighted time slot to move the class there, or click \"Cancel Move\" to exit."
             }
           </p>
+        </div>
+      )}
+
+      {highlightedCourse && !draggedClass && (
+        <div className="highlight-mode-info">
+          <p>✨ Highlighting all sessions for: <strong>{highlightedCourse}</strong></p>
+          <p>Double-click any session to move it, or click another course to highlight it instead.</p>
         </div>
       )}
       
@@ -662,17 +701,28 @@ const WeeklySchedule = ({ schedule, isLoading, user, authToken, scheduleName, sc
                   if (occupyingSlot) {
                     const isStartHour = h === occupyingSlot.start;
                     const isDragging = draggedClass && draggedClass.slotKey === occupyingSlot.slotKey;
+                    const isHighlighted = isCourseHighlighted(occupyingSlot);
                     
                     return isStartHour ? (
                       <td 
                         key={d} 
                         rowSpan={occupyingSlot.end - occupyingSlot.start} 
-                        style={{ backgroundColor: occupyingSlot.color }}
-                        title={occupyingSlot.text}
+                        style={{ 
+                          backgroundColor: occupyingSlot.color,
+                          opacity: isHighlighted ? 1 : (highlightedCourse ? 0.3 : 1),
+                          transform: isDragging ? 'scale(0.95)' : 'scale(1)',
+                          transition: 'all 0.2s ease'
+                        }}
+                        title={`${occupyingSlot.text} - Click to highlight all sessions, Double-click to move`}
                         onClick={() => handleClassClick(occupyingSlot)}
-                        className={`clickable-cell ${isDragging ? 'dragging' : ''}`}
+                        onDoubleClick={() => handleClassDoubleClick(occupyingSlot)}
+                        className={`clickable-cell ${isDragging ? 'dragging' : ''} ${isHighlighted ? 'highlighted-course' : ''}`}
                       >
-                        {occupyingSlot.text}
+                        <div className="class-content">
+                          {occupyingSlot.text}
+                          {isHighlighted && <span className="highlight-indicator">✨</span>}
+                          {isDragging && <span className="drag-indicator">🔄</span>}
+                        </div>
                       </td>
                     ) : null;
                   }
