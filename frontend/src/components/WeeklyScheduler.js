@@ -573,7 +573,6 @@ const WeeklySchedule = ({ schedule, isLoading, user, authToken, scheduleName, sc
       
       // Calculate proper sizing - prioritize width usage
       const canvasAspectRatio = canvas.width / canvas.height;
-      const pageAspectRatio = availableWidth / availableHeight;
       
       let imgWidth, imgHeight;
       
