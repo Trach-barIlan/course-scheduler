@@ -2,41 +2,63 @@ import re
 from ai_model.hybrid_parser import HybridScheduleParser
 
 # Initialize hybrid parser for better constraint parsing
+print("🔍 PARSER AI: Initializing HybridScheduleParser...")
 try:
     constraint_parser = HybridScheduleParser()
     PARSER_AVAILABLE = True
-except Exception:
+    print("🔍 PARSER AI: HybridScheduleParser initialized successfully")
+except Exception as e:
     PARSER_AVAILABLE = False
+    print(f"❌ PARSER AI: HybridScheduleParser initialization failed: {e}")
+    import traceback
+    print(f"❌ PARSER AI: Full traceback: {traceback.format_exc()}")
 
 def parse_course_text(text):
     """Parse natural language course descriptions into structured data."""
+    print(f"🔍 PARSER AI: parse_course_text called with text: '{text}'")
+    print(f"🔍 PARSER AI: PARSER_AVAILABLE: {PARSER_AVAILABLE}")
+    
     courses = []
     constraints = []
     
     # Use hybrid parser for constraints if available
     if PARSER_AVAILABLE:
+        print("🔍 PARSER AI: Using hybrid parser for constraints...")
         try:
             constraint_result = constraint_parser.parse(text)
             constraints = constraint_result.get("constraints", [])
-        except Exception:
+            print(f"🔍 PARSER AI: Hybrid parser succeeded, found {len(constraints)} constraints: {constraints}")
+        except Exception as e:
+            print(f"❌ PARSER AI: Hybrid parser failed: {e}")
+            import traceback
+            print(f"❌ PARSER AI: Full traceback: {traceback.format_exc()}")
+            print("🔍 PARSER AI: Falling back to regex parsing...")
             constraints = _parse_constraints_fallback(text)
     else:
+        print("🔍 PARSER AI: Using fallback regex parsing...")
         constraints = _parse_constraints_fallback(text)
     
     # Parse course information (existing logic)
+    print("🔍 PARSER AI: Parsing courses...")
     courses = _parse_courses(text)
+    print(f"🔍 PARSER AI: Found {len(courses)} courses: {courses}")
     
-    return {
+    result = {
         "courses": courses,
         "constraints": constraints
     }
+    print(f"🔍 PARSER AI: Final result: {result}")
+    return result
 
 def _parse_constraints_fallback(text):
     """Fallback constraint parsing using original regex method"""
+    print(f"🔍 PARSER AI FALLBACK: Starting fallback constraint parsing for: '{text}'")
     constraints = []
     sentences = [s.strip() for s in text.split('.') if s.strip()]
+    print(f"🔍 PARSER AI FALLBACK: Split into {len(sentences)} sentences: {sentences}")
     
-    for sentence in sentences:
+    for i, sentence in enumerate(sentences):
+        print(f"🔍 PARSER AI FALLBACK: Processing sentence {i+1}: '{sentence}'")
         sentence_lower = sentence.lower()
         
         # Parse time constraints

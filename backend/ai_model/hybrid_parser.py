@@ -11,14 +11,38 @@ class HybridScheduleParser:
     """
     
     def __init__(self):
+        print("🔍 HYBRID PARSER: Initializing HybridScheduleParser...")
         # Load base English model
-        self.nlp = spacy.load("en_core_web_sm")
-        self.matcher = Matcher(self.nlp.vocab)
+        print("🔍 HYBRID PARSER: About to load en_core_web_sm model...")
+        try:
+            self.nlp = spacy.load("en_core_web_sm")
+            print("🔍 HYBRID PARSER: en_core_web_sm loaded successfully")
+        except Exception as e:
+            print(f"❌ HYBRID PARSER: Failed to load en_core_web_sm: {e}")
+            import traceback
+            print(f"❌ HYBRID PARSER: Full traceback: {traceback.format_exc()}")
+            raise
+        
+        print("🔍 HYBRID PARSER: Creating Matcher...")
+        try:
+            self.matcher = Matcher(self.nlp.vocab)
+            print("🔍 HYBRID PARSER: Matcher created successfully")
+        except Exception as e:
+            print(f"❌ HYBRID PARSER: Failed to create Matcher: {e}")
+            raise
         
         # Add sophisticated rule-based patterns
-        self._add_time_patterns()
-        self._add_day_patterns()
-        self._add_ta_patterns()
+        print("🔍 HYBRID PARSER: Adding patterns...")
+        try:
+            self._add_time_patterns()
+            self._add_day_patterns()
+            self._add_ta_patterns()
+            print("🔍 HYBRID PARSER: All patterns added successfully")
+        except Exception as e:
+            print(f"❌ HYBRID PARSER: Failed to add patterns: {e}")
+            raise
+        
+        print("🔍 HYBRID PARSER: HybridScheduleParser initialization complete")
         
     def _add_time_patterns(self):
         """Add comprehensive time constraint patterns"""
