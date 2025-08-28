@@ -51,9 +51,12 @@ const convertScheduleFormat = (scheduleData) => {
           
           if (!converted[fullDay]) converted[fullDay] = [];
           converted[fullDay].push({
+            id: `${course.name}-lecture-${fullDay}-${start}-${end}`,
             course_name: course.name,
             type: 'Lecture',
             time: `${start}:00-${end}:00`,
+            startTime: `${start}:00`,
+            endTime: `${end}:00`,
             lecturer: course.lecturer || 'TBA',
             location: course.location || 'TBA'
           });
@@ -69,9 +72,12 @@ const convertScheduleFormat = (scheduleData) => {
           
           if (!converted[fullDay]) converted[fullDay] = [];
           converted[fullDay].push({
+            id: `${course.name}-ta-${fullDay}-${start}-${end}`,
             course_name: course.name,
             type: 'Practice',
             time: `${start}:00-${end}:00`,
+            startTime: `${start}:00`,
+            endTime: `${end}:00`,
             lecturer: course.ta_instructor || course.lecturer || 'TBA',
             location: course.ta_location || course.location || 'TBA'
           });
@@ -86,9 +92,12 @@ const convertScheduleFormat = (scheduleData) => {
   return {};
 };
 
-const ScheduleViewer = ({ schedule, title, backButton }) => {
+const ScheduleViewer = ({ schedule, title, backButton, onScheduleUpdate }) => {
   const [hoveredCourse, setHoveredCourse] = useState(null);
   const [selectedCourse, setSelectedCourse] = useState(null);
+  const [selectedCourseForMove, setSelectedCourseForMove] = useState(null);
+  const [scheduleData, setScheduleData] = useState(null);
+  const [originalCourseOptions, setOriginalCourseOptions] = useState(null);
 
   // Debug the incoming schedule
   console.log('🔍 ScheduleViewer received schedule:', schedule);
@@ -109,9 +118,24 @@ const ScheduleViewer = ({ schedule, title, backButton }) => {
 
   const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 
+  // Load original course options from localStorage
+  React.useEffect(() => {
+    const storedOptions = localStorage.getItem('originalCourseOptions');
+    if (storedOptions) {
+      try {
+        const parsedOptions = JSON.parse(storedOptions);
+        setOriginalCourseOptions(parsedOptions);
+        console.log('📚 Loaded original course options:', parsedOptions);
+      } catch (error) {
+        console.error('❌ Error parsing original course options:', error);
+      }
+    }
+  }, []);
+
   // Convert schedule to a more workable format
   const processedSchedule = useMemo(() => {
-    const convertedSchedule = convertScheduleFormat(schedule);
+    const sourceSchedule = scheduleData || schedule;
+    const convertedSchedule = convertScheduleFormat(sourceSchedule);
     
     if (!convertedSchedule || Object.keys(convertedSchedule).length === 0) return {};
     
@@ -151,7 +175,7 @@ const ScheduleViewer = ({ schedule, title, backButton }) => {
       });
       return acc;
     }, {});
-  }, [schedule]);
+  }, [schedule, scheduleData]);
 
   // Get all unique courses for the course list, grouped by course name
   const getAllCourses = useCallback(() => {
@@ -258,6 +282,195 @@ const ScheduleViewer = ({ schedule, title, backButton }) => {
     return (endTime - startTime) / 30; // Each slot is 30 minutes
   };
 
+  // Get available time slots for a specific course and session type
+  const getAvailableTimeSlotsForCourse = (courseName, sessionType) => {
+    if (!originalCourseOptions) return [];
+    
+    const courseData = originalCourseOptions.find(course => 
+      course.name === courseName
+    );
+    
+    if (!courseData) return [];
+    
+    const availableSlots = [];
+    
+    // Get lecture time slots if it's a lecture
+    if (sessionType === 'Lecture' && courseData.lectures) {
+      courseData.lectures.forEach(lectureTimeStr => {
+        const match = lectureTimeStr.match(/^(\w+)\s+(\d+)-(\d+)$/);
+        if (match) {
+          const [, day, start, end] = match;
+          availableSlots.push({
+            day: day,
+            startTime: `${start}:00`,
+            endTime: `${end}:00`,
+            timeString: lectureTimeStr
+          });
+        }
+      });
+    }
+    
+    // Get practice/TA time slots if it's a practice session
+    if ((sessionType === 'Practice' || sessionType === 'TA') && courseData.ta_times) {
+      courseData.ta_times.forEach(taTimeStr => {
+        const match = taTimeStr.match(/^(\w+)\s+(\d+)-(\d+)$/);
+        if (match) {
+          const [, day, start, end] = match;
+          availableSlots.push({
+            day: day,
+            startTime: `${start}:00`,
+            endTime: `${end}:00`,
+            timeString: taTimeStr
+          });
+        }
+      });
+    }
+    
+    console.log(`📅 Available slots for ${courseName} (${sessionType}):`, availableSlots);
+    return availableSlots;
+  };
+
+  // Check if a time slot is available for a specific course and session type
+  const isTimeSlotAvailableForCourse = (courseName, sessionType, targetDay, targetStartTime, targetEndTime) => {
+    const availableSlots = getAvailableTimeSlotsForCourse(courseName, sessionType);
+    
+    // Convert day names to match format
+    const dayMap = {
+      'Sunday': 'Sun',
+      'Monday': 'Mon', 
+      'Tuesday': 'Tue',
+      'Wednesday': 'Wed',
+      'Thursday': 'Thu',
+      'Friday': 'Fri',
+      'Saturday': 'Sat'
+    };
+    
+    const shortDay = dayMap[targetDay] || targetDay;
+    
+    return availableSlots.some(slot => 
+      slot.day === shortDay && 
+      slot.startTime === targetStartTime && 
+      slot.endTime === targetEndTime
+    );
+  };
+
+  // Handle course selection for moving
+  const handleCourseSelection = (course, day, timeSlot) => {
+    if (!course || !course.id) return;
+    
+    if (selectedCourseForMove && selectedCourseForMove.id === course.id) {
+      // Deselect if clicking the same course
+      setSelectedCourseForMove(null);
+    } else {
+      // Select the course for moving
+      setSelectedCourseForMove({
+        ...course,
+        originalDay: day,
+        originalTimeSlot: timeSlot
+      });
+    }
+  };
+
+  // Handle clicking on empty time slot
+  const handleEmptySlotClick = (day, timeSlot) => {
+    if (!selectedCourseForMove) return;
+
+    // Calculate course duration
+    const courseDuration = getCourseSpan(selectedCourseForMove);
+    const newStartTime = timeSlot.time;
+    const newEndTime = calculateEndTime(newStartTime, courseDuration);
+
+    // First check if this time slot is available for this specific course
+    if (!isTimeSlotAvailableForCourse(
+      selectedCourseForMove.course_name, 
+      selectedCourseForMove.type, 
+      day, 
+      newStartTime, 
+      newEndTime
+    )) {
+      alert(`❌ This time slot is not available for ${selectedCourseForMove.course_name} (${selectedCourseForMove.type}). You can only move courses to their originally available time slots.`);
+      return;
+    }
+
+    // Check if the move is valid (no conflicts with other courses)
+    if (canMoveCourse(selectedCourseForMove, day, timeSlot, courseDuration)) {
+      moveCourse(selectedCourseForMove, day, newStartTime, newEndTime);
+      setSelectedCourseForMove(null);
+    } else {
+      alert('Cannot move course here due to time conflicts or schedule limitations.');
+    }
+  };
+
+  // Calculate end time based on start time and duration
+  const calculateEndTime = (startTime, durationInSlots) => {
+    const startMinutes = parseTime(startTime);
+    const endMinutes = startMinutes + (durationInSlots * 30);
+    const hours = Math.floor(endMinutes / 60);
+    const minutes = endMinutes % 60;
+    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+  };
+
+  // Check if course can be moved to a new location
+  const canMoveCourse = (course, newDay, newTimeSlot, duration) => {
+    const newStartMinutes = parseTime(newTimeSlot.time);
+    const newEndMinutes = newStartMinutes + (duration * 30);
+    
+    // Check if it's within schedule hours (8 AM to 8 PM)
+    if (newStartMinutes < 480 || newEndMinutes > 1200) return false; // 8 AM = 480 min, 8 PM = 1200 min
+
+    // Check for conflicts with other courses
+    if (!processedSchedule[newDay]) return true;
+
+    return !processedSchedule[newDay].some(otherCourse => {
+      if (otherCourse.id === course.id) return false; // Don't check against itself
+      
+      const otherStart = parseTime(otherCourse.startTime);
+      const otherEnd = parseTime(otherCourse.endTime);
+      
+      // Check for time overlap
+      return !(newEndMinutes <= otherStart || newStartMinutes >= otherEnd);
+    });
+  };
+
+  // Move course to new location
+  const moveCourse = (course, newDay, newStartTime, newEndTime) => {
+    try {
+      const newSchedule = { ...processedSchedule };
+      
+      // Remove course from original location
+      if (newSchedule[course.originalDay]) {
+        newSchedule[course.originalDay] = newSchedule[course.originalDay].filter(c => c.id !== course.id);
+      }
+      
+      // Add course to new location
+      if (!newSchedule[newDay]) {
+        newSchedule[newDay] = [];
+      }
+      
+      const movedCourse = {
+        ...course,
+        startTime: newStartTime,
+        endTime: newEndTime,
+        time: `${newStartTime}-${newEndTime}`
+      };
+      
+      newSchedule[newDay].push(movedCourse);
+      
+      // Update the schedule data
+      setScheduleData(newSchedule);
+      
+      // Notify parent component if callback is provided
+      if (onScheduleUpdate) {
+        onScheduleUpdate(newSchedule);
+      }
+      
+      console.log('✅ Course moved successfully:', movedCourse);
+    } catch (error) {
+      console.error('❌ Error moving course:', error);
+      alert('Failed to move course. Please try again.');
+    }
+  };
+
   // Check if course should be highlighted
   const shouldHighlight = (course) => {
     if (!course) return false;
@@ -302,7 +515,15 @@ const ScheduleViewer = ({ schedule, title, backButton }) => {
   }
 
   return (
-    <div className="schedule-viewer">
+    <div className={`schedule-viewer ${selectedCourseForMove ? 'has-selection' : ''}`}>
+      {selectedCourseForMove && (
+        <div className="course-selection-status">
+          🎯 Course "{selectedCourseForMove.course_name}" ({selectedCourseForMove.type}) selected for moving. 
+          <br />
+          Click on a <span style={{color: '#3B82F6', fontWeight: 'bold'}}>blue highlighted</span> empty time slot to move it. Only original course time slots are available.
+          <button onClick={() => setSelectedCourseForMove(null)}>Cancel</button>
+        </div>
+      )}
       <div className="schedule-viewer-header">
         {backButton && <div className="header-back-button">{backButton}</div>}
         <h2>{title}</h2>
@@ -346,7 +567,7 @@ const ScheduleViewer = ({ schedule, title, backButton }) => {
                     return (
                       <div
                         key={`${day}-${slot.time}`}
-                        className={`course-block ${shouldHighlight(course) ? 'highlighted' : ''}`}
+                        className={`course-block ${shouldHighlight(course) ? 'highlighted' : ''} ${selectedCourseForMove && selectedCourseForMove.id === course.id ? 'selected-for-move' : ''}`}
                         style={{
                           backgroundColor: course.color,
                           gridRow: `span ${span}`,
@@ -357,12 +578,16 @@ const ScheduleViewer = ({ schedule, title, backButton }) => {
                           type: course.type
                         }, true)}
                         onMouseLeave={() => handleCourseHover(null, false)}
-                        onClick={() => handleCourseClick({
-                          courseName: course.course_name,
-                          type: course.type,
-                          lecturer: course.lecturer,
-                          location: course.location
-                        })}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleCourseSelection(course, day, slot);
+                          handleCourseClick({
+                            courseName: course.course_name,
+                            type: course.type,
+                            lecturer: course.lecturer,
+                            location: course.location
+                          });
+                        }}
                       >
                         <div className="course-info">
                           <div className="course-name">{course.course_name}</div>
@@ -380,8 +605,22 @@ const ScheduleViewer = ({ schedule, title, backButton }) => {
                       </div>
                     );
                   } else if (!course) {
+                    // Check if this slot is available for the selected course
+                    const isValidDropZone = selectedCourseForMove && 
+                      isTimeSlotAvailableForCourse(
+                        selectedCourseForMove.course_name,
+                        selectedCourseForMove.type,
+                        day,
+                        slot.time,
+                        calculateEndTime(slot.time, getCourseSpan(selectedCourseForMove))
+                      );
+                    
                     return (
-                      <div key={`${day}-${slot.time}`} className="empty-slot"></div>
+                      <div 
+                        key={`${day}-${slot.time}`} 
+                        className={`empty-slot ${isValidDropZone ? 'can-drop' : ''} ${selectedCourseForMove && !isValidDropZone ? 'invalid-drop' : ''}`}
+                        onClick={() => handleEmptySlotClick(day, slot)}
+                      ></div>
                     );
                   }
                   return null;

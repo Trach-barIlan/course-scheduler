@@ -14,6 +14,71 @@ def get_auth_manager():
         print(f"Auth configuration error: {e}")
         return None
 
+@schedules_bp.route('', methods=['POST'])
+@token_required
+def create_schedule():
+    """Create a new schedule (REST-style endpoint)"""
+    print(f"=== CREATE SCHEDULE REQUEST ===")
+    print(f"User from g.user: {g.user}")
+    
+    user_id = g.user['id']
+    
+    print(f"User ID from g.user: {user_id}")
+
+    auth_manager = get_auth_manager()
+    if not auth_manager:
+        print("❌ Failed to get AuthManager")
+        return jsonify({'error': 'Authentication service unavailable'}), 500
+
+    try:
+        data = request.get_json()
+        print(f"Received schedule data: {data}")
+
+        if not data:
+            return jsonify({'error': 'No data provided'}), 400
+
+        schedule_data = data.get('schedule_data')
+        schedule_name = data.get('schedule_name', 'Untitled Schedule')
+
+        if not schedule_data:
+            return jsonify({'error': 'Schedule data is required'}), 400
+
+        print(f"Saving schedule with name: {schedule_name}")
+
+        # Get client with user context
+        client = auth_manager.get_client_for_user(user_id)
+
+        schedule_record = {
+            'user_id': user_id,
+            'schedule_name': schedule_name.strip(),
+            'schedule_data': schedule_data,  # Use the original data object, not JSON string
+            'constraints_data': data.get('constraints_data', []),
+            'original_course_options': data.get('original_course_options', [])
+        }
+
+        print(f"✅ Attempting to save schedule data: {schedule_record}")
+
+        result = client.table("saved_schedules").insert(schedule_record).execute()
+        print(f"Database insert result: {result}")
+        
+        if result.data:
+            schedule_id = result.data[0]['id']
+            print(f"✅ Schedule saved with ID: {schedule_id}")
+            return jsonify({
+                'message': 'Schedule saved successfully',
+                'schedule_id': schedule_id,
+                'schedule_name': schedule_name
+            }), 201
+        else:
+            print("❌ Failed to save schedule - no data returned")
+            return jsonify({'error': 'Failed to save schedule'}), 500
+
+    except Exception as e:
+        print(f"❌ Error saving schedule: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': 'Internal server error'}), 500
+
 @schedules_bp.route('/save', methods=['POST'])
 @token_required
 def save_schedule():
@@ -164,6 +229,72 @@ def get_schedule(schedule_id):
         import traceback
         traceback.print_exc()
         return jsonify({'error': 'Failed to fetch schedule'}), 500
+
+@schedules_bp.route('/<schedule_id>', methods=['PUT'])
+@token_required
+def update_schedule(schedule_id):
+    """Update an existing schedule"""
+    print(f"=== UPDATE SCHEDULE REQUEST ===")
+    print(f"Schedule ID: {schedule_id}")
+    print(f"User from g.user: {g.user}")
+    
+    user_id = g.user['id']
+
+    auth_manager = get_auth_manager()
+    if not auth_manager:
+        print("❌ Failed to get AuthManager")
+        return jsonify({'error': 'Authentication service unavailable'}), 500
+
+    try:
+        data = request.get_json()
+        print(f"Received update data: {data}")
+
+        if not data:
+            return jsonify({'error': 'No data provided'}), 400
+
+        schedule_data = data.get('schedule_data')
+        schedule_name = data.get('schedule_name')
+
+        if not schedule_data:
+            return jsonify({'error': 'Schedule data is required'}), 400
+
+        print(f"Updating schedule {schedule_id} with name: {schedule_name}")
+
+        # Update the schedule in the database
+        client = auth_manager.get_client_for_user(user_id)
+        
+        update_data = {
+            'schedule_data': schedule_data,  # Use original data object
+            'updated_at': datetime.utcnow().isoformat()
+        }
+        
+        if schedule_name:
+            update_data['schedule_name'] = schedule_name
+
+        result = client.table("saved_schedules")\
+            .update(update_data)\
+            .eq('id', schedule_id)\
+            .eq('user_id', user_id)\
+            .execute()
+
+        print(f"📊 Update result: {result}")
+
+        if result.data:
+            print(f"✅ Schedule updated successfully")
+            return jsonify({
+                'message': 'Schedule updated successfully',
+                'schedule_id': schedule_id,
+                'schedule_name': schedule_name or result.data[0].get('schedule_name')
+            }), 200
+        else:
+            print(f"❌ Schedule {schedule_id} not found or not authorized")
+            return jsonify({'error': 'Schedule not found or not authorized'}), 404
+
+    except Exception as e:
+        print(f"❌ Error updating schedule: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': 'Internal server error'}), 500
 
 @schedules_bp.route('/<schedule_id>', methods=['DELETE'])
 @token_required
