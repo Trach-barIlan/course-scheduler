@@ -515,6 +515,7 @@ const CourseInput = ({ course, onChange, index, onRemove, canRemove, selectedUni
 
     return (
         <div className={`course-block ${!hasValidSession() ? 'invalid' : ''} ${isExpanded ? 'expanded' : 'collapsed'}`}>
+            {/* X button positioned in top-right corner of course card */}
             {canRemove && (
                 <button 
                     type="button"
@@ -526,7 +527,7 @@ const CourseInput = ({ course, onChange, index, onRemove, canRemove, selectedUni
                     ×
                 </button>
             )}
-            
+
             <div className="course-header">
                 <div className="input-group">
                     <label className="input-label" htmlFor={`course-name-${index}`}>
@@ -597,7 +598,10 @@ const CourseInput = ({ course, onChange, index, onRemove, canRemove, selectedUni
                         })()}
                     </div>
                 )}
+            </div>
 
+            {/* Edit Sessions button */}
+            <div className="edit-sessions-container">
                 <button
                     type="button"
                     className="expand-toggle-btn"

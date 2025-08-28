@@ -604,3 +604,90 @@
     font-size: 14px;
   }
 }
+
+/* Interactive course moving styles */
+.course-block.selected-for-move {
+  outline: 3px solid #3B82F6;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+  cursor: move;
+  z-index: 10;
+}
+
+.empty-slot.can-drop {
+  background: rgba(59, 130, 246, 0.05);
+  border: 2px dashed #3B82F6;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.empty-slot.can-drop:hover {
+  background: rgba(59, 130, 246, 0.1);
+  border-color: #2563EB;
+}
+
+.empty-slot.invalid-drop {
+  background: rgba(239, 68, 68, 0.05);
+  border: 1px dashed #EF4444;
+  cursor: not-allowed;
+}
+
+.empty-slot.invalid-drop:hover {
+  background: rgba(239, 68, 68, 0.08);
+  border-color: #DC2626;
+}
+
+.course-block {
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.course-block:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Course selection status indicator */
+.schedule-viewer.has-selection {
+  position: relative;
+}
+
+.course-selection-status {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: #3B82F6;
+  color: white;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+  z-index: 1000;
+  animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.course-selection-status button {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  border: none;
+  padding: 4px 8px;
+  margin-left: 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.course-selection-status button:hover {
+  background: rgba(255, 255, 255, 0.3);
+}

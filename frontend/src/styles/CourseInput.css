@@ -453,22 +453,25 @@
 /* Remove Course Button */
 .remove-course-btn {
   position: absolute;
-  top: var(--space-4);
-  right: var(--space-4);
-  background: var(--error-500);
+  top: var(--space-3);
+  right: var(--space-3);
+  background: #ff4757;
   color: white;
   border: none;
   border-radius: 50%;
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  font-size: 1.2rem;
+  font-size: 20px;
+  font-weight: bold;
+  line-height: 1;
   transition: all var(--transition-fast);
-  opacity: 0;
-  z-index: 10;
+  opacity: 0.9;
+  z-index: 100;
+  box-shadow: 0 3px 10px rgba(255, 71, 87, 0.5);
 }
 
 .course-block:hover .remove-course-btn {
@@ -484,8 +487,37 @@
 }
 
 .remove-course-btn:hover {
-  background: var(--error-600);
-  transform: scale(1.1);
+  background: #ff3742;
+  transform: scale(1.15);
+  box-shadow: 0 5px 15px rgba(255, 71, 87, 0.7);
+}
+
+/* Edit Sessions Button Container */
+.edit-sessions-container {
+  margin-top: 2px;
+  margin-bottom: 20px;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  position: relative;
+  min-height: 32px;
+}
+
+.expand-toggle-btn {
+  background: linear-gradient(135deg, var(--primary-500), var(--primary-600));
+  color: white;
+  border: none;
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-md);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  white-space: nowrap;
+  z-index: 50;
 }
 
 /* Animation */
@@ -663,23 +695,6 @@
 .summary-item.no-sessions .summary-value {
   color: var(--text-secondary);
   font-style: italic;
-}
-
-.expand-toggle-btn {
-  background: linear-gradient(135deg, var(--primary-500), var(--primary-600));
-  color: white;
-  border: none;
-  padding: var(--space-1) var(--space-3);
-  border-radius: var(--radius-md);
-  font-size: 0.8rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all var(--transition-fast);
-  align-self: flex-start;
-  display: flex;
-  align-items: center;
-  gap: var(--space-1);
-  margin-top: var(--space-1);
 }
 
 .expand-toggle-btn:hover {

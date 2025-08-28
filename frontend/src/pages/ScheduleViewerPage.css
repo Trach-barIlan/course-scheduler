@@ -245,3 +245,125 @@
     font-size: 14px;
   }
 }
+
+/* Schedule name input and save button styles */
+.schedule-name-input {
+  display: flex;
+  align-items: center;
+}
+
+.schedule-name-field {
+  padding: 10px 12px;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  min-width: 200px;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.schedule-name-field:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.schedule-name-field::placeholder {
+  color: #94a3b8;
+}
+
+.save-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 14px;
+  background: #059669;
+  color: white;
+}
+
+.save-button:hover:not(:disabled) {
+  background: #047857;
+  transform: translateY(-1px);
+}
+
+.save-button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.save-button.saving {
+  animation: pulse 2s infinite;
+}
+
+.login-prompt-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border: 2px solid #f59e0b;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 14px;
+  background: #fef3c7;
+  color: #d97706;
+}
+
+.login-prompt-button:hover {
+  background: #f59e0b;
+  color: white;
+  transform: translateY(-1px);
+}
+
+@keyframes pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.7; }
+  100% { opacity: 1; }
+}
+
+/* Error message styles */
+.error-message {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+}
+
+.error-icon {
+  font-size: 16px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .header-actions {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  
+  .schedule-name-field {
+    min-width: 150px;
+    font-size: 12px;
+  }
+  
+  .save-button,
+  .edit-button,
+  .share-button {
+    font-size: 12px;
+    padding: 8px 12px;
+  }
+}

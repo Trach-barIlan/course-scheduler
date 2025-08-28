@@ -59,25 +59,67 @@ model_nlp = None
 def initialize_ai_model():
     """Initialize AI model in a separate thread to avoid blocking startup"""
     global schedule_parser, model_nlp
+    print(f"🔍 AI Model Init - Starting initialization...")
+    print(f"🔍 AI Model Init - SKIP_AI_MODEL env var: {os.environ.get('SKIP_AI_MODEL')}")
+    print(f"🔍 AI Model Init - Working directory: {os.getcwd()}")
+    print(f"🔍 AI Model Init - Python path: {os.sys.path}")
+    
     if not os.environ.get('SKIP_AI_MODEL'):
         try:
             print("🔄 Loading AI model...")
+            print("🔍 AI Model Init - About to import ScheduleParser...")
+            
+            # Check if ai_model directory exists
+            ai_model_path = os.path.join(os.getcwd(), 'ai_model')
+            print(f"🔍 AI Model Init - AI model directory path: {ai_model_path}")
+            print(f"🔍 AI Model Init - AI model directory exists: {os.path.exists(ai_model_path)}")
+            
+            if os.path.exists(ai_model_path):
+                print(f"🔍 AI Model Init - AI model directory contents: {os.listdir(ai_model_path)}")
+                schedule_ner_path = os.path.join(ai_model_path, 'schedule_ner')
+                print(f"🔍 AI Model Init - Schedule NER path: {schedule_ner_path}")
+                print(f"🔍 AI Model Init - Schedule NER exists: {os.path.exists(schedule_ner_path)}")
+                if os.path.exists(schedule_ner_path):
+                    print(f"🔍 AI Model Init - Schedule NER contents: {os.listdir(schedule_ner_path)}")
+            
             from ai_model.ml_parser import ScheduleParser
+            print("✅ AI Model Init - ScheduleParser imported successfully")
+            
             schedule_parser = ScheduleParser()
+            print("✅ AI Model Init - ScheduleParser instantiated successfully")
+            
             model_nlp = schedule_parser.nlp
+            print("✅ AI Model Init - NLP model assigned successfully")
+            
             print("✅ AI model loaded successfully")
+        except ImportError as e:
+            print(f"❌ AI Model Init - Import error: {e}")
+            print(f"❌ AI Model Init - Import error type: {type(e)}")
+            import traceback
+            print(f"❌ AI Model Init - Import traceback: {traceback.format_exc()}")
+            schedule_parser = None
+            model_nlp = None
         except Exception as e:
             print(f"❌ Failed to load AI model: {e}")
+            print(f"❌ AI Model Init - Error type: {type(e)}")
+            import traceback
+            print(f"❌ AI Model Init - Full traceback: {traceback.format_exc()}")
             schedule_parser = None
             model_nlp = None
     else:
-        print("⏭️ Skipping AI model initialization")
+        print("⏭️ Skipping AI model initialization (SKIP_AI_MODEL is set)")
+        schedule_parser = None
+        model_nlp = None
+    
+    print(f"🔍 AI Model Init - Final state: schedule_parser={schedule_parser is not None}, model_nlp={model_nlp is not None}")
 
 # Initialize AI model in background
 import threading
+print("🔍 Starting AI model initialization thread...")
 ai_thread = threading.Thread(target=initialize_ai_model)
 ai_thread.daemon = True
 ai_thread.start()
+print("🔍 AI model initialization thread started")
 
 def extract_hour_from_text(text):
     """Converts time expressions to 24-hour integer values."""
@@ -139,22 +181,43 @@ def update_user_statistics_after_generation(user_id, courses_count, constraints_
 @app.route("/api/parse", methods=["POST"])
 @token_required
 def parse_input():
+    print("🔍 CONSTRAINT PARSING: Starting parse_input endpoint")
+    print(f"🔍 CONSTRAINT PARSING: schedule_parser available: {schedule_parser is not None}")
+    print(f"🔍 CONSTRAINT PARSING: model_nlp available: {model_nlp is not None}")
+    
     if not schedule_parser or not model_nlp:
+        print("❌ CONSTRAINT PARSING: AI model not available - returning error")
         return jsonify({"error": "AI model not available"}), 500
         
     data = request.json
+    print(f"🔍 CONSTRAINT PARSING: Received data: {data}")
+    
     if not data or "text" not in data:
+        print("❌ CONSTRAINT PARSING: Missing text input")
         return jsonify({"error": "Missing text input"}), 400
 
     text = data["text"].strip()
-    normalized_text = normalize_text(text)
+    print(f"🔍 CONSTRAINT PARSING: Original text: '{text}'")
     
-    doc = model_nlp(normalized_text)
+    normalized_text = normalize_text(text)
+    print(f"🔍 CONSTRAINT PARSING: Normalized text: '{normalized_text}'")
+    
+    print("🔍 CONSTRAINT PARSING: About to process with NLP model")
+    try:
+        doc = model_nlp(normalized_text)
+        print(f"🔍 CONSTRAINT PARSING: NLP processing successful, found {len(doc.ents)} entities")
+    except Exception as e:
+        print(f"❌ CONSTRAINT PARSING: NLP processing failed: {e}")
+        import traceback
+        print(f"❌ CONSTRAINT PARSING: Full traceback: {traceback.format_exc()}")
+        return jsonify({"error": f"NLP processing failed: {str(e)}"}), 500
 
     constraints = []
     raw_entities = []
 
-    for ent in doc.ents:
+    print("🔍 CONSTRAINT PARSING: Starting entity processing...")
+    for i, ent in enumerate(doc.ents):
+        print(f"🔍 CONSTRAINT PARSING: Processing entity {i+1}: '{ent.text}' (label: {ent.label_})")
         raw_entities.append({
             "specifics": ent.text,
             "label": ent.label_
@@ -213,7 +276,24 @@ def api_schedule():
         return jsonify({"error": "Invalid preference value"}), 400
 
     constraints = data.get("constraints", [])
-    parsed_constraints = {"constraints": constraints} if isinstance(constraints, list) else parse_course_text(constraints)
+    print(f"🔍 SCHEDULE PARSING: Received constraints: {constraints}")
+    print(f"🔍 SCHEDULE PARSING: Constraints type: {type(constraints)}")
+    print(f"🔍 SCHEDULE PARSING: Is constraints a list? {isinstance(constraints, list)}")
+    
+    if isinstance(constraints, list):
+        print("🔍 SCHEDULE PARSING: Constraints already in list format, skipping parsing")
+        parsed_constraints = {"constraints": constraints}
+    else:
+        print("🔍 SCHEDULE PARSING: Need to parse constraints text...")
+        print(f"🔍 SCHEDULE PARSING: About to call parse_course_text with: '{constraints}'")
+        try:
+            parsed_constraints = parse_course_text(constraints)
+            print(f"🔍 SCHEDULE PARSING: parse_course_text succeeded: {parsed_constraints}")
+        except Exception as e:
+            print(f"❌ SCHEDULE PARSING: parse_course_text failed: {e}")
+            import traceback
+            print(f"❌ SCHEDULE PARSING: Full traceback: {traceback.format_exc()}")
+            return jsonify({"error": f"Constraint parsing failed: {str(e)}"}), 500
 
     try:
         courses = []
