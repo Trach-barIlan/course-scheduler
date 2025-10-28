@@ -86,10 +86,11 @@ def initialize_ai_model():
             print("✅ AI Model Init - ScheduleParser imported successfully")
             
             schedule_parser = ScheduleParser()
-            print("✅ AI Model Init - ScheduleParser instantiated successfully")
+            print("schedule parser status:", schedule_parser is not None)
+
             
             model_nlp = schedule_parser.nlp
-            print("✅ AI Model Init - NLP model assigned successfully")
+            print(f"🔍 AI Model Init - NLP model loaded: {model_nlp is not None}")
             
             print("✅ AI model loaded successfully")
         except ImportError as e:

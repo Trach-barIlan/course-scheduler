@@ -1,3 +1,4 @@
+import os
 import spacy
 from spacy.matcher import Matcher
 from spacy.lang.en import English
@@ -21,7 +22,44 @@ class HybridScheduleParser:
             print(f"❌ HYBRID PARSER: Failed to load en_core_web_sm: {e}")
             import traceback
             print(f"❌ HYBRID PARSER: Full traceback: {traceback.format_exc()}")
-            raise
+
+            # Try to auto-download the model if allowed by environment (useful for quick deploys)
+            auto_download = os.environ.get("SPACY_AUTO_DOWNLOAD", "0")
+            if auto_download == "1":
+                try:
+                    print("🔄 HYBRID PARSER: Attempting to download en_core_web_sm via spacy.cli.download...")
+                    try:
+                        from spacy.cli import download as spacy_download
+                    except Exception:
+                        # older spacy versions may expose differently
+                        import spacy as _spacy
+                        spacy_download = _spacy.cli.download
+
+                    spacy_download("en_core_web_sm")
+                    print("🔍 HYBRID PARSER: Download complete, retrying load...")
+                    self.nlp = spacy.load("en_core_web_sm")
+                    print("🔍 HYBRID PARSER: en_core_web_sm loaded successfully after download")
+                except Exception as de:
+                    print(f"❌ HYBRID PARSER: Auto-download attempt failed: {de}")
+                    print(traceback.format_exc())
+                    # Fall back to a lightweight blank English model to keep service running
+                    try:
+                        print("⚠️ HYBRID PARSER: Falling back to blank 'en' model (reduced NER capabilities)")
+                        self.nlp = spacy.blank("en")
+                    except Exception as be:
+                        print(f"❌ HYBRID PARSER: Failed to create blank 'en' model: {be}")
+                        print(traceback.format_exc())
+                        raise
+            else:
+                # If we are not allowed to auto-download, provide instructions and fallback
+                print("⚠️ HYBRID PARSER: SPACY_AUTO_DOWNLOAD not enabled. To fix, install the model in your environment: 'python -m spacy download en_core_web_sm' or add the package to your deployment image.")
+                print("⚠️ HYBRID PARSER: Falling back to blank 'en' model (reduced NER capabilities)")
+                try:
+                    self.nlp = spacy.blank("en")
+                except Exception as be:
+                    print(f"❌ HYBRID PARSER: Failed to create blank 'en' model: {be}")
+                    print(traceback.format_exc())
+                    raise
         
         print("🔍 HYBRID PARSER: Creating Matcher...")
         try:
