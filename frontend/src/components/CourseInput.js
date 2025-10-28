@@ -70,7 +70,6 @@ const CourseInput = ({ course, onChange, index, onRemove, canRemove, selectedUni
         try {
             const token = localStorage.getItem('auth_token');
             if (!token) {
-                console.log('No auth token found');
                 return;
             }
 
@@ -113,7 +112,6 @@ const CourseInput = ({ course, onChange, index, onRemove, canRemove, selectedUni
         try {
             const token = localStorage.getItem('auth_token');
             if (!token) {
-                console.log('No auth token found');
                 return;
             }
 
@@ -126,11 +124,9 @@ const CourseInput = ({ course, onChange, index, onRemove, canRemove, selectedUni
 
             if (response.ok) {
                 const responseData = await response.json();
-                console.log('📋 API response received:', responseData);
                 
                 // Extract course data from the API response
                 const courseData = responseData.success ? responseData.course : responseData;
-                console.log('📋 Course data extracted:', courseData);
                 
                 // Convert course data to scheduler format, preserving existing course structure
                 const updatedCourse = {
@@ -142,42 +138,34 @@ const CourseInput = ({ course, onChange, index, onRemove, canRemove, selectedUni
                     practices: []
                 };
 
-                console.log('📝 Initial updated course:', updatedCourse);
 
                 // Process events to create time slots
                 if (courseData.events && courseData.events.length > 0) {
-                    console.log('🎯 Processing events:', courseData.events);
                     
                     // Use Sets to track unique time slots and avoid duplicates
                     const uniqueLectures = new Set();
                     const uniquePractices = new Set();
                     
                     courseData.events.forEach(event => {
-                        console.log('📚 Processing event:', event);
                         if (event.timeSlots && event.timeSlots.length > 0) {
                             event.timeSlots.forEach(timeSlot => {
-                                console.log('⏰ Processing time slot:', timeSlot);
                                 const slot = {
                                     day: timeSlot.day || '',
                                     startTime: timeSlot.from ? timeSlot.from.split(':')[0] : '', // Extract hour from 'from'
                                     endTime: timeSlot.to ? timeSlot.to.split(':')[0] : '' // Extract hour from 'to'
                                 };
-
-                                console.log('✅ Created slot:', slot);
                                 
                                 // Create a unique key for this time slot to avoid duplicates
                                 const slotKey = `${slot.day}-${slot.startTime}-${slot.endTime}`;
 
                                 // Determine if it's a lecture or practice based on category
                                 if (event.category && (event.category.includes('הרצאה') || event.category.includes('lecture'))) {
-                                    console.log('📚 Adding as lecture');
                                     if (!uniqueLectures.has(slotKey)) {
                                         uniqueLectures.add(slotKey);
                                         updatedCourse.hasLecture = true;
                                         updatedCourse.lectures.push(slot);
                                     }
                                 } else {
-                                    console.log('👨‍🏫 Adding as practice');
                                     if (!uniquePractices.has(slotKey)) {
                                         uniquePractices.add(slotKey);
                                         updatedCourse.hasPractice = true;
@@ -187,18 +175,13 @@ const CourseInput = ({ course, onChange, index, onRemove, canRemove, selectedUni
                             });
                         }
                     });
-                } else {
-                    console.log('⚠️ No events found in course data');
                 }
 
                 // If no sessions were found, set defaults
                 if (!updatedCourse.hasLecture && !updatedCourse.hasPractice) {
-                    console.log('🔧 No sessions found, setting default lecture');
                     updatedCourse.hasLecture = true;
                     updatedCourse.lectures = [{ day: '', startTime: '', endTime: '' }];
                 }
-
-                console.log('🎯 Final updated course before onChange:', updatedCourse);
 
                 // Update the course with all the new data at once to avoid controlled/uncontrolled issues
                 // Instead of calling onChange multiple times, we'll update each property individually but synchronously
@@ -208,7 +191,6 @@ const CourseInput = ({ course, onChange, index, onRemove, canRemove, selectedUni
                 onChange(index, "lectures", updatedCourse.lectures);
                 onChange(index, "practices", updatedCourse.practices);
                 
-                console.log('✅ All onChange calls completed');
             } else {
                 console.error('❌ API response not OK:', response.status, response.statusText);
             }

@@ -95,11 +95,6 @@ const ScheduleViewer = ({ schedule, title, backButton, onScheduleUpdate, allowMo
   const [scheduleData, setScheduleData] = useState(null);
   const [originalCourseOptions, setOriginalCourseOptions] = useState(null);
 
-  // Debug the incoming schedule
-  console.log('🔍 ScheduleViewer received schedule:', schedule);
-  console.log('🔍 Schedule type:', typeof schedule);
-  console.log('🔍 Is Array:', Array.isArray(schedule));
-
   // Time slots from 8 AM to 8 PM (12 hours)
   const timeSlots = Array.from({ length: 25 }, (_, i) => {
     const hour = 8 + Math.floor(i / 2);
@@ -165,21 +160,17 @@ const ScheduleViewer = ({ schedule, title, backButton, onScheduleUpdate, allowMo
   // Get all unique courses for the course list, grouped by course name
   const getAllCourses = useCallback(() => {
     const coursesMap = new Map();
-    
-    console.log('📊 Processing schedule for course list:', processedSchedule);
-    
+        
     Object.entries(processedSchedule).forEach(([day, courses]) => {
       // Add safety check for courses array
       if (Array.isArray(courses)) {
         courses.forEach(course => {
-          console.log('📊 Processing course for list:', course);
           
           const courseName = course.course_name || course.name || course.courseName || 'Unknown Course';
           const courseType = course.type || course.courseType || 'Unknown Type';
           const lecturer = course.lecturer || course.instructor || course.teacher || 'TBA';
           const location = course.location || course.room || course.classroom || 'TBA';
           
-          console.log('📊 Extracted data - name:', courseName, 'type:', courseType, 'lecturer:', lecturer, 'location:', location);
           
           // Group by course name only, not by course name + type
           const key = courseName;
