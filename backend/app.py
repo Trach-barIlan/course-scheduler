@@ -86,7 +86,7 @@ def initialize_ai_model():
             print("✅ AI Model Init - ScheduleParser imported successfully")
             
             schedule_parser = ScheduleParser()
-            print("schedule parser status:", schedule_parser is not None)
+            print(f"🔍 AI Model Init - ScheduleParser instantiated successfully: {schedule_parser is not None}")
 
             
             model_nlp = schedule_parser.nlp
