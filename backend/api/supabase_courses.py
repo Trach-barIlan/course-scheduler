@@ -8,6 +8,7 @@ import os
 import logging
 from auth.routes import token_required
 from supabase import create_client, Client
+from .courses import load_courses_data
 
 logger = logging.getLogger(__name__)
 
@@ -336,152 +337,77 @@ def autocomplete_courses():
 @supabase_courses_bp.route('/courses/course/<course_id>', methods=['GET'])
 @token_required
 def get_course_details(course_id):
-    """Get detailed information for a specific course from Supabase"""
+    """Get detailed information for a specific course from local JSON (always)."""
     try:
-        supabase = get_supabase_client()
         semester = request.args.get('semester', '').strip()
-        
-        # Get comprehensive course data
-        result = (
-            supabase
-            .table('courses')
-            .select('''
-                *,
-                department:departments(*),
-                university:universities(*),
-                events:course_events(
-                    *,
-                    category:course_categories(*),
-                    location:locations(*),
-                    lecturers:course_event_lecturers(
-                        *,
-                        lecturer:lecturers(*)
-                    ),
-                    time_slots:time_slots(
-                        *,
-                        semester:semesters(*),
-                        day:days_of_week(*)
-                    )
-                ),
-                materials:course_materials(*),
-                prerequisites:course_prerequisites!course_prerequisites_course_id_fkey(
-                    *,
-                    prerequisite:courses!course_prerequisites_prerequisite_course_id_fkey(id, name)
-                )
-            ''')
-            .eq('id', course_id)
-            .eq('is_active', True)
-            .execute()
-        )
-        
-        if not result.data:
+
+        courses_data = load_courses_data()
+        all_courses = courses_data.get('courses', [])
+
+        # Find course by ID
+        course = next((c for c in all_courses if c.get('id') == course_id), None)
+
+        if not course:
             return jsonify({
                 'success': False,
                 'course': None,
                 'error': 'Course not found',
                 'course_id': course_id
             }), 404
-        
-        course = result.data[0]
-        
+
         # Filter events by semester if specified
         filtered_events = course.get('events', [])
         if semester:
-            filtered_events = []
+            tmp = []
             for event in course.get('events', []):
-                # Filter time slots by semester
                 filtered_time_slots = [
-                    slot for slot in event.get('time_slots', [])
-                    if slot.get('semester', {}).get('code') == semester
+                    slot for slot in event.get('timeSlots', [])
+                    if slot.get('semester') == semester
                 ]
-                
-                # Only include event if it has time slots for the requested semester
                 if filtered_time_slots:
-                    filtered_event = {
-                        **event,
-                        'time_slots': filtered_time_slots
-                    }
-                    filtered_events.append(filtered_event)
-        
-        # Create enhanced course with summary
+                    tmp.append({**event, 'timeSlots': filtered_time_slots})
+            filtered_events = tmp
+
+        # Build summary fields
         lecturers = set()
         categories = set()
         days = set()
         semesters = set()
         locations = set()
-        
+
         for event in filtered_events:
-            # Lecturers
-            for lec_assoc in event.get('lecturers', []):
-                lecturers.add(lec_assoc['lecturer']['name'])
-            
-            # Categories
+            for lec in event.get('lecturers', []) or []:
+                lecturers.add(lec)
             if event.get('category'):
-                categories.add(event['category']['name'])
-            
-            # Locations
+                categories.add(event.get('category'))
             if event.get('location'):
-                locations.add(event['location']['full_name'])
-            
-            # Days and semesters
-            for slot in event.get('time_slots', []):
+                locations.add(event.get('location'))
+            for slot in event.get('timeSlots', []) or []:
                 if slot.get('day'):
-                    days.add(slot['day']['name_hebrew'])
+                    days.add(slot['day'])
                 if slot.get('semester'):
-                    semesters.add(slot['semester']['code'])
-        
-        # Transform events to match frontend expectations
-        def transform_events_for_frontend(events):
-            """Transform events from database format to frontend format"""
-            transformed_events = []
-            for event in events:
-                # Transform time slots
-                time_slots = []
-                for slot in event.get('time_slots', []):
-                    time_slot = {
-                        'day': slot.get('day', {}).get('name_english', ''),  # Use English day names
-                        'from': slot.get('start_time', ''),
-                        'to': slot.get('end_time', ''),
-                        'semester': slot.get('semester', {}).get('code', ''),
-                        'is_cancelled': slot.get('is_cancelled', False)
-                    }
-                    time_slots.append(time_slot)
-                
-                # Transform event
-                transformed_event = {
-                    **event,
-                    'timeSlots': time_slots,  # Frontend expects camelCase
-                    'category': event.get('category', {}).get('name', ''),
-                    'location': event.get('location', {}).get('full_name', '') if event.get('location') else ''
-                }
-                # Remove the snake_case version
-                transformed_event.pop('time_slots', None)
-                transformed_events.append(transformed_event)
-            
-            return transformed_events
-        
-        # Apply transformation
-        transformed_events = transform_events_for_frontend(filtered_events)
-        
+                    semesters.add(slot['semester'])
+
         enhanced_course = {
             **course,
-            'events': transformed_events,
+            'events': filtered_events,
             'summary': {
                 'lecturers': list(lecturers),
                 'categories': list(categories),
                 'days': list(days),
                 'semesters': list(semesters),
-                'locations': list(locations),
+                'locations': list(filter(None, locations)),
                 'events_count': len(filtered_events)
             }
         }
-        
+
         return jsonify({
             'success': True,
             'course': enhanced_course,
-            'course_id': course_id
+            'course_id': course_id,
+            'source': 'json'
         }), 200
-        
+
     except Exception as e:
         logger.error(f"Error getting course details for {course_id}: {e}")
         return jsonify({
