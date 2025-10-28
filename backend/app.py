@@ -115,12 +115,9 @@ def initialize_ai_model():
     print(f"🔍 AI Model Init - Final state: schedule_parser={schedule_parser is not None}, model_nlp={model_nlp is not None}")
 
 # Initialize AI model in background
-import threading
-print("🔍 Starting AI model initialization thread...")
-ai_thread = threading.Thread(target=initialize_ai_model)
-ai_thread.daemon = True
-ai_thread.start()
-print("🔍 AI model initialization thread started")
+print("🔍 Starting AI model initialization...")
+initialize_ai_model()
+print("🔍 AI model initialization completed.")
 
 def extract_hour_from_text(text):
     """Converts time expressions to 24-hour integer values."""
