@@ -12,14 +12,9 @@ const ScheduleViewerPage = ({ user, authToken }) => {
   const [scheduleName, setScheduleName] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState(null);
 
   const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000';
-
-  // Determine if this is a saved schedule or a new one
-  const isExistingSchedule = Boolean(scheduleId);
-  const isNewSchedule = Boolean(location.state?.schedule && !scheduleId);
 
   // Handle schedule updates from ScheduleViewer
   const handleScheduleUpdate = useCallback(async (updatedSchedule) => {
@@ -51,66 +46,6 @@ const ScheduleViewerPage = ({ user, authToken }) => {
     }
   }, []); // Empty dependency array since we're only using setSchedule and setSaveError
 
-  // Save new schedule or update existing one
-  const handleSaveSchedule = useCallback(async () => {
-    if (!user || !authToken) {
-      setSaveError('Please log in to save schedules');
-      return;
-    }
-
-    if (!schedule) {
-      setSaveError('No schedule to save');
-      return;
-    }
-
-    try {
-      setIsSaving(true);
-      setSaveError(null);
-
-      const endpoint = isExistingSchedule 
-        ? `${API_BASE_URL}/api/schedules/${scheduleId}`
-        : `${API_BASE_URL}/api/schedules`;
-      
-      const method = isExistingSchedule ? 'PUT' : 'POST';
-
-      const response = await fetch(endpoint, {
-        method: method,
-        headers: {
-          'Authorization': `Bearer ${authToken}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          schedule_data: schedule,
-          schedule_name: scheduleName || 'Untitled Schedule',
-          user_id: user.id
-        })
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || `Failed to ${isExistingSchedule ? 'update' : 'save'} schedule`);
-      }
-
-      const data = await response.json();
-      
-      // If this was a new schedule, redirect to the saved schedule URL
-      if (!isExistingSchedule && data.schedule_id) {
-        navigate(`/schedule-viewer/${data.schedule_id}`, { replace: true });
-      }
-
-    } catch (err) {
-      console.error(`Error ${isExistingSchedule ? 'updating' : 'saving'} schedule:`, err);
-      setSaveError(`Failed to ${isExistingSchedule ? 'update' : 'save'} schedule: ${err.message}`);
-    } finally {
-      setIsSaving(false);
-    }
-  }, [user, authToken, schedule, scheduleName, isExistingSchedule, scheduleId, API_BASE_URL, navigate]);
-
-  // Handle schedule name changes
-  const handleScheduleNameChange = (newName) => {
-    setScheduleName(newName);
-    setSaveError(null); // Clear any previous save errors
-  };
 
   const loadScheduleFromAPI = useCallback(async () => {
     if (!user || !authToken) {
@@ -193,16 +128,6 @@ const ScheduleViewerPage = ({ user, authToken }) => {
     }
   };
 
-  const handleEditSchedule = () => {
-    // Navigate to scheduler page with this schedule data
-    navigate('/scheduler', {
-      state: {
-        schedule,
-        scheduleName,
-        scheduleId
-      }
-    });
-  };
 
   if (isLoading) {
     return (

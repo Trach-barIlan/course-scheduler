@@ -130,10 +130,10 @@ const WeeklySchedule = ({ schedule, isLoading, user, authToken, scheduleName, sc
         return;
       }
 
-      const authData = await authCheck.json();
-  // Authentication verified for user
-  // Opening save modal
-      setShowSaveModal(true);
+    // Authentication verified for user (response body not required here)
+    await authCheck.json();
+    // Opening save modal
+    setShowSaveModal(true);
     } catch (error) {
       console.error('❌ Error checking authentication:', error);
       alert('Unable to verify authentication. Please refresh the page and try again.');
@@ -481,14 +481,7 @@ const WeeklySchedule = ({ schedule, isLoading, user, authToken, scheduleName, sc
     return highlightedCourse && slot.courseName === highlightedCourse;
   };
 
-  // Add double-click handler to start drag mode
-  const handleClassDoubleClick = (slot) => {
-    // Start drag mode on double-click
-    setDraggedClass(slot);
-    const availableSlots = findAvailableSlots(slot);
-    setAvailableSlots(availableSlots);
-    setHighlightedCourse(slot.courseName);
-  };
+  // double-click handler removed — single-click now starts move mode
 
   const downloadPDF = async () => {
     if (!user) {
@@ -675,7 +668,7 @@ const WeeklySchedule = ({ schedule, isLoading, user, authToken, scheduleName, sc
             <div className="schedule-source">
               <div className="source-info">
                 <span className="source-badge">📂 Loaded Schedule</span>
-                <span className="edit-hint">You can modify course times on the left and regenerate, or you can double click a class to move it</span>
+                <span className="edit-hint">You can modify course times on the left and regenerate, or click a class to move it</span>
               </div>
             </div>
           )}
@@ -752,7 +745,7 @@ const WeeklySchedule = ({ schedule, isLoading, user, authToken, scheduleName, sc
       {highlightedCourse && !draggedClass && (
         <div className="highlight-mode-info">
           <p>✨ Highlighting all sessions for: <strong>{highlightedCourse}</strong></p>
-          <p>Double-click any session to move it, or click another course to highlight it instead.</p>
+          <p>Click any session to move it, or click another course to highlight it instead.</p>
         </div>
       )}
       
