@@ -12,14 +12,9 @@ const ScheduleViewerPage = ({ user, authToken }) => {
   const [scheduleName, setScheduleName] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState(null);
 
   const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000';
-
-  // Determine if this is a saved schedule or a new one
-  const isExistingSchedule = Boolean(scheduleId);
-  const isNewSchedule = Boolean(location.state?.schedule && !scheduleId);
 
   // Handle schedule updates from ScheduleViewer
   const handleScheduleUpdate = useCallback(async (updatedSchedule) => {
@@ -29,8 +24,6 @@ const ScheduleViewerPage = ({ user, authToken }) => {
       
       // Clear any save errors since the schedule has changed
       setSaveError(null);
-      
-      console.log('📅 Schedule updated:', updatedSchedule);
       
       // If you want to auto-save changes to the API, uncomment the following:
       /*
@@ -53,69 +46,6 @@ const ScheduleViewerPage = ({ user, authToken }) => {
     }
   }, []); // Empty dependency array since we're only using setSchedule and setSaveError
 
-  // Save new schedule or update existing one
-  const handleSaveSchedule = useCallback(async () => {
-    if (!user || !authToken) {
-      setSaveError('Please log in to save schedules');
-      return;
-    }
-
-    if (!schedule) {
-      setSaveError('No schedule to save');
-      return;
-    }
-
-    try {
-      setIsSaving(true);
-      setSaveError(null);
-
-      const endpoint = isExistingSchedule 
-        ? `${API_BASE_URL}/api/schedules/${scheduleId}`
-        : `${API_BASE_URL}/api/schedules`;
-      
-      const method = isExistingSchedule ? 'PUT' : 'POST';
-
-      const response = await fetch(endpoint, {
-        method: method,
-        headers: {
-          'Authorization': `Bearer ${authToken}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          schedule_data: schedule,
-          schedule_name: scheduleName || 'Untitled Schedule',
-          user_id: user.id
-        })
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || `Failed to ${isExistingSchedule ? 'update' : 'save'} schedule`);
-      }
-
-      const data = await response.json();
-      
-      // If this was a new schedule, redirect to the saved schedule URL
-      if (!isExistingSchedule && data.schedule_id) {
-        navigate(`/schedule-viewer/${data.schedule_id}`, { replace: true });
-      }
-
-      // Show success message (you could add a toast notification here)
-      console.log(`✅ Schedule ${isExistingSchedule ? 'updated' : 'saved'} successfully`);
-      
-    } catch (err) {
-      console.error(`Error ${isExistingSchedule ? 'updating' : 'saving'} schedule:`, err);
-      setSaveError(`Failed to ${isExistingSchedule ? 'update' : 'save'} schedule: ${err.message}`);
-    } finally {
-      setIsSaving(false);
-    }
-  }, [user, authToken, schedule, scheduleName, isExistingSchedule, scheduleId, API_BASE_URL, navigate]);
-
-  // Handle schedule name changes
-  const handleScheduleNameChange = (newName) => {
-    setScheduleName(newName);
-    setSaveError(null); // Clear any previous save errors
-  };
 
   const loadScheduleFromAPI = useCallback(async () => {
     if (!user || !authToken) {
@@ -198,16 +128,6 @@ const ScheduleViewerPage = ({ user, authToken }) => {
     }
   };
 
-  const handleEditSchedule = () => {
-    // Navigate to scheduler page with this schedule data
-    navigate('/scheduler', {
-      state: {
-        schedule,
-        scheduleName,
-        scheduleId
-      }
-    });
-  };
 
   if (isLoading) {
     return (
@@ -238,71 +158,7 @@ const ScheduleViewerPage = ({ user, authToken }) => {
 
   return (
     <div className="schedule-viewer-page">
-      <div className="page-header">
-        <div className="header-left">
-          <div className="page-title">
-            <h1>Schedule Viewer</h1>
-            <p>Enhanced visualization of your course schedule</p>
-          </div>
-        </div>
-        
-        <div className="header-actions">
-          {/* Schedule name input for new schedules or editing existing ones */}
-          {(isNewSchedule || isExistingSchedule) && user && (
-            <div className="schedule-name-input">
-              <input
-                type="text"
-                value={scheduleName}
-                onChange={(e) => handleScheduleNameChange(e.target.value)}
-                placeholder="Schedule Name"
-                className="schedule-name-field"
-              />
-            </div>
-          )}
-          
-          {/* Save/Update button */}
-          {user && (isNewSchedule || isExistingSchedule) && (
-            <button 
-              className={`save-button ${isSaving ? 'saving' : ''}`}
-              onClick={handleSaveSchedule}
-              disabled={isSaving}
-            >
-              {isSaving ? (
-                <>⏳ {isExistingSchedule ? 'Updating...' : 'Saving...'}</>
-              ) : (
-                <>{isExistingSchedule ? '💾 Update Schedule' : '💾 Save Schedule'}</>
-              )}
-            </button>
-          )}
-
-          {/* Login prompt for non-authenticated users with new schedules */}
-          {!user && isNewSchedule && (
-            <button 
-              className="login-prompt-button"
-              onClick={() => navigate('/login', { state: { returnUrl: window.location.pathname } })}
-            >
-              🔒 Login to Save
-            </button>
-          )}
-
-          {scheduleId && (
-            <button className="edit-button" onClick={handleEditSchedule}>
-              ✏️ Edit Schedule
-            </button>
-          )}
-          <button 
-            className="share-button"
-            onClick={() => {
-              // Copy current URL to clipboard
-              navigator.clipboard.writeText(window.location.href);
-              // You could show a toast notification here
-              alert('Schedule URL copied to clipboard!');
-            }}
-          >
-            🔗 Share
-          </button>
-        </div>
-      </div>
+      {/* Page header/banner removed to declutter the enhanced schedule viewer */}
 
       {/* Save error display */}
       {saveError && (
@@ -322,6 +178,7 @@ const ScheduleViewerPage = ({ user, authToken }) => {
               ← Back
             </button>
           }
+          allowMove={false}
         />
       </div>
     </div>

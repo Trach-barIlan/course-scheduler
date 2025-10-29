@@ -20,13 +20,11 @@ const convertScheduleFormat = (scheduleData) => {
   
   // If it's already in day-based format, return as is
   if (!Array.isArray(scheduleData) && typeof scheduleData === 'object') {
-    console.log('📊 Schedule is already in day-based format');
     return scheduleData;
   }
   
   // If it's in WeeklyScheduler array format, convert it
   if (Array.isArray(scheduleData)) {
-    console.log('📊 Converting from WeeklyScheduler array format');
     const dayMap = {
       'Sun': 'Sunday',
       'Mon': 'Monday', 
@@ -40,7 +38,6 @@ const convertScheduleFormat = (scheduleData) => {
     const converted = {};
     
     scheduleData.forEach(course => {
-      console.log('📊 Processing course:', course);
       
       // Process lecture
       if (course.lecture && typeof course.lecture === 'string') {
@@ -85,24 +82,18 @@ const convertScheduleFormat = (scheduleData) => {
       }
     });
     
-    console.log('📊 Converted schedule:', converted);
     return converted;
   }
   
   return {};
 };
 
-const ScheduleViewer = ({ schedule, title, backButton, onScheduleUpdate }) => {
+const ScheduleViewer = ({ schedule, title, backButton, onScheduleUpdate, allowMove = true }) => {
   const [hoveredCourse, setHoveredCourse] = useState(null);
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [selectedCourseForMove, setSelectedCourseForMove] = useState(null);
   const [scheduleData, setScheduleData] = useState(null);
   const [originalCourseOptions, setOriginalCourseOptions] = useState(null);
-
-  // Debug the incoming schedule
-  console.log('🔍 ScheduleViewer received schedule:', schedule);
-  console.log('🔍 Schedule type:', typeof schedule);
-  console.log('🔍 Is Array:', Array.isArray(schedule));
 
   // Time slots from 8 AM to 8 PM (12 hours)
   const timeSlots = Array.from({ length: 25 }, (_, i) => {
@@ -125,7 +116,6 @@ const ScheduleViewer = ({ schedule, title, backButton, onScheduleUpdate }) => {
       try {
         const parsedOptions = JSON.parse(storedOptions);
         setOriginalCourseOptions(parsedOptions);
-        console.log('📚 Loaded original course options:', parsedOptions);
       } catch (error) {
         console.error('❌ Error parsing original course options:', error);
       }
@@ -139,13 +129,7 @@ const ScheduleViewer = ({ schedule, title, backButton, onScheduleUpdate }) => {
     
     if (!convertedSchedule || Object.keys(convertedSchedule).length === 0) return {};
     
-    // Debug the converted schedule structure
-    console.log('📊 Converted schedule data:', convertedSchedule);
-    console.log('📊 Converted schedule keys:', Object.keys(convertedSchedule));
-    
     return Object.entries(convertedSchedule).reduce((acc, [day, courses]) => {
-      // Debug log to understand the data structure
-      console.log('Processing day:', day, 'courses:', courses, 'type:', typeof courses);
       
       // Handle different possible data structures
       let coursesArray;
@@ -159,12 +143,8 @@ const ScheduleViewer = ({ schedule, title, backButton, onScheduleUpdate }) => {
         console.warn(`Skipping day ${day} - courses is not an array or object:`, courses);
         return acc;
       }
-
-      console.log('📊 Courses array for', day, ':', coursesArray);
       
-      acc[day] = coursesArray.map(course => {
-        console.log('📊 Individual course:', course);
-        
+      acc[day] = coursesArray.map(course => {        
         return {
           ...course,
           startTime: course.time ? course.time.split('-')[0].trim() : '',
@@ -180,21 +160,17 @@ const ScheduleViewer = ({ schedule, title, backButton, onScheduleUpdate }) => {
   // Get all unique courses for the course list, grouped by course name
   const getAllCourses = useCallback(() => {
     const coursesMap = new Map();
-    
-    console.log('📊 Processing schedule for course list:', processedSchedule);
-    
+        
     Object.entries(processedSchedule).forEach(([day, courses]) => {
       // Add safety check for courses array
       if (Array.isArray(courses)) {
         courses.forEach(course => {
-          console.log('📊 Processing course for list:', course);
           
           const courseName = course.course_name || course.name || course.courseName || 'Unknown Course';
           const courseType = course.type || course.courseType || 'Unknown Type';
           const lecturer = course.lecturer || course.instructor || course.teacher || 'TBA';
           const location = course.location || course.room || course.classroom || 'TBA';
           
-          console.log('📊 Extracted data - name:', courseName, 'type:', courseType, 'lecturer:', lecturer, 'location:', location);
           
           // Group by course name only, not by course name + type
           const key = courseName;
@@ -240,8 +216,6 @@ const ScheduleViewer = ({ schedule, title, backButton, onScheduleUpdate }) => {
         return (dayOrder[a.day] || 7) - (dayOrder[b.day] || 7);
       })
     }));
-
-    console.log('📊 Final grouped course list:', result);
     return result;
   }, [processedSchedule]);
 
@@ -284,7 +258,9 @@ const ScheduleViewer = ({ schedule, title, backButton, onScheduleUpdate }) => {
 
   // Get available time slots for a specific course and session type
   const getAvailableTimeSlotsForCourse = (courseName, sessionType) => {
-    if (!originalCourseOptions) return [];
+    if (!originalCourseOptions) {
+      return [];
+    }
     
     const courseData = originalCourseOptions.find(course => 
       course.name === courseName
@@ -326,14 +302,21 @@ const ScheduleViewer = ({ schedule, title, backButton, onScheduleUpdate }) => {
       });
     }
     
-    console.log(`📅 Available slots for ${courseName} (${sessionType}):`, availableSlots);
     return availableSlots;
   };
 
   // Check if a time slot is available for a specific course and session type
   const isTimeSlotAvailableForCourse = (courseName, sessionType, targetDay, targetStartTime, targetEndTime) => {
+
+    // If we don't have original course options (catalog data) available,
+    // fall back to permissive behavior: allow any empty, non-conflicting
+    // slot. The conflict check is enforced separately by `canMoveCourse`.
+    if (!originalCourseOptions || !Array.isArray(originalCourseOptions) || originalCourseOptions.length === 0) {
+      return true;
+    }
+
     const availableSlots = getAvailableTimeSlotsForCourse(courseName, sessionType);
-    
+
     // Convert day names to match format
     const dayMap = {
       'Sunday': 'Sun',
@@ -347,15 +330,18 @@ const ScheduleViewer = ({ schedule, title, backButton, onScheduleUpdate }) => {
     
     const shortDay = dayMap[targetDay] || targetDay;
     
-    return availableSlots.some(slot => 
+    const matched = availableSlots.some(slot => 
       slot.day === shortDay && 
       slot.startTime === targetStartTime && 
       slot.endTime === targetEndTime
     );
+
+    return matched;
   };
 
   // Handle course selection for moving
   const handleCourseSelection = (course, day, timeSlot) => {
+    if (!allowMove) return;
     if (!course || !course.id) return;
     
     if (selectedCourseForMove && selectedCourseForMove.id === course.id) {
@@ -363,17 +349,23 @@ const ScheduleViewer = ({ schedule, title, backButton, onScheduleUpdate }) => {
       setSelectedCourseForMove(null);
     } else {
       // Select the course for moving
-      setSelectedCourseForMove({
+      const selection = {
         ...course,
         originalDay: day,
         originalTimeSlot: timeSlot
-      });
+      };
+      setSelectedCourseForMove(selection);
     }
   };
 
   // Handle clicking on empty time slot
   const handleEmptySlotClick = (day, timeSlot) => {
-    if (!selectedCourseForMove) return;
+    if (!allowMove) {
+      return;
+    }
+    if (!selectedCourseForMove) {
+      return;
+    }
 
     // Calculate course duration
     const courseDuration = getCourseSpan(selectedCourseForMove);
@@ -381,19 +373,22 @@ const ScheduleViewer = ({ schedule, title, backButton, onScheduleUpdate }) => {
     const newEndTime = calculateEndTime(newStartTime, courseDuration);
 
     // First check if this time slot is available for this specific course
-    if (!isTimeSlotAvailableForCourse(
+    const slotAllowed = isTimeSlotAvailableForCourse(
       selectedCourseForMove.course_name, 
       selectedCourseForMove.type, 
       day, 
       newStartTime, 
       newEndTime
-    )) {
+    );
+
+    if (!slotAllowed) {
       alert(`❌ This time slot is not available for ${selectedCourseForMove.course_name} (${selectedCourseForMove.type}). You can only move courses to their originally available time slots.`);
       return;
     }
 
     // Check if the move is valid (no conflicts with other courses)
-    if (canMoveCourse(selectedCourseForMove, day, timeSlot, courseDuration)) {
+    const valid = canMoveCourse(selectedCourseForMove, day, timeSlot, courseDuration);
+    if (valid) {
       moveCourse(selectedCourseForMove, day, newStartTime, newEndTime);
       setSelectedCourseForMove(null);
     } else {
@@ -421,15 +416,20 @@ const ScheduleViewer = ({ schedule, title, backButton, onScheduleUpdate }) => {
     // Check for conflicts with other courses
     if (!processedSchedule[newDay]) return true;
 
-    return !processedSchedule[newDay].some(otherCourse => {
-      if (otherCourse.id === course.id) return false; // Don't check against itself
-      
+    let conflictFound = false;
+    for (const otherCourse of processedSchedule[newDay]) {
+      if (otherCourse.id === course.id) continue; // Don't check against itself
+
       const otherStart = parseTime(otherCourse.startTime);
       const otherEnd = parseTime(otherCourse.endTime);
-      
-      // Check for time overlap
-      return !(newEndMinutes <= otherStart || newStartMinutes >= otherEnd);
-    });
+      const overlap = !(newEndMinutes <= otherStart || newStartMinutes >= otherEnd);
+      if (overlap) {
+        conflictFound = true;
+        break;
+      }
+    }
+
+    return !conflictFound;
   };
 
   // Move course to new location
@@ -464,7 +464,6 @@ const ScheduleViewer = ({ schedule, title, backButton, onScheduleUpdate }) => {
         onScheduleUpdate(newSchedule);
       }
       
-      console.log('✅ Course moved successfully:', movedCourse);
     } catch (error) {
       console.error('❌ Error moving course:', error);
       alert('Failed to move course. Please try again.');

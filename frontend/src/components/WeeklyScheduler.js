@@ -100,7 +100,7 @@ const WeeklySchedule = ({ schedule, isLoading, user, authToken, scheduleName, sc
   };
 
   const handleSaveSchedule = async () => {
-    console.log('Save schedule clicked, user:', user);
+    // Save schedule clicked
     
     if (!user) {
       alert('Please sign in to save schedules. Click the "Sign In" button in the top navigation to create an account or log in.');
@@ -114,7 +114,7 @@ const WeeklySchedule = ({ schedule, isLoading, user, authToken, scheduleName, sc
     
     // Verify authentication before opening modal
     try {
-      console.log('🔍 Verifying authentication before opening save modal...');
+  // Verifying authentication before opening save modal
       const authCheck = await fetch(API_BASE_URL + '/api/auth/me', {
         headers: {
           'Authorization': `Bearer ${authToken}`,
@@ -122,19 +122,18 @@ const WeeklySchedule = ({ schedule, isLoading, user, authToken, scheduleName, sc
         }
       });
 
-      console.log('Auth check response:', authCheck.status);
+  // Auth check response status available
 
       if (!authCheck.ok) {
-        console.log('❌ Auth check failed, user may need to sign in again');
+    // Auth check failed, user may need to sign in again
         alert('Your session has expired. Please refresh the page and sign in again.');
         return;
       }
 
-      const authData = await authCheck.json();
-      console.log('✅ Authentication verified for user:', authData.user?.username);
-
-      console.log('Opening save modal with schedule:', currentSchedule);
-      setShowSaveModal(true);
+    // Authentication verified for user (response body not required here)
+    await authCheck.json();
+    // Opening save modal
+    setShowSaveModal(true);
     } catch (error) {
       console.error('❌ Error checking authentication:', error);
       alert('Unable to verify authentication. Please refresh the page and try again.');
@@ -235,13 +234,20 @@ const WeeklySchedule = ({ schedule, isLoading, user, authToken, scheduleName, sc
       colorIndex++;
     }
 
-    // Parse lecture slot
+    // Parse lecture slot (normalize day to short code)
     const lectureMatch = typeof lecture === "string" ? lecture.match(/^(\w+)\s+(\d+)-(\d+)$/) : null;
     if (lectureMatch) {
-      const [, day, start, end] = lectureMatch;
+      let [, day, start, end] = lectureMatch;
+      // Normalize day names to short codes used by the grid
+      const dayShortMap = {
+        'Sunday': 'Sun', 'Monday': 'Mon', 'Tuesday': 'Tue', 'Wednesday': 'Wed',
+        'Thursday': 'Thu', 'Friday': 'Fri', 'Saturday': 'Sat',
+        'Sun': 'Sun', 'Mon': 'Mon', 'Tue': 'Tue', 'Wed': 'Wed', 'Thu': 'Thu', 'Fri': 'Fri', 'Sat': 'Sat'
+      };
+      const dayCode = dayShortMap[day] || day;
       const startHour = parseInt(start);
       const endHour = parseInt(end);
-      const key = `${day}-${startHour}-${endHour}`;
+      const key = `${dayCode}-${startHour}-${endHour}`;
       
       slots[key] = {
         text: `${name} (Lecture)`,
@@ -251,20 +257,26 @@ const WeeklySchedule = ({ schedule, isLoading, user, authToken, scheduleName, sc
         courseName: name,
         type: "Lecture",
         time: `${startHour}:00 - ${endHour}:00`,
-        day: day,
+        day: dayCode,
         slotKey: key,
         courseIndex: courseIndex,
         isLecture: true
       };
     }
 
-    // Parse TA slot
+    // Parse TA slot (normalize day to short code)
     const taMatch = typeof ta === "string" ? ta.match(/^(\w+)\s+(\d+)-(\d+)$/) : null;
     if (taMatch) {
-      const [, day, start, end] = taMatch;
+      let [, day, start, end] = taMatch;
+      const dayShortMap = {
+        'Sunday': 'Sun', 'Monday': 'Mon', 'Tuesday': 'Tue', 'Wednesday': 'Wed',
+        'Thursday': 'Thu', 'Friday': 'Fri', 'Saturday': 'Sat',
+        'Sun': 'Sun', 'Mon': 'Mon', 'Tue': 'Tue', 'Wed': 'Wed', 'Thu': 'Thu', 'Fri': 'Fri', 'Sat': 'Sat'
+      };
+      const dayCode = dayShortMap[day] || day;
       const startHour = parseInt(start);
       const endHour = parseInt(end);
-      const key = `${day}-${startHour}-${endHour}`;
+      const key = `${dayCode}-${startHour}-${endHour}`;
       
       slots[key] = {
         text: `${name} (TA)`,
@@ -274,7 +286,7 @@ const WeeklySchedule = ({ schedule, isLoading, user, authToken, scheduleName, sc
         courseName: name,
         type: "TA Session",
         time: `${startHour}:00 - ${endHour}:00`,
-        day: day,
+        day: dayCode,
         slotKey: key,
         courseIndex: courseIndex,
         isLecture: false
@@ -285,9 +297,15 @@ const WeeklySchedule = ({ schedule, isLoading, user, authToken, scheduleName, sc
   const parseTimeSlot = (timeSlotStr) => {
     const match = timeSlotStr.match(/^(\w+)\s+(\d+)-(\d+)$/);
     if (match) {
-      const [, day, start, end] = match;
+      let [, day, start, end] = match;
+      const dayShortMap = {
+        'Sunday': 'Sun', 'Monday': 'Mon', 'Tuesday': 'Tue', 'Wednesday': 'Wed',
+        'Thursday': 'Thu', 'Friday': 'Fri', 'Saturday': 'Sat',
+        'Sun': 'Sun', 'Mon': 'Mon', 'Tue': 'Tue', 'Wed': 'Wed', 'Thu': 'Thu', 'Fri': 'Fri', 'Sat': 'Sat'
+      };
+      const dayCode = dayShortMap[day] || day;
       return {
-        day,
+        day: dayCode,
         start: parseInt(start),
         end: parseInt(end)
       };
@@ -296,6 +314,12 @@ const WeeklySchedule = ({ schedule, isLoading, user, authToken, scheduleName, sc
   };
 
   const findAvailableSlots = (classToMove) => {
+    // Normalize day names: prefer short codes used in the grid (Sun, Mon, ...)
+    const dayShortMap = {
+      'Sunday': 'Sun', 'Monday': 'Mon', 'Tuesday': 'Tue', 'Wednesday': 'Wed',
+      'Thursday': 'Thu', 'Friday': 'Fri', 'Saturday': 'Sat',
+      'Sun': 'Sun', 'Mon': 'Mon', 'Tue': 'Tue', 'Wed': 'Wed', 'Thu': 'Thu', 'Fri': 'Fri', 'Sat': 'Sat'
+    };
     const available = [];
     
     // Get original course options from localStorage
@@ -312,21 +336,22 @@ const WeeklySchedule = ({ schedule, isLoading, user, authToken, scheduleName, sc
         alternativeSlots.forEach(slotStr => {
           const parsedSlot = parseTimeSlot(slotStr.trim());
           if (parsedSlot) {
+            const dayCode = dayShortMap[parsedSlot.day] || parsedSlot.day;
             // Check if this slot conflicts with any other classes (except the one being moved)
             const hasConflict = Object.values(slots).some(existingSlot => {
               if (existingSlot.slotKey === classToMove.slotKey) return false; // Skip the slot being moved
               
-              return existingSlot.day === parsedSlot.day && 
+              return existingSlot.day === dayCode && 
                      parsedSlot.start < existingSlot.end && 
                      parsedSlot.end > existingSlot.start;
             });
             
             if (!hasConflict) {
               available.push({
-                day: parsedSlot.day,
+                day: dayCode,
                 start: parsedSlot.start,
                 end: parsedSlot.end,
-                key: `${parsedSlot.day}-${parsedSlot.start}-${parsedSlot.end}`,
+                key: `${dayCode}-${parsedSlot.start}-${parsedSlot.end}`,
                 isOriginalOption: true,
                 originalSlotString: slotStr.trim()
               });
@@ -377,60 +402,54 @@ const WeeklySchedule = ({ schedule, isLoading, user, authToken, scheduleName, sc
           }
         }
       });
-    }
-    
+    }    
     return available;
   };
 
   const handleClassClick = (slot) => {
-    // If we're in drag mode and clicking the same class, cancel drag mode
+    // Single click: start drag/move mode for this class (show available slots)
+    // If already in drag mode for the same class, cancel drag mode.
     if (draggedClass && draggedClass.slotKey === slot.slotKey) {
       setDraggedClass(null);
       setAvailableSlots([]);
       setHighlightedCourse(null);
       return;
     }
-    
-    // If we're in drag mode and clicking a different class, switch to new class
-    if (draggedClass && draggedClass.slotKey !== slot.slotKey) {
-      setDraggedClass(slot);
-      const availableSlots = findAvailableSlots(slot);
-      setAvailableSlots(availableSlots);
-      setHighlightedCourse(slot.courseName);
-      console.log('Available slots for', slot.text, ':', availableSlots);
-      return;
-    }
 
-    // If clicking the same course that's already highlighted, toggle off
-    if (highlightedCourse === slot.courseName) {
-      setHighlightedCourse(null);
-      return;
-    }
-
-    // Otherwise, highlight all sessions of this course
+    // Start or switch drag mode to this class
+    setDraggedClass(slot);
+    const availableSlots = findAvailableSlots(slot);
+    setAvailableSlots(availableSlots);
     setHighlightedCourse(slot.courseName);
-    console.log('Highlighting all sessions for course:', slot.courseName);
+    return;
   };
 
   const handleSlotDrop = (targetSlot) => {
     if (!draggedClass) return;
+    // Dropping dragged class to target slot
 
-    console.log('Dropping', draggedClass.text, 'to', targetSlot);
-
-    // Update the schedule
+    // Update the schedule (copy and modify)
     const newSchedule = [...currentSchedule];
     const courseIndex = draggedClass.courseIndex;
     const course = newSchedule[courseIndex];
-    
-    const newTimeSlot = targetSlot.originalSlotString || `${targetSlot.day} ${targetSlot.start}-${targetSlot.end}`;
-    
-    if (draggedClass.isLecture) {
-      course.lecture = newTimeSlot;
-    } else {
-      course.ta = newTimeSlot;
+    if (!course) {
+      console.error('handleSlotDrop: course not found at index', courseIndex, { newSchedule, draggedClass });
+      return;
     }
-    
+
+    // Always save the new time slot using the normalized short day code
+    const normalizedTimeString = `${targetSlot.day} ${targetSlot.start}-${targetSlot.end}`;
+
+    if (draggedClass.isLecture) {
+      course.lecture = normalizedTimeString;
+    } else {
+      course.ta = normalizedTimeString;
+    }
+
+    // Set state with updated schedule
     setCurrentSchedule(newSchedule);
+
+    // Clear drag state
     setDraggedClass(null);
     setAvailableSlots([]);
   };
@@ -462,15 +481,7 @@ const WeeklySchedule = ({ schedule, isLoading, user, authToken, scheduleName, sc
     return highlightedCourse && slot.courseName === highlightedCourse;
   };
 
-  // Add double-click handler to start drag mode
-  const handleClassDoubleClick = (slot) => {
-    // Start drag mode on double-click
-    setDraggedClass(slot);
-    const availableSlots = findAvailableSlots(slot);
-    setAvailableSlots(availableSlots);
-    setHighlightedCourse(slot.courseName);
-    console.log('Drag mode started for', slot.text, ':', availableSlots);
-  };
+  // double-click handler removed — single-click now starts move mode
 
   const downloadPDF = async () => {
     if (!user) {
@@ -657,7 +668,7 @@ const WeeklySchedule = ({ schedule, isLoading, user, authToken, scheduleName, sc
             <div className="schedule-source">
               <div className="source-info">
                 <span className="source-badge">📂 Loaded Schedule</span>
-                <span className="edit-hint">You can modify course times on the left and regenerate, or you can double click a class to move it</span>
+                <span className="edit-hint">You can modify course times on the left and regenerate, or click a class to move it</span>
               </div>
             </div>
           )}
@@ -734,7 +745,7 @@ const WeeklySchedule = ({ schedule, isLoading, user, authToken, scheduleName, sc
       {highlightedCourse && !draggedClass && (
         <div className="highlight-mode-info">
           <p>✨ Highlighting all sessions for: <strong>{highlightedCourse}</strong></p>
-          <p>Double-click any session to move it, or click another course to highlight it instead.</p>
+          <p>Click any session to move it, or click another course to highlight it instead.</p>
         </div>
       )}
       
@@ -776,9 +787,8 @@ const WeeklySchedule = ({ schedule, isLoading, user, authToken, scheduleName, sc
                           transform: isDragging ? 'scale(0.95)' : 'scale(1)',
                           transition: 'all 0.2s ease'
                         }}
-                        title={`${occupyingSlot.text} - Click to highlight all sessions, Double-click to move`}
+                        title={`${occupyingSlot.text} - Click to move`}
                         onClick={() => handleClassClick(occupyingSlot)}
-                        onDoubleClick={() => handleClassDoubleClick(occupyingSlot)}
                         className={`clickable-cell ${isDragging ? 'dragging' : ''} ${isHighlighted ? 'highlighted-course' : ''}`}
                       >
                         <div className="class-content">
