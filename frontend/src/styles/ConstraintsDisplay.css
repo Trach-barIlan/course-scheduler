@@ -13,7 +13,7 @@
 }
 
 .constraints-display.collapsed {
-  padding-bottom: var(--space-4);
+  padding-bottom: calc(var(--space-12) + var(--space-4)); /* Extra space below summary when collapsed */
   min-height: 180px; /* Much more compact */
   transition: all var(--transition-fast);
 }
@@ -28,13 +28,13 @@
 .constraints-display.expanded {
   padding: var(--space-6) var(--space-5) var(--space-8) var(--space-5);
   min-height: 300px; /* Force minimum size */
-  max-height: 85vh; /* But don't exceed viewport */
+  /* Remove internal max-height to allow page scrolling instead of inner scroll */
   margin: var(--space-10) 0 var(--space-12) 0;
   z-index: 25;
   position: relative;
   background: var(--bg-secondary);
   border: 2px solid var(--primary-300);
-  overflow-y: auto; /* Enable scrolling if needed */
+  overflow-y: visible; /* Let the page handle scrolling */
 }
 
 .constraints-display::before {
@@ -94,7 +94,7 @@
   font-size: 1.5rem;
   font-weight: 700;
   color: var(--text-primary);
-  margin: 0 0 var(--space-2) 0;
+  margin: 0 0 var(--space-0) 0;
   display: flex;
   align-items: center;
   gap: var(--space-2);
@@ -128,7 +128,7 @@
 
 .constraints-summary {
   margin-top: var(--space-3);
-  margin-bottom: var(--space-3);
+  margin-bottom: var(--space-1); /* Larger gap before card edge */
   padding: var(--space-4);
   background: linear-gradient(135deg, var(--primary-50), var(--bg-secondary));
   border-radius: var(--radius-lg);
@@ -206,7 +206,7 @@
   align-items: center;
   justify-content: center;
   gap: var(--space-1);
-  box-shadow: var(--shadow-md);
+  box-shadow: none !important; /* Remove bubble shadow */
   min-height: 36px;
   width: auto;
   min-width: 120px;
@@ -219,7 +219,25 @@
 .expand-toggle-btn:hover {
   background: linear-gradient(135deg, var(--primary-600), var(--primary-700));
   transform: translateY(-1px);
-  box-shadow: var(--shadow-lg);
+  box-shadow: none !important; /* Keep hover without shadow bubble */
+}
+
+/* Remove any pseudo-element decorative shadow/bubble */
+.expand-toggle-btn::before,
+.expand-toggle-btn::after {
+  content: none !important;
+  display: none !important;
+  box-shadow: none !important;
+  filter: none !important;
+}
+
+/* Remove focus rings that look like a bubble under the button */
+.expand-toggle-btn:focus,
+.expand-toggle-btn:focus-visible,
+.expand-toggle-btn:active {
+  outline: none !important;
+  box-shadow: none !important;
+  filter: none !important;
 }
 
 .expand-toggle-btn:active {
@@ -230,10 +248,11 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
-  min-height: 350px; /* Force minimum size */
-  max-height: 75vh; /* But don't exceed viewport */
-  overflow-y: auto;
-  padding-right: var(--space-2);
+  /* Allow the list to grow naturally without inner scrollbars */
+  min-height: 0;
+  max-height: none;
+  overflow-y: visible;
+  padding-right: 0;
 }
 
 .constraint-item {
@@ -614,6 +633,7 @@
   display: flex;
   gap: var(--space-4);
   margin-top: var(--space-6);
+  margin-bottom: var(--space-8); /* Add more space before the constraints list */
   padding-top: var(--space-5);
   border-top: 2px solid var(--border-color);
   justify-content: space-between;

@@ -121,7 +121,8 @@ const SchedulerPage = ({ user, authToken }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [schedule, setSchedule] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [parsedConstraints, setParsedConstraints] = useState(null);
+  const [parsedConstraints, setParsedConstraints] = useState(null); // AI-parsed constraints (enhanced object)
+  const [uiConstraints, setUiConstraints] = useState([]); // Manually added constraints from the UI
   const [constraintsUpdateFunction, setConstraintsUpdateFunction] = useState(null);
   const [selectedUniversity, setSelectedUniversity] = useState("");
   const [selectedSemester, setSelectedSemester] = useState("");
@@ -382,10 +383,92 @@ const SchedulerPage = ({ user, authToken }) => {
       }
 
       const data = await scheduleRes.json();
-      
+
+      // Helper: parse a slot string like "Mon 9-11" into an object
+      const parseSlot = (slotStr) => {
+        if (!slotStr || typeof slotStr !== 'string') return null;
+        const parts = slotStr.split(' ');
+        if (parts.length !== 2) return null;
+        const day = parts[0];
+        const [startStr, endStr] = parts[1].split('-');
+        const start = parseInt(startStr, 10);
+        const end = parseInt(endStr, 10);
+        if (Number.isNaN(start) || Number.isNaN(end)) return null;
+        return { day, start, end };
+      };
+
+      // Helper: build flat list of slots from schedule
+      const buildSlots = (sched) => {
+        const slots = [];
+        (sched || []).forEach(item => {
+          const lecture = parseSlot(item.lecture);
+          const ta = parseSlot(item.ta);
+          if (lecture) slots.push({ ...lecture, type: 'lecture', course: item.name });
+          if (ta) slots.push({ ...ta, type: 'ta', course: item.name });
+        });
+        return slots;
+      };
+
+      // Helper: validate constraints
+      const validateAgainstConstraints = (sched, constraintsList) => {
+        const violations = [];
+        if (!Array.isArray(constraintsList) || constraintsList.length === 0) return violations;
+        const slots = buildSlots(sched);
+        // Group by day for gap-related checks
+        const byDay = slots.reduce((acc, s) => {
+          acc[s.day] = acc[s.day] || [];
+          acc[s.day].push(s);
+          return acc;
+        }, {});
+        Object.values(byDay).forEach(list => list.sort((a, b) => a.start - b.start));
+
+        for (const c of constraintsList) {
+          const type = c.type;
+          if (type === 'No Class Day' && c.day) {
+            const found = slots.some(s => s.day === c.day);
+            if (found) violations.push(`Class scheduled on forbidden day ${c.day}`);
+          } else if (type === 'No Class Before' && typeof c.time === 'number') {
+            const found = slots.some(s => s.start < c.time);
+            if (found) violations.push(`Class starts before ${c.time}:00`);
+          } else if (type === 'No Class After' && typeof c.time === 'number') {
+            const found = slots.some(s => s.end > c.time);
+            if (found) violations.push(`Class ends after ${c.time}:00`);
+          } else if (type === 'No Gap') {
+            for (const [day, list] of Object.entries(byDay)) {
+              for (let i = 1; i < list.length; i++) {
+                if (list[i - 1].end !== list[i].start) {
+                  violations.push(`Gap detected on ${day} between ${list[i - 1].end}:00 and ${list[i].start}:00`);
+                  break;
+                }
+              }
+            }
+          } else if (type === 'Max Gap' && typeof c.hours === 'number') {
+            for (const [day, list] of Object.entries(byDay)) {
+              for (let i = 1; i < list.length; i++) {
+                const gap = list[i].start - list[i - 1].end;
+                if (gap > c.hours) {
+                  violations.push(`Gap of ${gap}h exceeds max of ${c.hours}h on ${day}`);
+                  break;
+                }
+              }
+            }
+          }
+          // Note: 'Avoid TA' and 'Prefer TA' cannot be reliably validated client-side
+          // because returned schedule does not include TA names, only time slots.
+        }
+        return violations;
+      };
+
       if (data.schedule) {
-        setSchedule(data.schedule);
-        setError(null);
+        const violations = validateAgainstConstraints(data.schedule, constraintsToUse);
+        if (violations.length > 0) {
+          setSchedule(null);
+          setError(`The generated schedule violates your constraints:\n- ${violations.join('\n- ')}`);
+          setShowErrorModal(true);
+        } else {
+          setSchedule(data.schedule);
+          setError(null);
+        }
       } else {
         const errorMessage = data.error || 'No valid schedule found with the given constraints. Try adjusting your requirements.';
         setError(errorMessage);
@@ -418,7 +501,7 @@ const SchedulerPage = ({ user, authToken }) => {
       let parsedConstraints = [];
       let constraintsData = null;
       
-      if (constraints.trim()) {
+  if (constraints.trim()) {
         const headers = {
           "Content-Type": "application/json"
         };
@@ -462,7 +545,13 @@ const SchedulerPage = ({ user, authToken }) => {
         setParsedConstraints(enhancedConstraintsData);
       }
 
-      await generateScheduleWithConstraints(parsedConstraints);
+      // Combine AI-parsed constraints (if any) with UI constraints before generating
+      const combinedConstraints = [
+        ...((parsedConstraints || [])),
+        ...((uiConstraints || []))
+      ];
+
+      await generateScheduleWithConstraints(combinedConstraints);
     } catch (err) {
       console.error('Submit error:', err);
       let errorMessage = err.message;
@@ -485,14 +574,20 @@ const SchedulerPage = ({ user, authToken }) => {
     if (constraintsUpdateFunction) {
       setIsLoading(true);
       try {
-        await constraintsUpdateFunction(updatedConstraints);
+        // Persist UI constraints and combine with existing AI-parsed constraints
+        setUiConstraints(updatedConstraints || []);
+        const combinedConstraints = [
+          ...((updatedConstraints || [])),
+          ...((parsedConstraints?.constraints || []))
+        ];
+        await constraintsUpdateFunction(combinedConstraints);
       } catch (err) {
         console.error('Error updating constraints:', err);
       } finally {
         setIsLoading(false);
       }
     }
-  }, [constraintsUpdateFunction]);
+  }, [constraintsUpdateFunction, parsedConstraints]);
 
   React.useEffect(() => {
     setConstraintsUpdateFunction(() => generateScheduleWithConstraints);
@@ -691,8 +786,7 @@ const SchedulerPage = ({ user, authToken }) => {
 
           <ConstraintsDisplay 
             parsedConstraints={parsedConstraints} 
-            onConstraintsUpdate={handleConstraintsUpdate}
-            isRegenerating={isLoading}
+            onConstraintsChange={handleConstraintsUpdate}
           />
           
           <WeeklyScheduler 
@@ -714,7 +808,11 @@ const SchedulerPage = ({ user, authToken }) => {
           setError(null);
         }}
         onTryAgain={() => {
-          generateScheduleWithConstraints();
+          const combinedConstraints = [
+            ...((parsedConstraints?.constraints || [])),
+            ...((uiConstraints || []))
+          ];
+          generateScheduleWithConstraints(combinedConstraints);
         }}
       />
     </div>
