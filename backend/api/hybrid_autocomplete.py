@@ -89,7 +89,6 @@ def load_autocomplete_cache():
         return _autocomplete_cache
 
 @hybrid_autocomplete_bp.route('/courses/fast-autocomplete', methods=['GET'])
-@token_required
 def fast_autocomplete():
     """
     Ultra-fast autocomplete using JSON-based lookup
@@ -211,6 +210,45 @@ def get_cache_status():
             'success': False,
             'error': str(e)
         }), 500
+
+
+@hybrid_autocomplete_bp.route('/courses/fast-course/<course_id>', methods=['GET'])
+def fast_course_details(course_id):
+    """
+    Return full course details (events + timeSlots) from the JSON cache without requiring auth.
+    This is read-only and intended for unauthenticated UIs to populate times quickly.
+    """
+    try:
+        semester = request.args.get('semester', '').strip()
+
+        # Load courses.json directly (keeps this endpoint independent of DB)
+        courses_path = os.path.join(os.path.dirname(__file__), '..', 'integrations', 'courses.json')
+        with open(courses_path, 'r', encoding='utf-8') as f:
+            courses_data = json.load(f)
+
+        all_courses = courses_data.get('courses', [])
+        course = next((c for c in all_courses if c.get('id') == course_id), None)
+
+        if not course:
+            return jsonify({'success': False, 'course': None, 'error': 'Course not found', 'course_id': course_id}), 404
+
+        # Optionally filter timeSlots by semester
+        filtered_events = course.get('events', [])
+        if semester:
+            new_events = []
+            for event in course.get('events', []):
+                filtered_time_slots = [slot for slot in event.get('timeSlots', []) if slot.get('semester') == semester]
+                if filtered_time_slots:
+                    ev = { **event, 'timeSlots': filtered_time_slots }
+                    new_events.append(ev)
+            filtered_events = new_events
+
+        filtered_course = { **course, 'events': filtered_events }
+
+        return jsonify({ 'success': True, 'course': filtered_course, 'course_id': course_id }), 200
+    except Exception as e:
+        logger.error(f"Error in fast_course_details for {course_id}: {e}")
+        return jsonify({ 'success': False, 'course': None, 'error': str(e), 'course_id': course_id }), 500
 
 # Background sync service (could be implemented separately)
 def sync_json_from_database():
