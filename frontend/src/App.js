@@ -1,7 +1,6 @@
 import React, { useState, useCallback, useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route, useNavigate } from "react-router-dom";
 import Navigation from './components/Navigation/Navigation';
-import Sidebar from './components/Sidebar/Sidebar';
 import HomePage from './pages/HomePage';
 import SchedulerPage from './pages/SchedulerPage';
 import ScheduleViewerPage from './pages/ScheduleViewerPage';
@@ -181,11 +180,6 @@ function AppContent() {
       />
 
       <div className="app-layout">
-        <Sidebar 
-          user={user}
-          onQuickAction={handleQuickAction}
-        />
-        
         <main className="main-content">
           <Routes>
             <Route 

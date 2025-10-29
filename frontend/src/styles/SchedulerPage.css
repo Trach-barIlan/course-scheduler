@@ -1,28 +1,33 @@
 .scheduler-page {
   flex: 1;
-  padding: var(--space-6);
-  max-width: 1400px;
+  /* reduced side padding so content has more horizontal room */
+  padding: var(--space-4);
+  /* allow a slightly wider max width so schedule can expand on large screens */
+  max-width: 1600px;
   margin: 0 auto;
   width: 100%;
 }
 
 .scheduler-content {
   display: grid;
-  grid-template-columns: minmax(450px, 1.2fr) 1.8fr;
-  gap: var(--space-6);
+  /* leaner left panel and slightly larger right panel for the schedule */
+  grid-template-columns: minmax(360px, 1.1fr) 2fr;
+  gap: var(--space-5);
   height: calc(100vh - 120px); /* Fixed height for independent scrolling */
   overflow: hidden; /* Prevent main container from scrolling */
 }
 
 @media (max-width: 1400px) {
   .scheduler-content {
-    grid-template-columns: minmax(420px, 1.3fr) 1.7fr;
+    grid-template-columns: minmax(380px, 1.15fr) 1.85fr;
+    gap: var(--space-4);
   }
 }
 
 @media (max-width: 1200px) {
   .scheduler-content {
-    grid-template-columns: minmax(400px, 1.4fr) 1.6fr;
+    /* keep left panel usable on medium screens but give schedule more room */
+    grid-template-columns: minmax(360px, 1.4fr) 1.6fr;
     gap: var(--space-4);
   }
 }
