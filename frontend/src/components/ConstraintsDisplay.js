@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import '../styles/ConstraintsDisplay.css';
 
-const ConstraintsDisplay = ({ parsedConstraints, onConstraintsChange }) => {
+const ConstraintsDisplay = ({ parsedConstraints, onConstraintsChange, onConstraintsUpdate }) => {
     const [showAddForm, setShowAddForm] = useState(false);
     const [isRegenerating, setIsRegenerating] = useState(false);
     const [isExpanded, setIsExpanded] = useState(false);
@@ -20,9 +20,8 @@ const ConstraintsDisplay = ({ parsedConstraints, onConstraintsChange }) => {
     }
   }, [parsedConstraints]);
 
-  if (!constraints || constraints.length === 0) {
-    return null;
-  }
+  // Always render the component, even with zero constraints
+  const notifyChange = onConstraintsChange || onConstraintsUpdate;
 
   const getConstraintIcon = (type) => {
     switch (type) {
@@ -120,8 +119,8 @@ const ConstraintsDisplay = ({ parsedConstraints, onConstraintsChange }) => {
     setIsEditing(false);
     
     // Notify parent component
-    if (onConstraintsChange) {
-      onConstraintsChange(newConstraints);
+    if (notifyChange) {
+      notifyChange(newConstraints);
     }
   };
 
@@ -136,8 +135,8 @@ const ConstraintsDisplay = ({ parsedConstraints, onConstraintsChange }) => {
     setConstraints(newConstraints);
     
     // Notify parent component
-    if (onConstraintsChange) {
-      onConstraintsChange(newConstraints);
+    if (notifyChange) {
+      notifyChange(newConstraints);
     }
   };
 
@@ -168,8 +167,8 @@ const ConstraintsDisplay = ({ parsedConstraints, onConstraintsChange }) => {
       setShowAddForm(false);
       
       // Notify parent component
-      if (onConstraintsChange) {
-        onConstraintsChange(newConstraints);
+      if (notifyChange) {
+        notifyChange(newConstraints);
       }
     }
   };
@@ -369,7 +368,7 @@ const ConstraintsDisplay = ({ parsedConstraints, onConstraintsChange }) => {
             <div className="constraints-header">
                 <div className="constraints-title-section">
                     <h3 className="constraints-title">
-                        🎯 Scheduling Constraints
+                        Scheduling Constraints
                     </h3>
                     <p className="constraints-subtitle">
                         AI-parsed preferences and requirements from your input
@@ -404,10 +403,7 @@ const ConstraintsDisplay = ({ parsedConstraints, onConstraintsChange }) => {
                             )}
                         </div>
                     )}
-                </div>
-                <div className="constraints-count">
-                    {constraints.length} Found
-                </div>
+        </div>
             </div>
 
             <button
@@ -424,7 +420,37 @@ const ConstraintsDisplay = ({ parsedConstraints, onConstraintsChange }) => {
 
             {isExpanded && (
             <div>
-            <div className="constraints-list">
+      <div className="constraints-controls top">
+        {!showAddForm && !isEditing && (
+          <button 
+            className="add-new-btn" 
+            onClick={() => setShowAddForm(true)}
+          >
+            ➕ Add New Constraint
+          </button>
+        )}
+        
+        <button 
+          className="regenerate-btn" 
+          onClick={handleRegenerateSchedule}
+          disabled={isRegenerating || isEditing || showAddForm}
+        >
+          {isRegenerating ? (
+            <>
+              <div className="loading-spinner"></div>
+              Regenerating...
+            </>
+          ) : (
+            <>
+              🔄 Update Schedule
+            </>
+          )}
+        </button>
+      </div>
+
+      {renderAddForm()}
+
+      <div className="constraints-list">
         {constraints.map((constraint, index) => (
           <div key={index} className={`constraint-item ${getConstraintColor(constraint.type)}`}>
             <div className="constraint-icon">
@@ -464,36 +490,6 @@ const ConstraintsDisplay = ({ parsedConstraints, onConstraintsChange }) => {
             )}
           </div>
         ))}
-      </div>
-
-      {renderAddForm()}
-
-      <div className="constraints-controls">
-        {!showAddForm && !isEditing && (
-          <button 
-            className="add-new-btn" 
-            onClick={() => setShowAddForm(true)}
-          >
-            ➕ Add New Constraint
-          </button>
-        )}
-        
-        <button 
-          className="regenerate-btn" 
-          onClick={handleRegenerateSchedule}
-          disabled={isRegenerating || isEditing || showAddForm}
-        >
-          {isRegenerating ? (
-            <>
-              <div className="loading-spinner"></div>
-              Regenerating...
-            </>
-          ) : (
-            <>
-              🔄 Update Schedule
-            </>
-          )}
-        </button>
       </div>
       </div>
       )}
