@@ -112,20 +112,6 @@
   line-height: 1.4;
 }
 
-.constraints-count {
-  background: linear-gradient(135deg, var(--primary-100), var(--primary-50));
-  color: var(--primary-700);
-  padding: var(--space-2) var(--space-4);
-  border-radius: var(--radius-xl);
-  font-size: 0.875rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  border: 2px solid var(--primary-200);
-  box-shadow: var(--shadow-sm);
-  white-space: nowrap;
-}
-
 .constraints-summary {
   margin-top: var(--space-3);
   margin-bottom: var(--space-1); /* Larger gap before card edge */
@@ -206,7 +192,6 @@
   align-items: center;
   justify-content: center;
   gap: var(--space-1);
-  box-shadow: none !important; /* Remove bubble shadow */
   min-height: 36px;
   width: auto;
   min-width: 120px;

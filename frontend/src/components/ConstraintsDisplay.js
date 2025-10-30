@@ -403,10 +403,7 @@ const ConstraintsDisplay = ({ parsedConstraints, onConstraintsChange, onConstrai
                             )}
                         </div>
                     )}
-                </div>
-                <div className="constraints-count">
-                    {constraints.length} Found
-                </div>
+        </div>
             </div>
 
             <button
