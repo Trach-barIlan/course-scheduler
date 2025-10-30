@@ -1,7 +1,7 @@
 import React from 'react';
 import './ScheduleErrorModal.css';
 
-const ScheduleErrorModal = ({ isOpen, onClose, error, onTryAgain }) => {
+const ScheduleErrorModal = ({ isOpen, onClose, error, onTryAgain, user, onAuthClick }) => {
   if (!isOpen || !error) return null;
 
   const handleOverlayClick = (e) => {
@@ -10,8 +10,10 @@ const ScheduleErrorModal = ({ isOpen, onClose, error, onTryAgain }) => {
     }
   };
 
-  const isConstraintError = error.includes('No valid schedule found');
-  const isNetworkError = error.includes('connect to the server') || error.includes('NetworkError');
+  // Special sentinel for auth-required flow
+  const isAuthRequired = error === 'AUTH_REQUIRED';
+  const isConstraintError = String(error).includes('No valid schedule found');
+  const isNetworkError = String(error).includes('connect to the server') || String(error).includes('NetworkError');
 
   return (
     <div className="schedule-error-modal-overlay" onClick={handleOverlayClick}>
@@ -21,7 +23,7 @@ const ScheduleErrorModal = ({ isOpen, onClose, error, onTryAgain }) => {
             {isNetworkError ? '🌐' : '⚠️'}
           </div>
           <h3 className="error-title">
-            {isNetworkError ? 'Connection Error' : 'Schedule Generation Failed'}
+            {isNetworkError ? 'Connection Error' : isAuthRequired ? 'Sign In Required' : 'Schedule Generation Failed'}
           </h3>
           <button className="modal-close-btn" onClick={onClose}>
             ✕
@@ -30,7 +32,9 @@ const ScheduleErrorModal = ({ isOpen, onClose, error, onTryAgain }) => {
 
         <div className="schedule-error-modal-body">
           <p className="error-description">
-            {error}
+            {isAuthRequired && !user
+              ? 'You are currently not signed in. Please sign in to use the AI constraints parsing feature.'
+              : error}
           </p>
 
           {isConstraintError && (
@@ -61,9 +65,20 @@ const ScheduleErrorModal = ({ isOpen, onClose, error, onTryAgain }) => {
 
         <div className="schedule-error-modal-footer">
           <button className="modal-btn modal-btn-secondary" onClick={onClose}>
-            Close
+            Cancel
           </button>
-          {onTryAgain && (
+          {isAuthRequired && !user && onAuthClick && (
+            <button
+              className="modal-btn modal-btn-primary"
+              onClick={() => {
+                onAuthClick();
+                onClose();
+              }}
+            >
+              Sign In
+            </button>
+          )}
+          {onTryAgain && !isAuthRequired && (
             <button className="modal-btn modal-btn-primary" onClick={() => {
               onClose();
               onTryAgain();

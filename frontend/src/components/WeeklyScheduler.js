@@ -19,6 +19,7 @@ const WeeklySchedule = ({ schedule, isLoading, user, authToken, scheduleName, sc
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [showNotImplemented, setShowNotImplemented] = useState(false);
   const [notImplementedFeature, setNotImplementedFeature] = useState('');
+  const [showLoginPrompt, setShowLoginPrompt] = useState(false);
   
   // Progress tracking state - only for new generation, not loaded schedules
   const [progress, setProgress] = useState(0);
@@ -103,7 +104,8 @@ const WeeklySchedule = ({ schedule, isLoading, user, authToken, scheduleName, sc
     // Save schedule clicked
     
     if (!user) {
-      alert('Please sign in to save schedules. Click the "Sign In" button in the top navigation to create an account or log in.');
+      // Show a nicer modal prompting the user to sign in
+      setShowLoginPrompt(true);
       return;
     }
     
@@ -484,10 +486,7 @@ const WeeklySchedule = ({ schedule, isLoading, user, authToken, scheduleName, sc
   // double-click handler removed — single-click now starts move mode
 
   const downloadPDF = async () => {
-    if (!user) {
-      alert('Please sign in to download schedules. Click the "Sign In" button in the top navigation to create an account or log in.');
-      return;
-    }
+    // Allow downloads for unauthenticated users too — PDF generation is client-side only.
     setIsGeneratingPDF(true);
     
     try {
@@ -870,6 +869,47 @@ const WeeklySchedule = ({ schedule, isLoading, user, authToken, scheduleName, sc
         authToken={authToken}
         courses={originalCourseOptions}
       />
+
+      {/* Login prompt modal for unauthenticated save attempts */}
+      {showLoginPrompt && (
+        <div className="not-implemented-overlay">
+          <div className="not-implemented-container">
+            <div className="not-implemented-header">
+              <div className="feature-icon">👤</div>
+              <button className="close-button" onClick={() => setShowLoginPrompt(false)}>×</button>
+            </div>
+
+            <div className="not-implemented-content">
+              <h2 className="feature-title">Sign in to save schedules</h2>
+              <p className="feature-description">Saving schedules is available for signed-in users. Sign in to keep your schedules in your account and access them from any device.</p>
+              <div className="modal-action-row">
+                <button
+                  className="secondary-action"
+                  onClick={() => setShowLoginPrompt(false)}
+                >
+                  Cancel
+                </button>
+
+                <button
+                  className="primary-action"
+                  onClick={() => {
+                    // Try to open the global Sign In modal if present in Navigation
+                    const authBtn = document.querySelector('.auth-button');
+                    if (authBtn) {
+                      authBtn.click();
+                    }
+                    setShowLoginPrompt(false);
+                    // Also scroll to top so the nav is visible
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                >
+                  Sign In
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Not Implemented Modal */}
       <NotImplementedModal

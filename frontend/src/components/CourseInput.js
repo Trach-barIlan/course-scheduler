@@ -7,6 +7,7 @@ const CourseInput = ({ course, onChange, index, onRemove, canRemove, selectedUni
     const [showSuggestions, setShowSuggestions] = useState(false);
     const [isLoadingCourse, setIsLoadingCourse] = useState(false);
     const [isExpanded, setIsExpanded] = useState(false);
+    const [inputValue, setInputValue] = useState(course.name || '');
 
     const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5001';
 
@@ -61,7 +62,8 @@ const CourseInput = ({ course, onChange, index, onRemove, canRemove, selectedUni
 
     // Autocomplete functions - Using hybrid approach for optimal performance
     const fetchSuggestions = async (query) => {
-        if (!selectedUniversity || !selectedSemester || query.trim().length < 3) {
+        if (!selectedUniversity || query.trim().length < 3) {
+            // If semester is not selected we still allow suggestions (semester is optional for UX)
             setSuggestions([]);
             setShowSuggestions(false);
             return;
@@ -69,22 +71,27 @@ const CourseInput = ({ course, onChange, index, onRemove, canRemove, selectedUni
 
         try {
             const token = localStorage.getItem('auth_token');
-            if (!token) {
-                return;
-            }
+            const headers = { 'Content-Type': 'application/json' };
+            if (token) headers['Authorization'] = `Bearer ${token}`;
+
+            const semesterParam = selectedSemester ? `&semester=${selectedSemester}` : '';
+
+            // Debug logging so failed fetches are visible in developer console
+            console.log('CourseInput: fetching suggestions', { query, selectedUniversity, selectedSemester });
 
             // Use fast JSON-based autocomplete for better performance
-            const response = await fetch(`${API_BASE_URL}/api/courses/fast-autocomplete?q=${encodeURIComponent(query)}&semester=${selectedSemester}&limit=8`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                }
+            const response = await fetch(`${API_BASE_URL}/api/courses/fast-autocomplete?q=${encodeURIComponent(query)}${semesterParam}&limit=8`, {
+                headers
             });
 
             if (response.ok) {
                 const data = await response.json();
                 setSuggestions(data.suggestions || []);
                 setShowSuggestions(true);
+            } else {
+                console.warn('CourseInput: suggestions fetch returned non-OK', response.status, response.statusText);
+                setSuggestions([]);
+                setShowSuggestions(false);
             }
         } catch (error) {
             console.error('Error fetching autocomplete suggestions:', error);
@@ -94,6 +101,8 @@ const CourseInput = ({ course, onChange, index, onRemove, canRemove, selectedUni
     };
 
     const handleCourseNameChange = (value) => {
+        // Update local input immediately
+        setInputValue(value);
         onChange(index, "name", value);
         
         // Enhanced debounced autocomplete with faster JSON-based backend
@@ -108,29 +117,31 @@ const CourseInput = ({ course, onChange, index, onRemove, canRemove, selectedUni
     const selectCourseFromSuggestion = async (suggestion) => {
         setIsLoadingCourse(true);
         setShowSuggestions(false);
-        
+
         try {
             const token = localStorage.getItem('auth_token');
-            if (!token) {
-                return;
+            let response;
+
+            if (token) {
+                response = await fetch(`${API_BASE_URL}/api/courses/course/${suggestion.id}${selectedSemester ? `?semester=${selectedSemester}` : ''}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+            } else {
+                // Unauthenticated: use fast JSON-based course details endpoint
+                response = await fetch(`${API_BASE_URL}/api/courses/fast-course/${suggestion.id}${selectedSemester ? `?semester=${selectedSemester}` : ''}`, {
+                    headers: { 'Content-Type': 'application/json' }
+                });
             }
 
-            const response = await fetch(`${API_BASE_URL}/api/courses/course/${suggestion.id}${selectedSemester ? `?semester=${selectedSemester}` : ''}`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                }
-            });
-
-            if (response.ok) {
+            if (response && response.ok) {
                 const responseData = await response.json();
-                
-                // Extract course data from the API response
                 const courseData = responseData.success ? responseData.course : responseData;
-                
-                // Convert course data to scheduler format, preserving existing course structure
+
                 const updatedCourse = {
-                    ...course, // Keep existing course data
+                    ...course,
                     name: courseData.name || course.name,
                     hasLecture: false,
                     hasPractice: false,
@@ -138,27 +149,21 @@ const CourseInput = ({ course, onChange, index, onRemove, canRemove, selectedUni
                     practices: []
                 };
 
-
-                // Process events to create time slots
                 if (courseData.events && courseData.events.length > 0) {
-                    
-                    // Use Sets to track unique time slots and avoid duplicates
                     const uniqueLectures = new Set();
                     const uniquePractices = new Set();
-                    
+
                     courseData.events.forEach(event => {
                         if (event.timeSlots && event.timeSlots.length > 0) {
                             event.timeSlots.forEach(timeSlot => {
                                 const slot = {
                                     day: timeSlot.day || '',
-                                    startTime: timeSlot.from ? timeSlot.from.split(':')[0] : '', // Extract hour from 'from'
-                                    endTime: timeSlot.to ? timeSlot.to.split(':')[0] : '' // Extract hour from 'to'
+                                    startTime: timeSlot.from ? timeSlot.from.split(':')[0] : (timeSlot.from_time || ''),
+                                    endTime: timeSlot.to ? timeSlot.to.split(':')[0] : (timeSlot.to_time || '')
                                 };
-                                
-                                // Create a unique key for this time slot to avoid duplicates
+
                                 const slotKey = `${slot.day}-${slot.startTime}-${slot.endTime}`;
 
-                                // Determine if it's a lecture or practice based on category
                                 if (event.category && (event.category.includes('הרצאה') || event.category.includes('lecture'))) {
                                     if (!uniqueLectures.has(slotKey)) {
                                         uniqueLectures.add(slotKey);
@@ -177,22 +182,20 @@ const CourseInput = ({ course, onChange, index, onRemove, canRemove, selectedUni
                     });
                 }
 
-                // If no sessions were found, set defaults
                 if (!updatedCourse.hasLecture && !updatedCourse.hasPractice) {
                     updatedCourse.hasLecture = true;
                     updatedCourse.lectures = [{ day: '', startTime: '', endTime: '' }];
                 }
 
-                // Update the course with all the new data at once to avoid controlled/uncontrolled issues
-                // Instead of calling onChange multiple times, we'll update each property individually but synchronously
+                // Immediately update local input and parent state
+                setInputValue(updatedCourse.name);
                 onChange(index, "name", updatedCourse.name);
                 onChange(index, "hasLecture", updatedCourse.hasLecture);
                 onChange(index, "hasPractice", updatedCourse.hasPractice);
                 onChange(index, "lectures", updatedCourse.lectures);
                 onChange(index, "practices", updatedCourse.practices);
-                
             } else {
-                console.error('❌ API response not OK:', response.status, response.statusText);
+                console.error('❌ API response not OK when selecting suggestion:', response && response.status, response && response.statusText);
             }
         } catch (error) {
             console.error('Error fetching course details:', error);
@@ -207,6 +210,11 @@ const CourseInput = ({ course, onChange, index, onRemove, canRemove, selectedUni
         document.addEventListener('click', handleClickOutside);
         return () => document.removeEventListener('click', handleClickOutside);
     }, []);
+
+    // Keep local input in sync when parent updates course.name
+    useEffect(() => {
+        setInputValue(course.name || '');
+    }, [course.name]);
 
     const validateTimeSlot = (day, startTime, endTime, type, slotIndex) => {
         const newErrors = { ...errors };
@@ -520,7 +528,7 @@ const CourseInput = ({ course, onChange, index, onRemove, canRemove, selectedUni
                             id={`course-name-${index}`}
                             type="text"
                             placeholder={selectedUniversity ? "Type 3+ characters for fast search..." : "e.g., CS101, Mathematics, Physics"}
-                            value={course.name}
+                            value={inputValue}
                             onChange={(e) => handleCourseNameChange(e.target.value)}
                             className="course-input"
                             required

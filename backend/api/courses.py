@@ -233,7 +233,6 @@ def autocomplete_courses():
         }), 500
 
 @courses_bp.route('/courses/course/<course_id>', methods=['GET'])
-@token_required
 def get_course_details(course_id):
     """Get detailed information for a specific course"""
     try:
