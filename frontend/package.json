@@ -2,7 +2,6 @@
   "name": "frontend",
   "version": "0.1.0",
   "private": true,
-  "homepage": "https://trach-barilan.github.io/course-scheduler",
   "proxy": "https://course-scheduler-backend-b2v6.onrender.com",
   "dependencies": {
     "@testing-library/dom": "^10.4.0",
