@@ -108,7 +108,7 @@ const convertScheduleToCourses = (scheduleData) => {
   return converted;
 };
 
-const SchedulerPage = ({ user, authToken }) => {
+const SchedulerPage = ({ user, authToken, onAuthClick }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const { universityConfig, importedCourses } = location.state || {};
@@ -378,6 +378,13 @@ const SchedulerPage = ({ user, authToken }) => {
       if (!scheduleRes.ok) {
         const errorData = await scheduleRes.json();
         console.error('API Error:', errorData);
+        const backendMsg = (errorData && errorData.error) ? String(errorData.error).toLowerCase() : '';
+        // Map auth-related backend responses to a sentinel so the modal can show a sign-in action
+        if (scheduleRes.status === 401 || backendMsg.includes('authorization')) {
+          setError('AUTH_REQUIRED');
+          setShowErrorModal(true);
+          return;
+        }
         throw new Error(errorData.error || `Server error: ${scheduleRes.status}`);
       }
 
@@ -393,15 +400,19 @@ const SchedulerPage = ({ user, authToken }) => {
       }
     } catch (err) {
       console.error('Schedule generation error:', err);
-      let errorMessage = err.message;
-      
-      // Provide more helpful error messages
-      if (err.message.includes('Failed to fetch')) {
+      let errorMessage = err.message || '';
+
+      // Map auth-related thrown errors to sentinel
+      const lower = String(errorMessage).toLowerCase();
+      if (lower.includes('authorization') || lower.includes('authorization header') || err.status === 401) {
+        errorMessage = 'AUTH_REQUIRED';
+      } else if (errorMessage.includes('Failed to fetch')) {
+        // Provide more helpful error messages
         errorMessage = 'Unable to connect to the server. Please check if the backend is running and try again.';
-      } else if (err.message.includes('NetworkError')) {
+      } else if (errorMessage.includes('NetworkError')) {
         errorMessage = 'Network error. Please check your internet connection and try again.';
       }
-      
+
       setError(errorMessage);
       setShowErrorModal(true);
     }
@@ -445,6 +456,13 @@ const SchedulerPage = ({ user, authToken }) => {
         if (!parseRes.ok) {
           const errorData = await parseRes.json();
           console.error('Parse error:', errorData);
+          const backendMsg = (errorData && errorData.error) ? String(errorData.error).toLowerCase() : '';
+          if (parseRes.status === 401 || backendMsg.includes('authorization')) {
+            setError('AUTH_REQUIRED');
+            setShowErrorModal(true);
+            setParsedConstraints(null);
+            return; // stop submission flow
+          }
           throw new Error(errorData.error || 'Failed to parse constraints');
         }
 
@@ -465,13 +483,17 @@ const SchedulerPage = ({ user, authToken }) => {
       await generateScheduleWithConstraints(parsedConstraints);
     } catch (err) {
       console.error('Submit error:', err);
-      let errorMessage = err.message;
-      
-      // Provide more helpful error messages
-      if (err.message.includes('Failed to fetch')) {
+      let errorMessage = err.message || '';
+
+      // Map auth-related errors to friendly sign-in message
+      const lower = String(errorMessage).toLowerCase();
+      if (lower.includes('authorization') || lower.includes('authorization header') || err.status === 401) {
+        errorMessage = 'Your session has expired. Please refresh the page and sign in again.';
+      } else if (errorMessage.includes('Failed to fetch')) {
+        // Provide more helpful error messages
         errorMessage = 'Unable to connect to the server. Please make sure the backend is running on the correct port and try again.';
       }
-      
+
       setError(errorMessage);
       setShowErrorModal(true);
       setParsedConstraints(null);

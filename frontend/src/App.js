@@ -188,7 +188,7 @@ function AppContent() {
             />
             <Route 
               path="/scheduler" 
-              element={<SchedulerPage user={user} authToken={authToken} />} 
+              element={<SchedulerPage user={user} authToken={authToken} onAuthClick={() => setShowAuth(true)} />} 
             />
             <Route 
               path="/schedule-viewer/:scheduleId?" 
