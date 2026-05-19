@@ -14,7 +14,7 @@ This document provides comprehensive information about the testing setup for the
 
 ## 🎯 Overview
 
-Schedgic uses a comprehensive testing strategy with:
+*Schedgic* uses a comprehensive testing strategy with:
 - **Backend**: pytest with Flask testing utilities
 - **Frontend**: Jest with React Testing Library
 - **Coverage**: Minimum 80% coverage requirement

@@ -116,6 +116,9 @@ const SchedulerPage = ({ user, authToken, onAuthClick }) => {
   const [preference, setPreference] = useState("crammed");
   const [courses, setCourses] = useState([]);
   const [constraints, setConstraints] = useState("");
+  const [liveConstraints, setLiveConstraints] = useState([]);
+  const [isLiveParsing, setIsLiveParsing] = useState(false);
+  const [liveParseError, setLiveParseError] = useState(null);
   const [error, setError] = useState(null);
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -131,6 +134,52 @@ const SchedulerPage = ({ user, authToken, onAuthClick }) => {
   const [loadedScheduleId, setLoadedScheduleId] = useState(null);
   
   const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
+
+  const formatLiveConstraintLabel = useCallback((constraint) => {
+    if (constraint?.label && typeof constraint.label === 'string') {
+      return constraint.label;
+    }
+
+    switch (constraint?.type) {
+      case 'no_classes_before':
+        return 'No early classes';
+      case 'no_classes_after':
+        return 'No late classes';
+      case 'no_day':
+        return 'Day blocked';
+      case 'avoid_ta':
+        return 'Avoid this TA';
+      default:
+        return 'Parsed preference';
+    }
+  }, []);
+
+  const normalizeLiveConstraints = useCallback((payload) => {
+    const colorMap = {
+      blue: 'pill-blue',
+      red: 'pill-red',
+      green: 'pill-green',
+      yellow: 'pill-amber',
+      orange: 'pill-amber',
+      purple: 'pill-violet'
+    };
+
+    const items = Array.isArray(payload)
+      ? payload
+      : Array.isArray(payload?.constraints)
+        ? payload.constraints
+        : [];
+
+    return items.map((item, index) => {
+      const color = typeof item?.color === 'string' ? item.color.toLowerCase() : '';
+      return {
+        id: `${item?.type || 'constraint'}-${index}`,
+        label: formatLiveConstraintLabel(item),
+        colorClass: colorMap[color] || 'pill-slate',
+        type: item?.type || 'parsed_constraint'
+      };
+    });
+  }, [formatLiveConstraintLabel]);
 
   useEffect(() => {
     // Handle restored state from schedule viewer
@@ -199,6 +248,57 @@ const SchedulerPage = ({ user, authToken, onAuthClick }) => {
       setCourses(convertedCourses);
     }
   }, [importedCourses]);
+
+  useEffect(() => {
+    const text = constraints.trim();
+
+    if (text.length < 3) {
+      setLiveConstraints([]);
+      setLiveParseError(null);
+      setIsLiveParsing(false);
+      return;
+    }
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(async () => {
+      try {
+        setIsLiveParsing(true);
+        setLiveParseError(null);
+
+        const parseRes = await fetch((API_BASE_URL || '') + "/api/parse-live", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ text }),
+          signal: controller.signal
+        });
+
+        if (!parseRes.ok) {
+          throw new Error(`Live parse failed with status ${parseRes.status}`);
+        }
+
+        const data = await parseRes.json();
+        setLiveConstraints(normalizeLiveConstraints(data));
+      } catch (err) {
+        if (err.name === 'AbortError') {
+          return;
+        }
+        console.error('Live parsing failed:', err);
+        setLiveConstraints([]);
+        setLiveParseError('Live parsing is temporarily unavailable.');
+      } finally {
+        if (!controller.signal.aborted) {
+          setIsLiveParsing(false);
+        }
+      }
+    }, 350);
+
+    return () => {
+      controller.abort();
+      clearTimeout(timeoutId);
+    };
+  }, [constraints, API_BASE_URL, normalizeLiveConstraints]);
 
   const handleCourseChange = (index, field, value) => {
     const newCourses = [...courses];
@@ -550,12 +650,16 @@ const SchedulerPage = ({ user, authToken, onAuthClick }) => {
         }
 
         constraintsData = await parseRes.json();
-        parsedConstraints = constraintsData[0]?.constraints || [];
+          parsedConstraints = Array.isArray(constraintsData)
+            ? constraintsData[0]?.constraints || []
+            : constraintsData?.constraints || [];
         
         // Enhanced constraints data with original text and entities
         const enhancedConstraintsData = {
           constraints: parsedConstraints,
-          entities: constraintsData[0]?.entities || [],
+            entities: Array.isArray(constraintsData)
+              ? constraintsData[0]?.entities || []
+              : constraintsData?.entities || [],
           originalText: constraints.trim(),
           parsedAt: new Date().toISOString()
         };
@@ -754,6 +858,31 @@ const SchedulerPage = ({ user, authToken, onAuthClick }) => {
                   placeholder="Optional: No classes before 9am, Avoid TA Smith, etc."
                   rows={3}
                 />
+
+                <div className="live-constraints-meta">
+                  {isLiveParsing ? (
+                    <span className="live-constraints-status">Analyzing your preference...</span>
+                  ) : (
+                    <span className="live-constraints-hint">
+                      {constraints.trim().length < 3
+                        ? 'Type at least 3 characters to preview parsed constraints.'
+                        : 'Live preview updates as you type.'}
+                    </span>
+                  )}
+                  {liveParseError && (
+                    <span className="live-constraints-error">{liveParseError}</span>
+                  )}
+                </div>
+
+                {liveConstraints.length > 0 && (
+                  <div className="live-constraints-pills" aria-live="polite">
+                    {liveConstraints.map((pill) => (
+                      <span key={pill.id} className={`live-constraint-pill ${pill.colorClass}`}>
+                        {pill.label}
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <button 

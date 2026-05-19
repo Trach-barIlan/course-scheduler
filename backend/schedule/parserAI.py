@@ -1,15 +1,15 @@
 import re
-from ai_model.hybrid_parser import HybridScheduleParser
+from ai_model.gliner_parser import GlinerParser
 
-# Initialize hybrid parser for better constraint parsing
-print("🔍 PARSER AI: Initializing HybridScheduleParser...")
+# Initialize GLiNER parser for better constraint parsing
+print("🔍 PARSER AI: Initializing GlinerParser...")
 try:
-    constraint_parser = HybridScheduleParser()
+    constraint_parser = GlinerParser()
     PARSER_AVAILABLE = True
-    print("🔍 PARSER AI: HybridScheduleParser initialized successfully")
+    print("🔍 PARSER AI: GlinerParser initialized successfully")
 except Exception as e:
     PARSER_AVAILABLE = False
-    print(f"❌ PARSER AI: HybridScheduleParser initialization failed: {e}")
+    print(f"❌ PARSER AI: GlinerParser initialization failed: {e}")
     import traceback
     print(f"❌ PARSER AI: Full traceback: {traceback.format_exc()}")
 

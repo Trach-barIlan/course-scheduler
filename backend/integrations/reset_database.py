@@ -9,7 +9,9 @@ import json
 from dotenv import load_dotenv
 from supabase import create_client
 
-load_dotenv('/Users/yonitrach/Desktop/RandomProj/course-scheduler/backend/.env')
+# Load .env from parent directory
+env_path = os.path.join(os.path.dirname(__file__), '..', '.env')
+load_dotenv(env_path, override=True)
 
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY")

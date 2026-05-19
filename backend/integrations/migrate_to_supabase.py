@@ -9,7 +9,7 @@ try:
     from dotenv import load_dotenv
     # Load .env from parent directory
     env_path = os.path.join(os.path.dirname(__file__), '..', '.env')
-    load_dotenv(env_path)
+    load_dotenv(env_path, override=True)
     print(f"✅ Loaded environment variables from {env_path}")
 except ImportError:
     print("⚠️  python-dotenv not installed, using system environment variables")
