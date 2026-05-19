@@ -1,17 +1,28 @@
-flask
-flask-cors
-ortools
-spacy
-spacy-lookups-data
+# Core Dependencies
+fastapi
+uvicorn
+pydantic
+pydantic-settings
+email-validator
+structlog
+python-multipart
+httpx
 supabase
-python-dotenv
+ortools
+gliner
+
+# Data & Scrapers
+beautifulsoup4
+lxml
+requests
+
+# Production & Deployment
 gunicorn
+python-dotenv
+
+# Testing
 pytest
-pytest-flask
 pytest-cov
 pytest-mock
 requests-mock
 factory-boy
-requests
-beautifulsoup4
-lxml

@@ -120,19 +120,24 @@ const CourseInput = ({ course, onChange, index, onRemove, canRemove, selectedUni
 
         try {
             const token = localStorage.getItem('auth_token');
-            let response;
+            const semesterQuery = selectedSemester ? `?semester=${selectedSemester}` : '';
 
-            if (token) {
-                response = await fetch(`${API_BASE_URL}/api/courses/course/${suggestion.id}${selectedSemester ? `?semester=${selectedSemester}` : ''}`, {
+            // Prefer the public fast-course endpoint so selection works even when the
+            // authenticated details route is unavailable or has changed.
+            let response = await fetch(
+                `${API_BASE_URL}/api/courses/fast-course/${suggestion.id}${semesterQuery}`,
+                {
+                    headers: { 'Content-Type': 'application/json' }
+                }
+            );
+
+            // Fall back to the authenticated endpoint only if the fast path fails.
+            if (!response.ok && token) {
+                response = await fetch(`${API_BASE_URL}/api/courses/course/${suggestion.id}${semesterQuery}`, {
                     headers: {
                         'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json'
                     }
-                });
-            } else {
-                // Unauthenticated: use fast JSON-based course details endpoint
-                response = await fetch(`${API_BASE_URL}/api/courses/fast-course/${suggestion.id}${selectedSemester ? `?semester=${selectedSemester}` : ''}`, {
-                    headers: { 'Content-Type': 'application/json' }
                 });
             }
 
