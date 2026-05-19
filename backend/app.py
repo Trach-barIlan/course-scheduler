@@ -173,8 +173,8 @@ async def api_schedule(payload: ScheduleRequest, request: Request):
         duration_ms = int((time.time() - start_time) * 1000)
         
         if generated_list is None:
-             logger.info("generation_finished", duration_ms=duration_ms, status="failed")
-               return {"status": "error", "error": "No valid schedule found with these constraints", "message": "No valid schedule found with these constraints"}
+            logger.info("generation_finished", duration_ms=duration_ms, status="failed")
+            return {"status": "error", "error": "No valid schedule found with these constraints", "message": "No valid schedule found with these constraints"}
 
         logger.info("generation_finished", duration_ms=duration_ms, status="success")
         return {"status": "success", "schedule": generated_list}
