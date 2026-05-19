@@ -284,9 +284,75 @@ async def get_university_departments(university_id: str):
 async def convert_catalog_courses(data: Dict[str, Any], user: Dict = Depends(get_current_user)):
     if 'selectedCourses' not in data:
         raise HTTPException(status_code=400, detail="Missing course selections")
+    if not isinstance(data['selectedCourses'], list):
+        raise HTTPException(status_code=400, detail="selectedCourses must be an array")
+
+    converted_courses: List[Dict[str, Any]] = []
+
+    for selection in data['selectedCourses']:
+        if not isinstance(selection, dict):
+            continue
+
+        course_info = selection.get('course') or {}
+        section_info = selection.get('section') or {}
+
+        name = (
+            course_info.get('name')
+            or course_info.get('courseName')
+            or selection.get('name')
+            or ""
+        )
+        code = course_info.get('code') or selection.get('code')
+        if code and code not in name:
+            name = f"{code} - {name}" if name else str(code)
+
+        scheduler_course = {
+            'name': name,
+            'hasLecture': False,
+            'hasPractice': False,
+            'lectures': [],
+            'practices': []
+        }
+
+        section_times = section_info.get('times')
+        if not isinstance(section_times, list):
+            section_times = []
+
+        for time_slot in section_times:
+            if not isinstance(time_slot, dict):
+                continue
+
+            day = time_slot.get('day')
+            start_time = time_slot.get('startTime')
+            end_time = time_slot.get('endTime')
+
+            if not day or start_time is None or end_time is None:
+                continue
+
+            normalized_slot = {
+                'day': str(day),
+                'startTime': str(start_time),
+                'endTime': str(end_time)
+            }
+
+            slot_type = str(time_slot.get('type', '')).lower()
+            if slot_type == 'lecture':
+                scheduler_course['hasLecture'] = True
+                scheduler_course['lectures'].append(normalized_slot)
+            elif slot_type in {'lab', 'practice', 'tutorial', 'ta'}:
+                scheduler_course['hasPractice'] = True
+                scheduler_course['practices'].append(normalized_slot)
+            else:
+                # Default unknown session types to lectures to avoid silent data loss.
+                scheduler_course['hasLecture'] = True
+                scheduler_course['lectures'].append(normalized_slot)
+
+        if not scheduler_course['name']:
+            continue
+
+        converted_courses.append(scheduler_course)
     
-    # Mock conversion logic
     return {
-        'courses': [],
-        'message': f"Converted {len(data['selectedCourses'])} courses"
+        'courses': converted_courses,
+        'message': f"Converted {len(converted_courses)} courses"
     }

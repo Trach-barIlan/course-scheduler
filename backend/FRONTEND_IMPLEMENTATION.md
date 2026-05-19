@@ -21,15 +21,13 @@ The backend now provides a dedicated lightweight endpoint for live parsing.
     ```
 *   **Response Body:**
     ```json
-    {
-      "constraints": [
-        {
-          "label": "Starts after 10:00",
-          "color": "blue",
-          "type": "no_classes_before"
-        }
-      ]
-    }
+    [
+      {
+        "label": "Starts after 10:00",
+        "color": "blue",
+        "type": "no_classes_before"
+      }
+    ]
     ```
 
 ---
@@ -62,7 +60,7 @@ async function fetchLiveConstraints(text) {
       body: JSON.stringify({ text })
     });
     const data = await response.json();
-    setLiveConstraints(data.constraints);
+    setLiveConstraints(Array.isArray(data) ? data : []);
   } catch (error) {
     console.error("Live parsing failed", error);
   }

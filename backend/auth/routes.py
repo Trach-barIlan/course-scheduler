@@ -78,6 +78,13 @@ async def get_me(user: Dict = Depends(get_current_user)):
 
 @auth_router.post("/logout")
 async def logout(authorization: str = Header(...)):
-    token = authorization.split(" ")[1]
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Invalid or missing token")
+
+    token_parts = authorization.split(" ", 1)
+    if len(token_parts) != 2 or not token_parts[1].strip():
+        raise HTTPException(status_code=401, detail="Invalid or missing token")
+
+    token = token_parts[1].strip()
     get_auth_manager().delete_session(token)
     return {"message": "Logged out"}

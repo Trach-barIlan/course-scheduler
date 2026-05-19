@@ -152,10 +152,26 @@ async def api_schedule(payload: ScheduleRequest, request: Request):
         # (Parsing string time slots like "Mon 9-11" into tuples)
         parsed_courses = []
         for c in payload.courses:
+            lecture_slots = []
+            for slot in c.lectures:
+                if not slot:
+                    continue
+                parsed_slot = parse_time_slot(slot)
+                if parsed_slot:
+                    lecture_slots.append(parsed_slot)
+
+            ta_slots = []
+            for slot in c.ta_times:
+                if not slot:
+                    continue
+                parsed_slot = parse_time_slot(slot)
+                if parsed_slot:
+                    ta_slots.append(parsed_slot)
+
             parsed_courses.append({
                 "name": c.name,
-                "lectures": [parse_time_slot(s) for s in c.lectures if s and parse_time_slot(s)],
-                "ta_times": [parse_time_slot(s) for s in c.ta_times if s and parse_time_slot(s)]
+                "lectures": lecture_slots,
+                "ta_times": ta_slots
             })
         
         constraints_dict = [c.dict() for c in payload.constraints]

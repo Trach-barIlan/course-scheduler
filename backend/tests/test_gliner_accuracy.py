@@ -1,6 +1,15 @@
 import unittest
+import os
 from ai_model.gliner_parser import GlinerParser
 
+
+RUN_SLOW_GLINER_TESTS = os.getenv("RUN_SLOW_GLINER_TESTS", "").strip().lower() in {"1", "true", "yes", "on"}
+
+
+@unittest.skipUnless(
+    RUN_SLOW_GLINER_TESTS,
+    "Skipping slow integration test. Set RUN_SLOW_GLINER_TESTS=1 to run tests that load the real GLiNER model.",
+)
 class TestGlinerAccuracy(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
